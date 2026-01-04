@@ -1,12 +1,28 @@
-export default function Home() {
+import { supabase } from '@/lib/supabaseClient'
+
+export default async function Home() {
+  const { data: products, error } = await supabase
+    .from('products')
+    .select('*')
+    .eq('active', true)
+
+  if (error) {
+    return <p>Error cargando productos</p>
+  }
+
   return (
-    <main className="p-8">
-      <h1 className="text-3xl font-bold">
-        Muscle Meals
-      </h1>
-      <p className="mt-4">
-        Comidas preparadas saludables.
-      </p>
+    <main style={{ padding: 40 }}>
+      <h1>Muscle Meals</h1>
+
+      <ul>
+        {products?.map(product => (
+          <li key={product.id}>
+            <strong>{product.name}</strong><br />
+            {product.description}<br />
+            ${product.price / 100}
+          </li>
+        ))}
+      </ul>
     </main>
-  );
+  )
 }
