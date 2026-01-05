@@ -1,69 +1,90 @@
 import { supabase } from '@/lib/supabase/client'
-import type { Order, CreateOrderPayload, OrderItem } from '@/lib/types'
+import type { Order, OrderWithItems, CreateOrderPayload, CreateOrderItemData } from '@/lib/types'
 
 /**
- * Crea una nueva orden desde el cliente (browser)
+ * Crea una nueva orden con sus items
  * 
- * NOTA: Esta función usa el cliente browser porque se llama desde
- * un Client Component después de la selección del usuario.
- * 
- * En el futuro, considera mover esto a un Server Action para
- * mejor seguridad y validación server-side.
+ * IMPORTANTE: Esta función usa el cliente browser.
+ * Considera mover a Server Action para mejor seguridad.
  */
-export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
-  const { data, error } = await supabase
+export async function createOrder(
+  payload: CreateOrderPayload,
+  items: CreateOrderItemData[]
+): Promise<Order> {
+  // 1. Crear la orden
+  const { data: order, error: orderError } = await supabase
     .from('orders')
-    .insert(payload)
+    .insert({
+      customer_id: payload.customer_id || null,
+      total_amount: payload.total_amount,
+      status: payload.status || 'pending'
+    })
     .select()
     .single()
 
-  if (error) {
-    console.error('Error creating order:', error)
-    
-    // Errores comunes de Supabase con mensajes útiles
-    if (error.code === 'PGRST204') {
-      throw new Error(`Error de base de datos: La columna '${error.message.match(/'(.+?)'/)?.[1] || 'desconocida'}' no existe. Verifica tu schema en Supabase.`)
-    }
-    
-    if (error.code === '23505') {
-      throw new Error('Esta orden ya existe.')
-    }
-    
-    // Error genérico pero con detalles
-    throw new Error(`No se pudo crear la orden: ${error.message || error.code || 'Error desconocido'}`)
+  if (orderError) {
+    console.error('Error creating order:', orderError)
+    throw new Error(getErrorMessage(orderError))
   }
 
-  return data as Order
+  // 2. Crear los items de la orden
+  const orderItems = items.map(item => ({
+    order_id: order.id,
+    meal_id: item.meal_id,
+    size_id: item.size_id,
+    qty: item.qty,
+    unit_price: item.unit_price,
+    package_id: item.package_id || null
+  }))
+
+  const { error: itemsError } = await supabase
+    .from('order_items')
+    .insert(orderItems)
+
+  if (itemsError) {
+    // Rollback: eliminar la orden si fallan los items
+    await supabase.from('orders').delete().eq('id', order.id)
+    console.error('Error creating order items:', itemsError)
+    throw new Error('Error al crear los items de la orden')
+  }
+
+  return order as Order
 }
 
 /**
- * Construye el payload de orden a partir de la selección del usuario
+ * Obtiene una orden por ID con sus items
  */
-export function buildOrderPayload(
-  packageId: string,
-  packagePrice: number,
-  selection: Record<string, number>,
-  dishNames: Record<string, string>
-): CreateOrderPayload {
-  const items: OrderItem[] = Object.entries(selection)
-    .filter(([, qty]) => qty > 0)
-    .map(([dishId, qty]) => ({
-      product_id: dishId,
-      name: dishNames[dishId] || 'Platillo desconocido',
-      qty
-    }))
+export async function getOrderWithItems(id: string): Promise<OrderWithItems | null> {
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('id', id)
+    .single()
+
+  if (orderError) {
+    if (orderError.code === 'PGRST116') return null
+    console.error('Error fetching order:', orderError)
+    throw new Error('Error al cargar la orden')
+  }
+
+  const { data: items, error: itemsError } = await supabase
+    .from('order_items')
+    .select('*')
+    .eq('order_id', id)
+
+  if (itemsError) {
+    console.error('Error fetching order items:', itemsError)
+    throw new Error('Error al cargar los items')
+  }
 
   return {
-    package_id: packageId,
-    items,
-    status: 'pending',
-    total_amount: packagePrice
-  }
+    ...order,
+    items
+  } as OrderWithItems
 }
 
 /**
- * Obtiene una orden por ID (para página de checkout)
- * Usa cliente browser - considera mover a server si necesitas auth
+ * Obtiene una orden por ID (sin items)
  */
 export async function getOrderById(id: string): Promise<Order | null> {
   const { data, error } = await supabase
@@ -79,4 +100,24 @@ export async function getOrderById(id: string): Promise<Order | null> {
   }
 
   return data as Order
+}
+
+/**
+ * Mensajes de error específicos de Supabase
+ */
+function getErrorMessage(error: any): string {
+  if (error.code === 'PGRST204') {
+    const column = error.message.match(/'(.+?)'/)?.[1] || 'desconocida'
+    return `Error de base de datos: La columna '${column}' no existe. Verifica tu schema en Supabase.`
+  }
+  
+  if (error.code === '23505') {
+    return 'Esta orden ya existe.'
+  }
+  
+  if (error.code === '23503') {
+    return 'Producto o paquete no válido.'
+  }
+  
+  return `No se pudo crear la orden: ${error.message || error.code || 'Error desconocido'}`
 }

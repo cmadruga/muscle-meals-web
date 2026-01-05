@@ -1,57 +1,105 @@
-import { getActiveProducts } from '@/lib/db/products'
+import Link from 'next/link'
+import { getActivePackages } from '@/lib/db/packages'
+import { getActiveMeals } from '@/lib/db/meals'
+import { getMainSizes } from '@/lib/db/sizes'
 
 /**
- * Página principal - Lista de productos/paquetes
- * 
- * Server Component que carga datos directamente de Supabase.
- * No necesita Client Component porque no hay interactividad compleja.
+ * Página principal - Lista de paquetes y meals disponibles
  */
 export default async function Home() {
-  const products = await getActiveProducts()
+  const [packages, meals, sizes] = await Promise.all([
+    getActivePackages(),
+    getActiveMeals(),
+    getMainSizes()
+  ])
+
+  // Precio más bajo para mostrar "desde $X"
+  const lowestPrice = sizes.length > 0 ? Math.min(...sizes.map(s => s.price)) : 0
+  const lowestPackagePrice = sizes.length > 0 ? Math.min(...sizes.map(s => s.package_price)) : 0
 
   return (
-    <main style={{ padding: 40 }}>
+    <main style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
       <h1>Muscle Meals</h1>
-      <p>Paquetes de comida preparada para tu semana fitness</p>
+      <p>Comida preparada para tu semana fitness</p>
 
-      <ul style={{ listStyle: 'none', padding: 0, marginTop: 24 }}>
-        {products.map(product => (
-          <li 
-            key={product.id}
-            style={{
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              padding: 16,
-              marginBottom: 16
-            }}
-          >
-            <h2>{product.name}</h2>
-            {product.description && <p>{product.description}</p>}
-            <p>
-              <strong>${(product.price / 100).toFixed(2)}</strong>
-              {product.meals_included && (
-                <span> · {product.meals_included} comidas</span>
+      {/* PAQUETES */}
+      <section style={{ marginTop: 40 }}>
+        <h2>📦 Paquetes</h2>
+        <p style={{ color: '#666', marginBottom: 16 }}>
+          Arma tu paquete semanal y ahorra
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+          {packages.map(pkg => (
+            <Link 
+              key={pkg.id}
+              href={`/package/${pkg.id}`}
+              style={{
+                display: 'block',
+                border: '1px solid #ccc',
+                borderRadius: 8,
+                padding: 16,
+                textDecoration: 'none',
+                color: 'inherit',
+                transition: 'box-shadow 0.2s'
+              }}
+            >
+              {pkg.img && (
+                <img 
+                  src={pkg.img} 
+                  alt={pkg.name}
+                  style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
+                />
               )}
-            </p>
-            {product.meals_included && (
-              <a 
-                href={`/package/${product.id}`}
-                style={{
-                  display: 'inline-block',
-                  marginTop: 8,
-                  padding: '8px 16px',
-                  background: '#333',
-                  color: '#fff',
-                  textDecoration: 'none',
-                  borderRadius: 4
-                }}
-              >
-                Armar paquete
-              </a>
-            )}
-          </li>
-        ))}
-      </ul>
+              <h3 style={{ margin: '8px 0' }}>{pkg.name}</h3>
+              {pkg.description && <p style={{ color: '#666', fontSize: 14 }}>{pkg.description}</p>}
+              <p style={{ marginTop: 8 }}>
+                <strong>Desde ${((lowestPackagePrice * pkg.meals_included) / 100).toFixed(0)} MXN</strong>
+                <span style={{ color: '#666' }}> · {pkg.meals_included} comidas</span>
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      {/* MEALS INDIVIDUALES */}
+      <section style={{ marginTop: 48 }}>
+        <h2>🍽️ Comidas Individuales</h2>
+        <p style={{ color: '#666', marginBottom: 16 }}>
+          Ordena platillos sueltos
+        </p>
+        
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+          {meals.map(meal => (
+            <Link 
+              key={meal.id}
+              href={`/meal/${meal.id}`}
+              style={{
+                display: 'block',
+                border: '1px solid #ccc',
+                borderRadius: 8,
+                padding: 16,
+                textDecoration: 'none',
+                color: 'inherit',
+                transition: 'box-shadow 0.2s'
+              }}
+            >
+              {meal.img && (
+                <img 
+                  src={meal.img} 
+                  alt={meal.name}
+                  style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
+                />
+              )}
+              <h3 style={{ margin: '8px 0' }}>{meal.name}</h3>
+              {meal.description && <p style={{ color: '#666', fontSize: 14 }}>{meal.description}</p>}
+              <p style={{ marginTop: 8 }}>
+                <strong>Desde ${(lowestPrice / 100).toFixed(0)} MXN</strong>
+              </p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </main>
   )
 }

@@ -1,36 +1,57 @@
 /**
- * Item individual dentro de una orden
+ * Estados posibles de una orden
+ */
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
+
+/**
+ * OrderItem - Item individual de una orden (cada meal)
  */
 export interface OrderItem {
-  product_id: string
-  name: string
+  id: string
+  order_id: string
+  meal_id: string
+  size_id: string
   qty: number
+  unit_price: number // precio unitario al momento de la orden (centavos)
+  package_id: string | null // si pertenece a un paquete
+  created_at: string
+}
+
+/**
+ * Datos para crear un item de orden
+ */
+export interface CreateOrderItemData {
+  meal_id: string
+  size_id: string
+  qty: number
+  unit_price: number
+  package_id?: string | null
 }
 
 /**
  * Payload para crear una nueva orden
  */
 export interface CreateOrderPayload {
-  package_id: string
-  items: OrderItem[]
-  status: OrderStatus
-  total_amount: number // en centavos
+  customer_id?: string | null
+  total_amount: number
+  status?: OrderStatus
 }
 
 /**
- * Estados posibles de una orden
- */
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
-
-/**
- * Orden completa como viene de Supabase
+ * Orden completa
  */
 export interface Order {
   id: string
-  package_id: string
-  items: OrderItem[]
+  customer_id: string | null
+  total_amount: number
   status: OrderStatus
-  total_amount: number // en centavos
   created_at: string
-  updated_at?: string
+  updated_at: string
+}
+
+/**
+ * Orden con sus items
+ */
+export interface OrderWithItems extends Order {
+  items: OrderItem[]
 }

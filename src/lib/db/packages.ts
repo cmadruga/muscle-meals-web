@@ -3,17 +3,15 @@ import type { Package, PackageBasic } from '@/lib/types'
 
 /**
  * Obtiene todos los paquetes activos
- * Uso: página principal para listar paquetes disponibles
  */
 export async function getActivePackages(): Promise<Package[]> {
   const supabase = await createClient()
   
   const { data, error } = await supabase
-    .from('products')
+    .from('packages')
     .select('*')
     .eq('active', true)
-    .not('meals_included', 'is', null) // Solo productos tipo paquete
-    .order('price', { ascending: true })
+    .order('meals_included', { ascending: true })
 
   if (error) {
     console.error('Error fetching packages:', error)
@@ -24,35 +22,33 @@ export async function getActivePackages(): Promise<Package[]> {
 }
 
 /**
- * Obtiene un paquete por ID (datos básicos para UI de selección)
- * Uso: página de selección de platillos
+ * Obtiene paquetes básicos para UI
  */
-export async function getPackageById(id: string): Promise<PackageBasic | null> {
+export async function getPackagesBasic(): Promise<PackageBasic[]> {
   const supabase = await createClient()
   
   const { data, error } = await supabase
-    .from('products')
-    .select('id, name, meals_included, price')
-    .eq('id', id)
-    .single()
+    .from('packages')
+    .select('id, name, meals_included')
+    .eq('active', true)
+    .order('meals_included', { ascending: true })
 
   if (error) {
-    if (error.code === 'PGRST116') return null // No encontrado
-    console.error('Error fetching package:', error)
-    throw new Error('Error al cargar el paquete')
+    console.error('Error fetching packages:', error)
+    throw new Error('No se pudieron cargar los paquetes')
   }
 
-  return data as PackageBasic
+  return data as PackageBasic[]
 }
 
 /**
- * Obtiene un paquete completo por ID
+ * Obtiene un paquete por ID
  */
-export async function getPackageFull(id: string): Promise<Package | null> {
+export async function getPackageById(id: string): Promise<Package | null> {
   const supabase = await createClient()
   
   const { data, error } = await supabase
-    .from('products')
+    .from('packages')
     .select('*')
     .eq('id', id)
     .single()
