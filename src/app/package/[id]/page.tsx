@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getPackageById } from '@/lib/db/packages'
-import { getActiveMeals } from '@/lib/db/meals'
+import { getActiveMealsWithRecipes } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
 import PackageClient from './PackageClient'
 
@@ -18,7 +18,7 @@ export default async function PackagePage({ params }: PackagePageProps) {
   // Fetch paralelo
   const [pkg, meals, sizes] = await Promise.all([
     getPackageById(id),
-    getActiveMeals(),
+    getActiveMealsWithRecipes(),
     getMainSizes()
   ])
 

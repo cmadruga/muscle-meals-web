@@ -1,12 +1,15 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Meal, Size } from '@/lib/types'
-import { createOrder } from '@/lib/db/orders'
+import Image from 'next/image'
+import type { Size } from '@/lib/types'
+import type { MealWithRecipes } from '@/lib/db/meals'
+import { useCartStore } from '@/lib/store/cart'
+import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 
 interface MealClientProps {
-  meal: Meal
+  meal: MealWithRecipes
   sizes: Size[]
 }
 
@@ -15,68 +18,76 @@ interface MealClientProps {
  */
 export default function MealClient({ meal, sizes }: MealClientProps) {
   const router = useRouter()
+  const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [qty, setQty] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const selectedSize = sizes.find(s => s.id === selectedSizeId)
+
+  // Calcular macros según size seleccionado
+  const macros = useMemo(() => {
+    if (!selectedSize) return null
+    
+    const ingredientsMap = new Map(meal.ingredients.map(i => [i.id, i]))
+    return calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
+  }, [meal, selectedSize])
+
   const totalPrice = selectedSize ? selectedSize.price * qty : 0
 
-  const handleSubmit = async () => {
+  const handleAddToCart = () => {
     if (!selectedSize) return
 
-    setIsSubmitting(true)
-    setError(null)
+    addToCart({
+      mealId: meal.id,
+      mealName: meal.name,
+      sizeId: selectedSize.id,
+      sizeName: selectedSize.name,
+      qty: qty,
+      unitPrice: selectedSize.price
+    })
 
-    try {
-      const order = await createOrder(
-        {
-          total_amount: totalPrice,
-          status: 'pending'
-        },
-        [{
-          meal_id: meal.id,
-          size_id: selectedSize.id,
-          qty: qty,
-          unit_price: selectedSize.price
-        }]
-      )
-
-      router.push(`/checkout/${order.id}`)
-    } catch (err) {
-      console.error('Error creating order:', err)
-      setError(err instanceof Error ? err.message : 'Error al crear la orden')
-      setIsSubmitting(false)
-    }
+    // Mostrar mensaje de éxito
+    setShowSuccess(true)
+    setTimeout(() => setShowSuccess(false), 2000)
   }
 
   return (
     <main style={{ padding: 40, maxWidth: 800, margin: '0 auto' }}>
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        style={{
+          marginBottom: 24,
+          padding: '8px 16px',
+          fontSize: 14,
+          border: '1px solid #ccc',
+          borderRadius: 8,
+          background: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}
+      >
+        ← Regresar
+      </button>
+
       {/* Meal Info */}
       <div style={{ marginBottom: 32 }}>
         {meal.img && (
-          <img 
+          <Image 
             src={meal.img} 
             alt={meal.name}
+            width={800}
+            height={300}
             style={{ width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 8, marginBottom: 16 }}
+            priority
           />
         )}
         <h1>{meal.name}</h1>
         {meal.description && <p style={{ color: '#666' }}>{meal.description}</p>}
       </div>
-
-      {error && (
-        <div style={{ 
-          color: 'white', 
-          background: '#ef4444',
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16 
-        }}>
-          {error}
-        </div>
-      )}
 
       {/* Size Selector */}
       <div style={{ marginBottom: 24 }}>
@@ -101,6 +112,83 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
           ))}
         </select>
       </div>
+
+      {/* Macros */}
+      {macros && (
+        <div style={{ 
+          padding: 16, 
+          background: '#f5f5f5', 
+          borderRadius: 8,
+          marginBottom: 24
+        }}>
+          <h3 style={{ marginTop: 0 }}>Información Nutricional ({selectedSize?.name})</h3>
+          <p style={{ fontSize: 16, margin: 0, color: '#333' }}>
+            {formatMacros(macros)}
+          </p>
+        </div>
+      )}
+
+      {/* Receta */}
+      <div style={{ marginBottom: 32 }}>
+        <h3>Receta</h3>
+        <div style={{ padding: 16, background: '#fafafa', borderRadius: 8 }}>
+          <h4 style={{ marginTop: 0, marginBottom: 12 }}>{meal.mainRecipe.name}</h4>
+          <ul style={{ margin: 0, paddingLeft: 20 }}>
+            {meal.mainRecipe.ingredients.map((ing, idx) => {
+              const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+              if (!ingredient) return null
+              
+              // Mostrar cantidad ajustada por size si aplica
+              let displayQty = ing.qty
+              if (selectedSize) {
+                if (ingredient.type === 'pro') displayQty = selectedSize.protein_qty
+                else if (ingredient.type === 'carb') displayQty = selectedSize.carb_qty
+                else if (ingredient.type === 'veg') displayQty = selectedSize.veg_qty
+              }
+              
+              return (
+                <li key={idx} style={{ marginBottom: 4 }}>
+                  {ingredient.name} - {displayQty}{ing.unit}
+                </li>
+              )
+            })}
+          </ul>
+          
+          {meal.subRecipes.length > 0 && (
+            <div style={{ marginTop: 16 }}>
+              {meal.subRecipes.map((subRecipe, subIdx) => (
+                <div key={subIdx}>
+                  <h4 style={{ marginBottom: 8 }}>{subRecipe.name}</h4>
+                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                    {subRecipe.ingredients.map((ing, idx) => {
+                      const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                      if (!ingredient) return null
+                      
+                      return (
+                        <li key={idx} style={{ marginBottom: 4 }}>
+                          {ingredient.name} - {ing.qty}{ing.unit}
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {showSuccess && (
+        <div style={{ 
+          color: 'white', 
+          background: '#10b981',
+          padding: 16,
+          borderRadius: 8,
+          marginBottom: 16 
+        }}>
+          ✓ Agregado al carrito
+        </div>
+      )}
 
       {/* Quantity */}
       <div style={{ marginBottom: 24 }}>
@@ -156,22 +244,22 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
         </div>
         
         <button
-          onClick={handleSubmit}
-          disabled={isSubmitting || !selectedSize}
+          onClick={handleAddToCart}
+          disabled={!selectedSize}
           style={{
             width: '100%',
             padding: '16px 24px',
             fontSize: 18,
             fontWeight: 'bold',
-            cursor: isSubmitting ? 'not-allowed' : 'pointer',
-            opacity: isSubmitting ? 0.5 : 1,
+            cursor: !selectedSize ? 'not-allowed' : 'pointer',
+            opacity: !selectedSize ? 0.5 : 1,
             background: '#333',
             color: 'white',
             border: 'none',
             borderRadius: 8
           }}
         >
-          {isSubmitting ? 'Creando orden...' : 'Ordenar ahora'}
+          🛒 Agregar al carrito
         </button>
       </div>
     </main>

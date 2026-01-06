@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { getActivePackages } from '@/lib/db/packages'
 import { getActiveMeals } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
@@ -45,9 +46,11 @@ export default async function Home() {
               }}
             >
               {pkg.img && (
-                <img 
+                <Image 
                   src={pkg.img} 
                   alt={pkg.name}
+                  width={280}
+                  height={150}
                   style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
                 />
               )}
@@ -85,9 +88,11 @@ export default async function Home() {
               }}
             >
               {meal.img && (
-                <img 
+                <Image 
                   src={meal.img} 
                   alt={meal.name}
+                  width={280}
+                  height={150}
                   style={{ width: '100%', height: 150, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
                 />
               )}

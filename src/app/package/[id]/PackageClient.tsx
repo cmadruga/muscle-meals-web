@@ -2,12 +2,15 @@
 
 import { useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
-import type { Package, Meal, Size, CreateOrderItemData } from '@/lib/types'
-import { createOrder } from '@/lib/db/orders'
+import Image from 'next/image'
+import type { Package, Size } from '@/lib/types'
+import type { MealWithRecipes } from '@/lib/db/meals'
+import { useCartStore } from '@/lib/store/cart'
+import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 
 interface PackageClientProps {
   pkg: Package
-  meals: Meal[]
+  meals: MealWithRecipes[]
   sizes: Size[]
 }
 
@@ -25,10 +28,10 @@ interface SelectionItem {
  */
 export default function PackageClient({ pkg, meals, sizes }: PackageClientProps) {
   const router = useRouter()
+  const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [showSuccess, setShowSuccess] = useState(false)
 
   const selectedSize = sizes.find(s => s.id === selectedSizeId)
   
@@ -41,10 +44,10 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
   // Precio total del paquete
   const totalPrice = selectedSize ? selectedSize.package_price * pkg.meals_included : 0
 
-  const canSubmit = totalSelected === pkg.meals_included && !isSubmitting && selectedSize
+  const canSubmit = totalSelected === pkg.meals_included && selectedSize
 
   // Agregar meal
-  const handleAdd = (meal: Meal) => {
+  const handleAdd = (meal: MealWithRecipes) => {
     if (totalSelected >= pkg.meals_included) return
 
     setSelection(prev => {
@@ -80,53 +83,64 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
     return item?.qty || 0
   }
 
-  // Crear orden
-  const handleSubmit = async () => {
+  // Agregar paquete al carrito
+  const handleAddToCart = () => {
     if (!canSubmit || !selectedSize) return
 
-    setIsSubmitting(true)
-    setError(null)
-
-    try {
-      // Cada meal seleccionado es un order_item
-      const orderItems: CreateOrderItemData[] = selection.map(item => ({
-        meal_id: item.mealId,
-        size_id: selectedSize.id,
+    // Cada meal seleccionado se agrega individualmente con package_id
+    selection.forEach(item => {
+      addToCart({
+        mealId: item.mealId,
+        mealName: item.mealName,
+        sizeId: selectedSize.id,
+        sizeName: selectedSize.name,
         qty: item.qty,
-        unit_price: selectedSize.package_price,
-        package_id: pkg.id
-      }))
+        unitPrice: selectedSize.package_price,
+        packageId: pkg.id
+      })
+    })
 
-      const order = await createOrder(
-        {
-          total_amount: totalPrice,
-          status: 'pending'
-        },
-        orderItems
-      )
-
-      router.push(`/checkout/${order.id}`)
-    } catch (err) {
-      console.error('Error creating order:', err)
-      setError(err instanceof Error ? err.message : 'Error al crear la orden')
-      setIsSubmitting(false)
-    }
+    // Mostrar mensaje de éxito
+    setShowSuccess(true)
+    setTimeout(() => {
+      setShowSuccess(false)
+      setSelection([]) // Limpiar selección
+    }, 2000)
   }
 
   return (
     <main style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
+      {/* Back Button */}
+      <button
+        onClick={() => router.back()}
+        style={{
+          marginBottom: 24,
+          padding: '8px 16px',
+          fontSize: 14,
+          border: '1px solid #ccc',
+          borderRadius: 8,
+          background: 'white',
+          cursor: 'pointer',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 8
+        }}
+      >
+        ← Regresar
+      </button>
+
       <h1>{pkg.name}</h1>
       {pkg.description && <p style={{ color: '#666' }}>{pkg.description}</p>}
 
-      {error && (
+      {showSuccess && (
         <div style={{ 
           color: 'white', 
-          background: '#ef4444',
+          background: '#10b981',
           padding: 16,
           borderRadius: 8,
           marginBottom: 16 
         }}>
-          {error}
+          ✓ Paquete agregado al carrito
         </div>
       )}
 
@@ -165,6 +179,14 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
           {meals.map(meal => {
             const qty = getQty(meal.id)
+            
+            // Calcular macros para este meal con el size seleccionado
+            let macros = null
+            if (selectedSize) {
+              const ingredientsMap = new Map(meal.ingredients.map(i => [i.id, i]))
+              macros = calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
+            }
+            
             return (
               <div 
                 key={meal.id}
@@ -176,15 +198,24 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                 }}
               >
                 {meal.img && (
-                  <img 
+                  <Image 
                     src={meal.img} 
                     alt={meal.name}
+                    width={280}
+                    height={120}
                     style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
                   />
                 )}
                 <h4 style={{ margin: '8px 0' }}>{meal.name}</h4>
                 {meal.description && (
-                  <p style={{ color: '#666', fontSize: 14, marginBottom: 12 }}>{meal.description}</p>
+                  <p style={{ color: '#666', fontSize: 14, marginBottom: 8 }}>{meal.description}</p>
+                )}
+                
+                {/* Macros */}
+                {macros && (
+                  <p style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+                    {formatMacros(macros)}
+                  </p>
                 )}
 
                 {/* Quantity Controls */}
@@ -258,7 +289,7 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         </div>
         
         <button
-          onClick={handleSubmit}
+          onClick={handleAddToCart}
           disabled={!canSubmit}
           style={{
             width: '100%',
@@ -273,11 +304,9 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
             borderRadius: 8
           }}
         >
-          {isSubmitting 
-            ? 'Creando orden...' 
-            : totalSelected < pkg.meals_included 
-              ? `Selecciona ${pkg.meals_included - totalSelected} más`
-              : 'Continuar al pago'
+          {totalSelected < pkg.meals_included 
+            ? `Selecciona ${pkg.meals_included - totalSelected} más`
+            : '🛒 Agregar al carrito'
           }
         </button>
       </div>

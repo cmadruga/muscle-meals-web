@@ -105,19 +105,25 @@ export async function getOrderById(id: string): Promise<Order | null> {
 /**
  * Mensajes de error específicos de Supabase
  */
-function getErrorMessage(error: any): string {
-  if (error.code === 'PGRST204') {
-    const column = error.message.match(/'(.+?)'/)?.[1] || 'desconocida'
-    return `Error de base de datos: La columna '${column}' no existe. Verifica tu schema en Supabase.`
+function getErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null) {
+    const err = error as { code?: string; message?: string }
+    
+    if (err.code === 'PGRST204') {
+      const column = err.message?.match(/'(.+?)'/)?.[1] || 'desconocida'
+      return `Error de base de datos: La columna '${column}' no existe. Verifica tu schema en Supabase.`
+    }
+    
+    if (err.code === '23505') {
+      return 'Esta orden ya existe.'
+    }
+    
+    if (err.code === '23503') {
+      return 'Producto o paquete no válido.'
+    }
+    
+    return `No se pudo crear la orden: ${err.message || err.code || 'Error desconocido'}`
   }
   
-  if (error.code === '23505') {
-    return 'Esta orden ya existe.'
-  }
-  
-  if (error.code === '23503') {
-    return 'Producto o paquete no válido.'
-  }
-  
-  return `No se pudo crear la orden: ${error.message || error.code || 'Error desconocido'}`
+  return 'No se pudo crear la orden: Error desconocido'
 }

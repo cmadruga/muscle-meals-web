@@ -1,4 +1,4 @@
-import type { Recipe, RecipeBasic } from './recipe'
+import type { Recipe } from './recipe'
 
 /**
  * Meal (platillo) = 1 main recipe + N sub recipes
