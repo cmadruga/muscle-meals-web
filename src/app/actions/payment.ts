@@ -53,8 +53,8 @@ export async function createConektaOrder(
           allowed_payment_methods: ['card', 'cash'],
           expires_at: Math.floor(Date.now() / 1000) + 86400, // 24 hours
           type: 'HostedPayment',
-          success_url: `http://localhost:3000/order-success?our_order_id=${data.orderId}`,
-          failure_url: 'http://localhost:3000/order-failed'
+          success_url: `https://www.musclemeals.com.mx/order-success?our_order_id=${data.orderId}`,
+          failure_url: 'https://www.musclemeals.com.mx/order-failed'
         },
         metadata: {
           order_id: data.orderId
