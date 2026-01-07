@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { colors } from '@/lib/theme'
 
 export default function OrderFailedPage() {
   return (
@@ -8,22 +9,22 @@ export default function OrderFailedPage() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 24,
-      background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
+      background: colors.black
     }}>
       <div style={{
         maxWidth: 500,
         width: '100%',
-        background: 'white',
+        background: colors.grayDark,
+        border: `2px solid ${colors.grayLight}`,
         borderRadius: 16,
         padding: 48,
-        textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        textAlign: 'center'
       }}>
         <div style={{
           width: 80,
           height: 80,
           borderRadius: '50%',
-          background: '#ef4444',
+          background: colors.error,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
@@ -37,14 +38,15 @@ export default function OrderFailedPage() {
         <h1 style={{ 
           fontSize: 32, 
           marginBottom: 16,
-          color: '#1f2937'
+          color: colors.error,
+          textTransform: 'uppercase'
         }}>
           Pago no completado
         </h1>
 
         <p style={{ 
           fontSize: 18, 
-          color: '#6b7280',
+          color: colors.textMuted,
           marginBottom: 32,
           lineHeight: 1.6
         }}>
@@ -53,14 +55,14 @@ export default function OrderFailedPage() {
 
         <div style={{
           padding: 16,
-          background: '#fef2f2',
+          background: colors.grayLight,
           borderRadius: 8,
           marginBottom: 32,
-          border: '1px solid #fecaca'
+          border: `1px solid ${colors.error}`
         }}>
           <p style={{ 
             fontSize: 14, 
-            color: '#991b1b',
+            color: colors.error,
             margin: '0 0 8px 0',
             fontWeight: 'bold'
           }}>
@@ -68,7 +70,7 @@ export default function OrderFailedPage() {
           </p>
           <ul style={{
             fontSize: 14,
-            color: '#7f1d1d',
+            color: colors.textMuted,
             margin: 0,
             padding: '0 0 0 20px',
             textAlign: 'left'
@@ -89,13 +91,14 @@ export default function OrderFailedPage() {
             href="/cart"
             style={{
               display: 'block',
-              padding: '12px 24px',
-              background: '#333',
-              color: 'white',
+              padding: '14px 24px',
+              background: colors.orange,
+              color: colors.black,
               textDecoration: 'none',
               borderRadius: 8,
               fontWeight: 'bold',
-              fontSize: 16
+              fontSize: 16,
+              textTransform: 'uppercase'
             }}
           >
             Intentar de nuevo
@@ -105,14 +108,14 @@ export default function OrderFailedPage() {
             href="/"
             style={{
               display: 'block',
-              padding: '12px 24px',
+              padding: '14px 24px',
               background: 'transparent',
-              color: '#ef4444',
+              color: colors.orange,
               textDecoration: 'none',
               borderRadius: 8,
               fontWeight: 'bold',
               fontSize: 16,
-              border: '2px solid #ef4444'
+              border: `2px solid ${colors.orange}`
             }}
           >
             Volver al inicio
@@ -122,7 +125,7 @@ export default function OrderFailedPage() {
         <p style={{
           marginTop: 32,
           fontSize: 14,
-          color: '#9ca3af'
+          color: colors.textTertiary
         }}>
           Si el problema persiste, contacta con tu banco o intenta con otro método de pago.
         </p>

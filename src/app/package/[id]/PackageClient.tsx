@@ -6,6 +6,7 @@ import type { Package, Size } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
+import { colors } from '@/lib/theme'
 
 interface PackageClientProps {
   pkg: Package
@@ -112,25 +113,46 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
   }
 
   return (
-    <main style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-      <h1>{pkg.name}</h1>
-      {pkg.description && <p style={{ color: '#666' }}>{pkg.description}</p>}
+    <main style={{ 
+      padding: '40px 24px', 
+      minHeight: '100vh',
+      background: colors.black,
+      color: colors.white
+    }}>
+      <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+      <h1 style={{ 
+        fontSize: 36, 
+        marginBottom: 8,
+        textTransform: 'uppercase',
+        letterSpacing: 2
+      }}>
+        📦 <span style={{ color: colors.orange }}>{pkg.name}</span>
+      </h1>
+      {pkg.description && <p style={{ color: colors.textMuted, marginBottom: 24 }}>{pkg.description}</p>}
 
       {showSuccess && (
         <div style={{ 
-          color: 'white', 
-          background: '#10b981',
+          color: colors.black, 
+          background: colors.orange,
           padding: 16,
           borderRadius: 8,
-          marginBottom: 16 
+          marginBottom: 16,
+          fontWeight: 'bold'
         }}>
           ✓ Paquete agregado al carrito
         </div>
       )}
 
       {/* Size Selector */}
-      <div style={{ marginTop: 24, marginBottom: 24, padding: 16, background: '#f5f5f5', borderRadius: 8 }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 8 }}>
+      <div style={{ 
+        marginTop: 24, 
+        marginBottom: 24, 
+        padding: 20, 
+        background: colors.grayDark, 
+        borderRadius: 12,
+        border: `2px solid ${colors.grayLight}`
+      }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           1. Selecciona tamaño
         </label>
         <select
@@ -139,10 +161,12 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
           style={{
             width: '100%',
             maxWidth: 400,
-            padding: 12,
+            padding: 14,
             fontSize: 16,
             borderRadius: 8,
-            border: '1px solid #ccc'
+            border: `2px solid ${colors.grayLight}`,
+            background: colors.grayLight,
+            color: colors.white
           }}
         >
           {sizes.map(size => (
@@ -155,12 +179,14 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
 
       {/* Meals Selection */}
       <div style={{ marginBottom: 24 }}>
-        <h3>2. Selecciona tus {pkg.meals_included} comidas</h3>
-        <p style={{ color: '#666', marginBottom: 16 }}>
-          Seleccionadas: <strong>{totalSelected} / {pkg.meals_included}</strong>
+        <h3 style={{ color: colors.orange, marginBottom: 8 }}>
+          2. Selecciona tus {pkg.meals_included} comidas
+        </h3>
+        <p style={{ color: colors.textMuted, marginBottom: 20 }}>
+          Seleccionadas: <strong style={{ color: colors.white }}>{totalSelected} / {pkg.meals_included}</strong>
         </p>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {meals.map(meal => {
             const qty = getQty(meal.id)
             
@@ -175,29 +201,43 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
               <div 
                 key={meal.id}
                 style={{
-                  border: qty > 0 ? '2px solid #333' : '1px solid #ccc',
-                  borderRadius: 8,
+                  border: qty > 0 ? `2px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
+                  borderRadius: 12,
                   padding: 16,
-                  background: qty > 0 ? '#f9f9f9' : 'white'
+                  background: qty > 0 ? colors.grayLight : colors.grayDark
                 }}
               >
-                {meal.img && (
+                {meal.img ? (
                   <Image 
                     src={meal.img} 
                     alt={meal.name}
                     width={280}
                     height={120}
-                    style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 4, marginBottom: 8 }}
+                    style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 12 }}
                   />
+                ) : (
+                  <div style={{
+                    width: '100%',
+                    height: 120,
+                    background: colors.black,
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: 32
+                  }}>
+                    🍽️
+                  </div>
                 )}
-                <h4 style={{ margin: '8px 0' }}>{meal.name}</h4>
+                <h4 style={{ margin: '8px 0', color: colors.orange }}>{meal.name}</h4>
                 {meal.description && (
-                  <p style={{ color: '#666', fontSize: 14, marginBottom: 8 }}>{meal.description}</p>
+                  <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 8 }}>{meal.description}</p>
                 )}
                 
                 {/* Macros */}
                 {macros && (
-                  <p style={{ fontSize: 12, color: '#666', marginBottom: 12 }}>
+                  <p style={{ fontSize: 12, color: colors.textTertiary, marginBottom: 12 }}>
                     {formatMacros(macros)}
                   </p>
                 )}
@@ -211,9 +251,10 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                       width: 36, 
                       height: 36,
                       fontSize: 18,
-                      border: '1px solid #ccc',
+                      border: `1px solid ${colors.grayLight}`,
                       borderRadius: 8,
-                      background: 'white',
+                      background: colors.grayLight,
+                      color: colors.white,
                       cursor: qty === 0 ? 'not-allowed' : 'pointer',
                       opacity: qty === 0 ? 0.5 : 1
                     }}
@@ -221,7 +262,7 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                     −
                   </button>
 
-                  <span style={{ fontWeight: 'bold', minWidth: 24, textAlign: 'center' }}>
+                  <span style={{ fontWeight: 'bold', minWidth: 24, textAlign: 'center', color: colors.white }}>
                     {qty}
                   </span>
 
@@ -232,9 +273,10 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                       width: 36, 
                       height: 36,
                       fontSize: 18,
-                      border: '1px solid #ccc',
+                      border: `1px solid ${colors.grayLight}`,
                       borderRadius: 8,
-                      background: 'white',
+                      background: colors.grayLight,
+                      color: colors.white,
                       cursor: totalSelected >= pkg.meals_included ? 'not-allowed' : 'pointer',
                       opacity: totalSelected >= pkg.meals_included ? 0.5 : 1
                     }}
@@ -248,26 +290,28 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         </div>
       </div>
 
+      </div>
       {/* Summary & Submit */}
       <div style={{ 
         position: 'sticky', 
         bottom: 0, 
-        background: 'white',
-        padding: '16px 0',
-        borderTop: '1px solid #ccc'
+        background: colors.grayDark,
+        padding: '20px 24px',
+        borderTop: `2px solid ${colors.grayLight}`
       }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
         {selection.length > 0 && (
-          <div style={{ marginBottom: 16, fontSize: 14, color: '#666' }}>
-            <strong>Tu selección:</strong>{' '}
+          <div style={{ marginBottom: 16, fontSize: 14, color: colors.textMuted }}>
+            <strong style={{ color: colors.orange }}>Tu selección:</strong>{' '}
             {selection.map(s => `${s.mealName} x${s.qty}`).join(', ')}
           </div>
         )}
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 18 }}>
+          <span style={{ fontSize: 18, color: colors.white }}>
             Total ({selectedSize?.name || ''}):
           </span>
-          <span style={{ fontSize: 24, fontWeight: 'bold' }}>
+          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
             ${(totalPrice / 100).toFixed(0)} MXN
           </span>
         </div>
@@ -282,10 +326,11 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
             fontWeight: 'bold',
             cursor: canSubmit ? 'pointer' : 'not-allowed',
             opacity: canSubmit ? 1 : 0.5,
-            background: canSubmit ? '#333' : '#ccc',
-            color: 'white',
+            background: canSubmit ? colors.orange : colors.grayLight,
+            color: canSubmit ? colors.black : colors.textMuted,
             border: 'none',
-            borderRadius: 8
+            borderRadius: 8,
+            textTransform: 'uppercase'
           }}
         >
           {totalSelected < pkg.meals_included 
@@ -293,6 +338,7 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
             : '🛒 Agregar al carrito'
           }
         </button>
+        </div>
       </div>
     </main>
   )

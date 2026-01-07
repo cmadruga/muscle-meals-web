@@ -8,6 +8,7 @@ import { createOrder } from '@/lib/db/orders'
 import { createConektaOrder } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
+import { colors } from '@/lib/theme'
 
 export default function CheckoutClient() {
   const { items, getTotal } = useCartStore()
@@ -95,46 +96,80 @@ export default function CheckoutClient() {
   }
 
   return (
-    <div>
-      {/* Order Summary */}
-      <div style={{ marginBottom: 32 }}>
-        <h1>Checkout</h1>
-        <h2>Detalle de la orden</h2>
-        
-        <OrderSummary 
-          packageGroups={packageGroups}
-          individualItems={individualItems}
-          total={getTotal()}
+    <main style={{
+      minHeight: '100vh',
+      background: colors.black,
+      color: colors.white,
+      padding: '40px 24px'
+    }}>
+      <div style={{ maxWidth: 700, margin: '0 auto' }}>
+        {/* Order Summary */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ 
+            fontSize: 32, 
+            marginBottom: 24,
+            textTransform: 'uppercase',
+            letterSpacing: 2
+          }}>
+            💳 <span style={{ color: colors.orange }}>Checkout</span>
+          </h1>
+          <h2 style={{ 
+            fontSize: 20, 
+            marginBottom: 16,
+            color: colors.textSecondary,
+            fontWeight: 'normal'
+          }}>
+            Detalle de la orden
+          </h2>
+          
+          <OrderSummary 
+            packageGroups={packageGroups}
+            individualItems={individualItems}
+            total={getTotal()}
+          />
+        </div>
+
+        <CustomerForm 
+          name={customerName}
+          email={customerEmail}
+          phone={customerPhone}
+          onNameChange={setCustomerName}
+          onEmailChange={setCustomerEmail}
+          onPhoneChange={setCustomerPhone}
+          disabled={isProcessing}
+          error={error}
+        />
+
+        <PaymentButton 
+          onClick={handleCheckout}
+          disabled={isProcessing}
+          isProcessing={isProcessing}
         />
       </div>
-
-      <CustomerForm 
-        name={customerName}
-        email={customerEmail}
-        phone={customerPhone}
-        onNameChange={setCustomerName}
-        onEmailChange={setCustomerEmail}
-        onPhoneChange={setCustomerPhone}
-        disabled={isProcessing}
-        error={error}
-      />
-
-      <PaymentButton 
-        onClick={handleCheckout}
-        disabled={isProcessing}
-        isProcessing={isProcessing}
-      />
-    </div>
+    </main>
   )
 }
 
 // Componentes de presentación
 function EmptyCheckoutView() {
   return (
-    <div style={{ textAlign: 'center', padding: 40 }}>
-      <h2>El carrito está vacío</h2>
-      <p style={{ color: '#666' }}>Agrega items para continuar</p>
-    </div>
+    <main style={{ 
+      textAlign: 'center', 
+      padding: '60px 24px',
+      minHeight: '100vh',
+      background: colors.black,
+      color: colors.white,
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center'
+    }}>
+      <div style={{ fontSize: 64, marginBottom: 24 }}>🛒</div>
+      <h2 style={{ fontSize: 28, marginBottom: 12 }}>
+        El carrito está <span style={{ color: colors.orange }}>vacío</span>
+      </h2>
+      <p style={{ color: colors.textMuted }}>Agrega items para continuar</p>
+    </main>
   )
 }
 
@@ -145,7 +180,12 @@ function OrderSummary({ packageGroups, individualItems, total }: {
 }) {
   return (
     <>
-      <div style={{ border: '1px solid #ccc', borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ 
+        border: `2px solid ${colors.grayLight}`, 
+        borderRadius: 12, 
+        overflow: 'hidden',
+        background: colors.grayDark
+      }}>
         {/* Paquetes */}
         {packageGroups.map((pkg) => (
           <PackageSummaryCard key={pkg.packageInstanceId} package={pkg} />
@@ -164,15 +204,16 @@ function OrderSummary({ packageGroups, individualItems, total }: {
       {/* Total */}
       <div style={{
         marginTop: 16,
-        padding: 16,
-        background: '#f5f5f5',
-        borderRadius: 8,
+        padding: 20,
+        background: colors.grayDark,
+        border: `2px solid ${colors.orange}`,
+        borderRadius: 12,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <span style={{ fontSize: 18, fontWeight: 'bold' }}>Total:</span>
-        <span style={{ fontSize: 24, fontWeight: 'bold' }}>
+        <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
+        <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
           ${(total / 100).toFixed(0)} MXN
         </span>
       </div>
@@ -182,20 +223,20 @@ function OrderSummary({ packageGroups, individualItems, total }: {
 
 function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
   return (
-    <div style={{ background: '#f9f9f9' }}>
+    <div style={{ background: colors.grayLight }}>
       {/* Package header */}
       <div style={{
         padding: 16,
-        borderBottom: '1px solid #eee',
+        borderBottom: `1px solid ${colors.black}`,
         display: 'flex',
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
         <div>
-          <strong>{pkg.packageName}</strong>
-          <span style={{ marginLeft: 8, color: '#666' }}>· {pkg.sizeName}</span>
+          <strong style={{ color: colors.orange }}>📦 {pkg.packageName}</strong>
+          <span style={{ marginLeft: 8, color: colors.textMuted }}>· {pkg.sizeName}</span>
         </div>
-        <strong>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
+        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
       </div>
       
       {/* Package items */}
@@ -204,11 +245,11 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
           key={`${item.mealId}-${item.sizeId}`}
           style={{
             padding: '12px 16px 12px 32px',
-            borderBottom: '1px solid #eee',
+            borderBottom: `1px solid ${colors.grayDark}`,
             display: 'flex',
             justifyContent: 'space-between',
             fontSize: 14,
-            color: '#666'
+            color: colors.textMuted
           }}
         >
           <span>{item.mealName}</span>
@@ -227,7 +268,7 @@ function IndividualItemSummary({ item, showBorder }: {
     <div
       style={{
         padding: 16,
-        borderBottom: showBorder ? '1px solid #eee' : 'none',
+        borderBottom: showBorder ? `1px solid ${colors.grayLight}` : 'none',
         display: 'grid',
         gridTemplateColumns: '1fr auto',
         gap: 16,
@@ -235,18 +276,18 @@ function IndividualItemSummary({ item, showBorder }: {
       }}
     >
       <div>
-        <h3 style={{ margin: '0 0 4px 0', fontSize: 16 }}>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: 16, color: colors.orange }}>
           {item.mealName}
         </h3>
-        <p style={{ margin: 0, fontSize: 14, color: '#666' }}>
+        <p style={{ margin: 0, fontSize: 14, color: colors.textMuted }}>
           {item.sizeName} · x{item.qty}
         </p>
       </div>
       <div style={{ textAlign: 'right' }}>
-        <p style={{ margin: '0 0 4px 0', fontSize: 14, color: '#666' }}>
+        <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
           ${(item.unitPrice / 100).toFixed(0)} MXN c/u
         </p>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold' }}>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold', color: colors.white }}>
           ${(item.unitPrice * item.qty / 100).toFixed(0)} MXN
         </p>
       </div>
@@ -275,12 +316,19 @@ function CustomerForm({
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
-      <h2>Información de contacto</h2>
+      <h2 style={{ 
+        fontSize: 20, 
+        marginBottom: 20,
+        color: colors.textSecondary,
+        fontWeight: 'normal'
+      }}>
+        Información de contacto
+      </h2>
       
       {error && (
         <div style={{
           color: 'white',
-          background: '#ef4444',
+          background: colors.error,
           padding: 16,
           borderRadius: 8,
           marginBottom: 16
@@ -291,7 +339,7 @@ function CustomerForm({
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
             Nombre completo
           </label>
           <input
@@ -302,16 +350,19 @@ function CustomerForm({
             disabled={disabled}
             style={{
               width: '100%',
-              padding: 12,
+              padding: 14,
               fontSize: 16,
               borderRadius: 8,
-              border: '1px solid #ccc'
+              border: `2px solid ${colors.grayLight}`,
+              background: colors.grayDark,
+              color: colors.white,
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
             Email
           </label>
           <input
@@ -322,16 +373,19 @@ function CustomerForm({
             disabled={disabled}
             style={{
               width: '100%',
-              padding: 12,
+              padding: 14,
               fontSize: 16,
               borderRadius: 8,
-              border: '1px solid #ccc'
+              border: `2px solid ${colors.grayLight}`,
+              background: colors.grayDark,
+              color: colors.white,
+              boxSizing: 'border-box'
             }}
           />
         </div>
 
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold' }}>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
             Teléfono
           </label>
           <input
@@ -342,10 +396,13 @@ function CustomerForm({
             disabled={disabled}
             style={{
               width: '100%',
-              padding: 12,
+              padding: 14,
               fontSize: 16,
               borderRadius: 8,
-              border: '1px solid #ccc'
+              border: `2px solid ${colors.grayLight}`,
+              background: colors.grayDark,
+              color: colors.white,
+              boxSizing: 'border-box'
             }}
           />
         </div>
@@ -365,15 +422,16 @@ function PaymentButton({ onClick, disabled, isProcessing }: {
       disabled={disabled}
       style={{
         width: '100%',
-        padding: '16px 24px',
+        padding: '18px 24px',
         fontSize: 18,
         fontWeight: 'bold',
         cursor: isProcessing ? 'not-allowed' : 'pointer',
         opacity: isProcessing ? 0.5 : 1,
-        background: '#333',
-        color: 'white',
+        background: colors.orange,
+        color: colors.black,
         border: 'none',
-        borderRadius: 8
+        borderRadius: 8,
+        textTransform: 'uppercase'
       }}
     >
       {isProcessing ? 'Procesando...' : '💳 Proceder al pago'}

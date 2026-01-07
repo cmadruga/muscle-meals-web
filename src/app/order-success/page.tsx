@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { useCartStore } from '@/lib/store/cart'
 import { updateOrderStatus, getOrderWithItems } from '@/lib/db/orders'
 import type { OrderWithItems } from '@/lib/types'
+import { colors } from '@/lib/theme'
 
 function OrderSuccessContent() {
   const clearCart = useCartStore(state => state.clearCart)
@@ -49,27 +50,28 @@ function OrderSuccessContent() {
       alignItems: 'center',
       justifyContent: 'center',
       padding: 24,
-      background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      background: colors.black
     }}>
       <div style={{
         maxWidth: 500,
         width: '100%',
-        background: 'white',
+        background: colors.grayDark,
+        border: `2px solid ${colors.grayLight}`,
         borderRadius: 16,
         padding: 48,
-        textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        textAlign: 'center'
       }}>
         <div style={{
           width: 80,
           height: 80,
           borderRadius: '50%',
-          background: '#10b981',
+          background: colors.orange,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           margin: '0 auto 24px',
-          fontSize: 48
+          fontSize: 48,
+          color: colors.black
         }}>
           ✓
         </div>
@@ -77,14 +79,15 @@ function OrderSuccessContent() {
         <h1 style={{ 
           fontSize: 32, 
           marginBottom: 16,
-          color: '#1f2937'
+          color: colors.orange,
+          textTransform: 'uppercase'
         }}>
           ¡Pago exitoso!
         </h1>
 
         <p style={{ 
           fontSize: 18, 
-          color: '#6b7280',
+          color: colors.textMuted,
           marginBottom: 32,
           lineHeight: 1.6
         }}>
@@ -94,18 +97,18 @@ function OrderSuccessContent() {
         {loading && (
           <div style={{
             padding: 24,
-            background: '#f3f4f6',
+            background: colors.grayLight,
             borderRadius: 8,
             marginBottom: 32
           }}>
-            <p style={{ margin: 0, color: '#6b7280' }}>Cargando detalles...</p>
+            <p style={{ margin: 0, color: colors.textMuted }}>Cargando detalles...</p>
           </div>
         )}
 
         {!loading && order && (
           <div style={{
             padding: 24,
-            background: '#f3f4f6',
+            background: colors.grayLight,
             borderRadius: 8,
             marginBottom: 32,
             textAlign: 'left'
@@ -114,7 +117,7 @@ function OrderSuccessContent() {
               fontSize: 18, 
               fontWeight: 'bold', 
               marginBottom: 16,
-              color: '#1f2937'
+              color: colors.orange
             }}>
               Resumen de tu orden
             </h2>
@@ -122,22 +125,22 @@ function OrderSuccessContent() {
             <div style={{ marginBottom: 16 }}>
               <p style={{ 
                 fontSize: 14, 
-                color: '#6b7280',
+                color: colors.textMuted,
                 margin: '0 0 4px 0'
               }}>
-                <strong>ID de orden:</strong> {order.id}
+                <strong style={{ color: colors.white }}>ID de orden:</strong> {order.id}
               </p>
               <p style={{ 
                 fontSize: 14, 
-                color: '#6b7280',
+                color: colors.textMuted,
                 margin: '0 0 4px 0'
               }}>
-                <strong>Estado:</strong> {order.status === 'paid' ? 'Pagado ✓' : order.status}
+                <strong style={{ color: colors.white }}>Estado:</strong> {order.status === 'paid' ? 'Pagado ✓' : order.status}
               </p>
             </div>
 
             <div style={{
-              borderTop: '1px solid #d1d5db',
+              borderTop: `1px solid ${colors.grayDark}`,
               paddingTop: 16,
               marginBottom: 16
             }}>
@@ -145,7 +148,7 @@ function OrderSuccessContent() {
                 fontSize: 16, 
                 fontWeight: 'bold', 
                 marginBottom: 12,
-                color: '#1f2937'
+                color: colors.white
               }}>
                 Items ({order.items.length})
               </h3>
@@ -154,11 +157,11 @@ function OrderSuccessContent() {
                   key={idx}
                   style={{
                     padding: '8px 0',
-                    borderBottom: idx < order.items.length - 1 ? '1px solid #e5e7eb' : 'none',
+                    borderBottom: idx < order.items.length - 1 ? `1px solid ${colors.grayDark}` : 'none',
                     display: 'flex',
                     justifyContent: 'space-between',
                     fontSize: 14,
-                    color: '#4b5563'
+                    color: colors.textMuted
                   }}
                 >
                   <span>x{item.qty}</span>
@@ -168,16 +171,16 @@ function OrderSuccessContent() {
             </div>
 
             <div style={{
-              borderTop: '2px solid #d1d5db',
+              borderTop: `2px solid ${colors.orange}`,
               paddingTop: 16,
               display: 'flex',
               justifyContent: 'space-between',
               alignItems: 'center'
             }}>
-              <span style={{ fontSize: 18, fontWeight: 'bold', color: '#1f2937' }}>
+              <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>
                 Total:
               </span>
-              <span style={{ fontSize: 24, fontWeight: 'bold', color: '#10b981' }}>
+              <span style={{ fontSize: 24, fontWeight: 'bold', color: colors.orange }}>
                 ${(order.total_amount / 100).toFixed(0)} MXN
               </span>
             </div>
@@ -187,13 +190,13 @@ function OrderSuccessContent() {
         {!loading && !order && (
           <div style={{
             padding: 16,
-            background: '#f3f4f6',
+            background: colors.grayLight,
             borderRadius: 8,
             marginBottom: 32
           }}>
             <p style={{ 
               fontSize: 14, 
-              color: '#6b7280',
+              color: colors.textMuted,
               margin: 0
             }}>
               Revisa tu correo para ver el estado de tu pedido y los próximos pasos.
@@ -210,30 +213,31 @@ function OrderSuccessContent() {
             href="/"
             style={{
               display: 'block',
-              padding: '12px 24px',
-              background: '#333',
-              color: 'white',
+              padding: '14px 24px',
+              background: colors.orange,
+              color: colors.black,
               textDecoration: 'none',
               borderRadius: 8,
               fontWeight: 'bold',
-              fontSize: 16
+              fontSize: 16,
+              textTransform: 'uppercase'
             }}
           >
             Volver al inicio
           </Link>
 
           <Link
-            href="/cart"
+            href="/menu"
             style={{
               display: 'block',
-              padding: '12px 24px',
+              padding: '14px 24px',
               background: 'transparent',
-              color: '#667eea',
+              color: colors.orange,
               textDecoration: 'none',
               borderRadius: 8,
               fontWeight: 'bold',
               fontSize: 16,
-              border: '2px solid #667eea'
+              border: `2px solid ${colors.orange}`
             }}
           >
             Hacer otro pedido
@@ -253,18 +257,17 @@ export default function OrderSuccessPage() {
         alignItems: 'center',
         justifyContent: 'center',
         padding: 24,
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+        background: colors.black
       }}>
         <div style={{
           maxWidth: 500,
           width: '100%',
-          background: 'white',
+          background: colors.grayDark,
           borderRadius: 16,
           padding: 48,
-          textAlign: 'center',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+          textAlign: 'center'
         }}>
-          <p style={{ fontSize: 18, color: '#6b7280' }}>Cargando...</p>
+          <p style={{ fontSize: 18, color: colors.textMuted }}>Cargando...</p>
         </div>
       </main>
     }>

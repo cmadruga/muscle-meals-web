@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cart'
+import { colors } from '@/lib/theme'
 
 export default function Navbar() {
   const pathname = usePathname()
@@ -22,10 +23,10 @@ export default function Navbar() {
       return { show: true, label: '← Carrito', href: '/cart' }
     }
     if (pathname === '/cart') {
-      return { show: true, label: '← Tienda', href: '/' }
+      return { show: true, label: '← Menú', href: '/menu' }
     }
     if (pathname?.startsWith('/package/') || pathname?.startsWith('/meal/')) {
-      return { show: true, label: '← Tienda', href: '/' }
+      return { show: true, label: '← Menú', href: '/menu' }
     }
     return { show: false, label: '', href: '' }
   }
@@ -39,43 +40,47 @@ export default function Navbar() {
       left: 0,
       right: 0,
       height: 60,
-      background: 'white',
-      borderBottom: '1px solid #ccc',
+      background: colors.black,
+      borderBottom: `2px solid ${colors.grayLight}`,
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'space-between',
       padding: '0 24px',
       zIndex: 1000
     }}>
-      {/* Left - Back Button or Home Icon */}
+      {/* Left - Logo + Back Button */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
         <Link
           href="/"
           style={{
-            fontSize: 24,
+            fontSize: 18,
+            fontWeight: 'bold',
             textDecoration: 'none',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
+            color: colors.white,
+            letterSpacing: 1
           }}
           title="Inicio"
         >
-          HOME
+          <span style={{ color: colors.orange }}>MUSCLE</span>
+          <span style={{ marginLeft: 6 }}>MEALS</span>
         </Link>
         
         {backButton.show && (
           <Link
             href={backButton.href}
             style={{
-              padding: '8px 16px',
-              fontSize: 14,
-              border: '1px solid #ccc',
-              borderRadius: 8,
-              background: 'white',
+              padding: '6px 14px',
+              fontSize: 13,
+              border: `1px solid ${colors.grayLight}`,
+              borderRadius: 6,
+              background: 'transparent',
               textDecoration: 'none',
-              color: 'inherit',
+              color: colors.white,
               display: 'flex',
               alignItems: 'center',
-              gap: 8
+              gap: 6
             }}
           >
             {backButton.label}
@@ -90,24 +95,25 @@ export default function Navbar() {
           position: 'relative',
           padding: '8px 16px',
           fontSize: 14,
-          border: '1px solid #ccc',
+          border: `2px solid ${colors.orange}`,
           borderRadius: 8,
-          background: 'white',
+          background: 'transparent',
           textDecoration: 'none',
-          color: 'inherit',
+          color: colors.white,
           display: 'flex',
           alignItems: 'center',
-          gap: 8
+          gap: 8,
+          fontWeight: 'bold'
         }}
       >
         🛒 Carrito
         {mounted && itemCount > 0 && (
           <span style={{
             position: 'absolute',
-            top: -8,
-            right: -8,
-            background: '#ef4444',
-            color: 'white',
+            top: -10,
+            right: -10,
+            background: colors.orange,
+            color: colors.black,
             borderRadius: '50%',
             width: 24,
             height: 24,

@@ -6,6 +6,7 @@ import type { Size } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
+import { colors } from '@/lib/theme'
 
 interface MealClientProps {
   meal: MealWithRecipes
@@ -51,26 +52,52 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
   }
 
   return (
-    <main style={{ padding: 40, maxWidth: 800, margin: '0 auto' }}>
+    <main style={{ 
+      padding: '40px 24px', 
+      minHeight: '100vh',
+      background: colors.black,
+      color: colors.white
+    }}>
+      <div style={{ maxWidth: 800, margin: '0 auto' }}>
       {/* Meal Info */}
       <div style={{ marginBottom: 32 }}>
-        {meal.img && (
+        {meal.img ? (
           <Image 
             src={meal.img} 
             alt={meal.name}
             width={800}
             height={300}
-            style={{ width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 8, marginBottom: 16 }}
+            style={{ width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 12, marginBottom: 20 }}
             priority
           />
+        ) : (
+          <div style={{
+            width: '100%',
+            height: 200,
+            background: colors.grayDark,
+            borderRadius: 12,
+            marginBottom: 20,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: 64
+          }}>
+            🍽️
+          </div>
         )}
-        <h1>{meal.name}</h1>
-        {meal.description && <p style={{ color: '#666' }}>{meal.description}</p>}
+        <h1 style={{ 
+          fontSize: 32, 
+          marginBottom: 8,
+          color: colors.orange
+        }}>
+          {meal.name}
+        </h1>
+        {meal.description && <p style={{ color: colors.textMuted }}>{meal.description}</p>}
       </div>
 
       {/* Size Selector */}
       <div style={{ marginBottom: 24 }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 8 }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           Tamaño
         </label>
         <select
@@ -78,10 +105,12 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
           onChange={(e) => setSelectedSizeId(e.target.value)}
           style={{
             width: '100%',
-            padding: 12,
+            padding: 14,
             fontSize: 16,
             borderRadius: 8,
-            border: '1px solid #ccc'
+            border: `2px solid ${colors.grayLight}`,
+            background: colors.grayDark,
+            color: colors.white
           }}
         >
           {sizes.map(size => (
@@ -95,13 +124,14 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
       {/* Macros */}
       {macros && (
         <div style={{ 
-          padding: 16, 
-          background: '#f5f5f5', 
-          borderRadius: 8,
+          padding: 20, 
+          background: colors.grayDark, 
+          borderRadius: 12,
+          border: `2px solid ${colors.grayLight}`,
           marginBottom: 24
         }}>
-          <h3 style={{ marginTop: 0 }}>Información Nutricional ({selectedSize?.name})</h3>
-          <p style={{ fontSize: 16, margin: 0, color: '#333' }}>
+          <h3 style={{ marginTop: 0, color: colors.orange }}>Información Nutricional ({selectedSize?.name})</h3>
+          <p style={{ fontSize: 16, margin: 0, color: colors.white }}>
             {formatMacros(macros)}
           </p>
         </div>
@@ -109,10 +139,15 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
 
       {/* Receta */}
       <div style={{ marginBottom: 32 }}>
-        <h3>Receta</h3>
-        <div style={{ padding: 16, background: '#fafafa', borderRadius: 8 }}>
-          <h4 style={{ marginTop: 0, marginBottom: 12 }}>{meal.mainRecipe.name}</h4>
-          <ul style={{ margin: 0, paddingLeft: 20 }}>
+        <h3 style={{ color: colors.orange }}>Receta</h3>
+        <div style={{ 
+          padding: 20, 
+          background: colors.grayDark, 
+          borderRadius: 12,
+          border: `2px solid ${colors.grayLight}`
+        }}>
+          <h4 style={{ marginTop: 0, marginBottom: 12, color: colors.white }}>{meal.mainRecipe.name}</h4>
+          <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
             {meal.mainRecipe.ingredients.map((ing, idx) => {
               const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
               if (!ingredient) return null
@@ -137,8 +172,8 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
             <div style={{ marginTop: 16 }}>
               {meal.subRecipes.map((subRecipe, subIdx) => (
                 <div key={subIdx}>
-                  <h4 style={{ marginBottom: 8 }}>{subRecipe.name}</h4>
-                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                  <h4 style={{ marginBottom: 8, color: colors.white }}>{subRecipe.name}</h4>
+                  <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
                     {subRecipe.ingredients.map((ing, idx) => {
                       const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
                       if (!ingredient) return null
@@ -159,11 +194,12 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
 
       {showSuccess && (
         <div style={{ 
-          color: 'white', 
-          background: '#10b981',
+          color: colors.black, 
+          background: colors.orange,
           padding: 16,
           borderRadius: 8,
-          marginBottom: 16 
+          marginBottom: 16,
+          fontWeight: 'bold'
         }}>
           ✓ Agregado al carrito
         </div>
@@ -171,36 +207,38 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
 
       {/* Quantity */}
       <div style={{ marginBottom: 24 }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 8 }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           Cantidad
         </label>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <button
             onClick={() => setQty(q => Math.max(1, q - 1))}
             style={{ 
-              width: 40, 
-              height: 40, 
+              width: 44, 
+              height: 44, 
               fontSize: 20,
-              border: '1px solid #ccc',
+              border: `1px solid ${colors.grayLight}`,
               borderRadius: 8,
-              background: 'white',
+              background: colors.grayLight,
+              color: colors.white,
               cursor: 'pointer'
             }}
           >
             −
           </button>
-          <span style={{ fontSize: 20, fontWeight: 'bold', minWidth: 40, textAlign: 'center' }}>
+          <span style={{ fontSize: 20, fontWeight: 'bold', minWidth: 40, textAlign: 'center', color: colors.white }}>
             {qty}
           </span>
           <button
             onClick={() => setQty(q => q + 1)}
             style={{ 
-              width: 40, 
-              height: 40, 
+              width: 44, 
+              height: 44,
               fontSize: 20,
-              border: '1px solid #ccc',
+              border: `1px solid ${colors.grayLight}`,
               borderRadius: 8,
-              background: 'white',
+              background: colors.grayLight,
+              color: colors.white,
               cursor: 'pointer'
             }}
           >
@@ -209,17 +247,19 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
         </div>
       </div>
 
+      </div>
       {/* Total & Submit */}
       <div style={{ 
         position: 'sticky', 
         bottom: 0, 
-        background: 'white',
-        padding: '16px 0',
-        borderTop: '1px solid #ccc'
+        background: colors.grayDark,
+        padding: '20px 24px',
+        borderTop: `2px solid ${colors.grayLight}`
       }}>
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 18 }}>Total:</span>
-          <span style={{ fontSize: 24, fontWeight: 'bold' }}>${(totalPrice / 100).toFixed(0)} MXN</span>
+          <span style={{ fontSize: 18, color: colors.white }}>Total:</span>
+          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>${(totalPrice / 100).toFixed(0)} MXN</span>
         </div>
         
         <button
@@ -232,14 +272,16 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
             fontWeight: 'bold',
             cursor: !selectedSize ? 'not-allowed' : 'pointer',
             opacity: !selectedSize ? 0.5 : 1,
-            background: '#333',
-            color: 'white',
+            background: colors.orange,
+            color: colors.black,
             border: 'none',
-            borderRadius: 8
+            borderRadius: 8,
+            textTransform: 'uppercase'
           }}
         >
           🛒 Agregar al carrito
         </button>
+        </div>
       </div>
     </main>
   )
