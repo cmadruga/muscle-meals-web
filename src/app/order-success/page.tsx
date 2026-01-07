@@ -7,6 +7,9 @@ import { useCartStore } from '@/lib/store/cart'
 import { updateOrderStatus, getOrderWithItems } from '@/lib/db/orders'
 import type { OrderWithItems } from '@/lib/types'
 
+// Hacer la página dinámica para evitar errores de prerender
+export const dynamic = 'force-dynamic'
+
 export default function OrderSuccessPage() {
   const clearCart = useCartStore(state => state.clearCart)
   const searchParams = useSearchParams()
