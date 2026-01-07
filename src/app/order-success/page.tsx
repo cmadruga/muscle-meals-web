@@ -1,16 +1,13 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCartStore } from '@/lib/store/cart'
 import { updateOrderStatus, getOrderWithItems } from '@/lib/db/orders'
 import type { OrderWithItems } from '@/lib/types'
 
-// Hacer la página dinámica para evitar errores de prerender
-export const dynamic = 'force-dynamic'
-
-export default function OrderSuccessPage() {
+function OrderSuccessContent() {
   const clearCart = useCartStore(state => state.clearCart)
   const searchParams = useSearchParams()
   const [order, setOrder] = useState<OrderWithItems | null>(null)
@@ -244,5 +241,34 @@ export default function OrderSuccessPage() {
         </div>
       </div>
     </main>
+  )
+}
+
+export default function OrderSuccessPage() {
+  return (
+    <Suspense fallback={
+      <main style={{ 
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+      }}>
+        <div style={{
+          maxWidth: 500,
+          width: '100%',
+          background: 'white',
+          borderRadius: 16,
+          padding: 48,
+          textAlign: 'center',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
+        }}>
+          <p style={{ fontSize: 18, color: '#6b7280' }}>Cargando...</p>
+        </div>
+      </main>
+    }>
+      <OrderSuccessContent />
+    </Suspense>
   )
 }
