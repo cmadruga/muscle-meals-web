@@ -8,13 +8,16 @@ export interface CartItem {
   sizeName: string
   qty: number
   unitPrice: number // en centavos
-  packageId?: string // si viene de un paquete
+  packageId?: string // ID del paquete en la DB (para metadata)
+  packageName?: string // Nombre del paquete
+  packageInstanceId?: string // ID único de esta instancia del paquete en el carrito
 }
 
 interface CartStore {
   items: CartItem[]
   addItem: (item: CartItem) => void
   removeItem: (mealId: string, sizeId: string) => void
+  removePackage: (packageInstanceId: string) => void
   updateQty: (mealId: string, sizeId: string, qty: number) => void
   clearCart: () => void
   getTotal: () => number
@@ -28,9 +31,17 @@ export const useCartStore = create<CartStore>()(
 
       addItem: (newItem) => {
         set((state) => {
-          // Verificar si ya existe (mismo meal + size)
+          // Si es un paquete, NUNCA combinar - cada paquete es independiente
+          if (newItem.packageInstanceId) {
+            return { items: [...state.items, newItem] }
+          }
+
+          // Solo combinar items individuales (sin packageInstanceId)
           const existingIndex = state.items.findIndex(
-            item => item.mealId === newItem.mealId && item.sizeId === newItem.sizeId
+            item => 
+              item.mealId === newItem.mealId && 
+              item.sizeId === newItem.sizeId &&
+              !item.packageInstanceId // Solo items individuales
           )
 
           if (existingIndex >= 0) {
@@ -48,7 +59,15 @@ export const useCartStore = create<CartStore>()(
       removeItem: (mealId, sizeId) => {
         set((state) => ({
           items: state.items.filter(
-            item => !(item.mealId === mealId && item.sizeId === sizeId)
+            item => !(item.mealId === mealId && item.sizeId === sizeId && !item.packageInstanceId)
+          )
+        }))
+      },
+
+      removePackage: (packageInstanceId) => {
+        set((state) => ({
+          items: state.items.filter(
+            item => item.packageInstanceId !== packageInstanceId
           )
         }))
       },
@@ -61,7 +80,7 @@ export const useCartStore = create<CartStore>()(
 
         set((state) => ({
           items: state.items.map(item =>
-            item.mealId === mealId && item.sizeId === sizeId
+            item.mealId === mealId && item.sizeId === sizeId && !item.packageInstanceId
               ? { ...item, qty }
               : item
           )

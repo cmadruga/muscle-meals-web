@@ -82,7 +82,7 @@ export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
   }
 
   // 3. Obtener sub-recetas para todos los meals
-  const { data: mealSubRecipes, error: subError } = await supabase
+  const { data: mealSubRecipes } = await supabase
     .from('meal_sub_recipes')
     .select('meal_id, sub_recipe_id')
     .in('meal_id', meals.map(m => m.id))
@@ -179,7 +179,7 @@ export async function getMealById(id: string): Promise<MealWithRecipes | null> {
   }
 
   // 3. Obtener sub-recetas
-  const { data: mealSubRecipes, error: subError } = await supabase
+  const { data: mealSubRecipes } = await supabase
     .from('meal_sub_recipes')
     .select('sub_recipe_id')
     .eq('meal_id', id)

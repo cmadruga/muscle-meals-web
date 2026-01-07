@@ -103,6 +103,27 @@ export async function getOrderById(id: string): Promise<Order | null> {
 }
 
 /**
+ * Actualiza el status de una orden
+ */
+export async function updateOrderStatus(
+  orderId: string, 
+  status: 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
+): Promise<void> {
+  const { error } = await supabase
+    .from('orders')
+    .update({ 
+      status,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', orderId)
+
+  if (error) {
+    console.error('Error updating order status:', error)
+    throw new Error('Error al actualizar el estado de la orden')
+  }
+}
+
+/**
  * Mensajes de error específicos de Supabase
  */
 function getErrorMessage(error: unknown): string {

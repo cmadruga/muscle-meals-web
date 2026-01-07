@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { Package, Size } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
@@ -27,7 +26,6 @@ interface SelectionItem {
  * 3. Crea orden
  */
 export default function PackageClient({ pkg, meals, sizes }: PackageClientProps) {
-  const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
@@ -87,7 +85,10 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
   const handleAddToCart = () => {
     if (!canSubmit || !selectedSize) return
 
-    // Cada meal seleccionado se agrega individualmente con package_id
+    // Generar un ID único para esta instancia del paquete
+    const packageInstanceId = `pkg_${crypto.randomUUID()}`
+
+    // Cada meal seleccionado se agrega individualmente con packageInstanceId
     selection.forEach(item => {
       addToCart({
         mealId: item.mealId,
@@ -96,7 +97,9 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         sizeName: selectedSize.name,
         qty: item.qty,
         unitPrice: selectedSize.package_price,
-        packageId: pkg.id
+        packageId: pkg.id, // ID del paquete en la DB (para metadata/orden)
+        packageName: pkg.name, // Nombre del paquete
+        packageInstanceId // ID único de esta instancia en el carrito
       })
     })
 
@@ -110,25 +113,6 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
 
   return (
     <main style={{ padding: 40, maxWidth: 1200, margin: '0 auto' }}>
-      {/* Back Button */}
-      <button
-        onClick={() => router.back()}
-        style={{
-          marginBottom: 24,
-          padding: '8px 16px',
-          fontSize: 14,
-          border: '1px solid #ccc',
-          borderRadius: 8,
-          background: 'white',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}
-      >
-        ← Regresar
-      </button>
-
       <h1>{pkg.name}</h1>
       {pkg.description && <p style={{ color: '#666' }}>{pkg.description}</p>}
 

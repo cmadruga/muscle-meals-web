@@ -1,7 +1,6 @@
 'use client'
 
 import { useState, useMemo } from 'react'
-import { useRouter } from 'next/navigation'
 import Image from 'next/image'
 import type { Size } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
@@ -17,7 +16,6 @@ interface MealClientProps {
  * Client Component para ordenar meal individual
  */
 export default function MealClient({ meal, sizes }: MealClientProps) {
-  const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [qty, setQty] = useState(1)
@@ -54,25 +52,6 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
 
   return (
     <main style={{ padding: 40, maxWidth: 800, margin: '0 auto' }}>
-      {/* Back Button */}
-      <button
-        onClick={() => router.back()}
-        style={{
-          marginBottom: 24,
-          padding: '8px 16px',
-          fontSize: 14,
-          border: '1px solid #ccc',
-          borderRadius: 8,
-          background: 'white',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 8
-        }}
-      >
-        ← Regresar
-      </button>
-
       {/* Meal Info */}
       <div style={{ marginBottom: 32 }}>
         {meal.img && (
