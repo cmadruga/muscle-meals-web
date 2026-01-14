@@ -9,20 +9,91 @@ import { createConektaOrder } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import { colors } from '@/lib/theme'
+import { 
+  isValidPostalCode,
+  getZoneByPostalCode,
+  buildFullAddress,
+  validateCP, 
+  validatePhone,
+  formatPhoneForWhatsApp,
+  type Address 
+} from '@/lib/address-validation'
 
 export default function CheckoutClient() {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isValidatingAddress, setIsValidatingAddress] = useState(false)
   
   // Datos del cliente
   const [customerName, setCustomerName] = useState('')
-  const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
+  
+  // Dirección separada
+  const [calle, setCalle] = useState('')
+  const [numeroExterior, setNumeroExterior] = useState('')
+  const [numeroInterior, setNumeroInterior] = useState('')
+  const [colonia, setColonia] = useState('')
+  const [codigoPostal, setCodigoPostal] = useState('')
+  const [ciudad, setCiudad] = useState('Monterrey')
+  const [estado, setEstado] = useState('Nuevo León')
+  
+  // Estado de validación
+  const [addressValidated, setAddressValidated] = useState(false)
+
+  const handleValidateAddress = () => {
+    try {
+      setIsValidatingAddress(true)
+      setError(null)
+      
+      // 1. Validar formato de código postal
+      if (!validateCP(codigoPostal)) {
+        throw new Error('Código postal inválido (debe ser 5 dígitos)')
+      }
+      
+      // 2. Verificar que el CP esté en la lista de permitidos
+      if (!isValidPostalCode(codigoPostal)) {
+        throw new Error(
+          `Lo sentimos, no hacemos envíos a este código postal (${codigoPostal}). ` +
+          `Solo entregamos en el Área Metropolitana de Monterrey.`
+        )
+      }
+      
+      const zone = getZoneByPostalCode(codigoPostal)
+      setAddressValidated(true)
+      alert(`✅ Dirección validada - Zona: ${zone}`)
+      
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al validar dirección')
+      setAddressValidated(false)
+    } finally {
+      setIsValidatingAddress(false)
+    }
+  }
 
   const handleCheckout = async () => {
-    if (!customerName || !customerEmail || !customerPhone) {
+    // Validar teléfono
+    if (!validatePhone(customerPhone)) {
+      setError('Teléfono inválido (debe ser 10 dígitos)')
+      return
+    }
+
+    // Validar campos básicos
+    if (!customerName.trim() || !customerPhone.trim() || 
+        !calle.trim() || !numeroExterior.trim() || !colonia.trim() || 
+        !codigoPostal.trim() || !ciudad.trim() || !estado.trim()) {
+      setError('Por favor completa todos los campos obligatorios')
+      return
+    }
+    
+    // Verificar que la dirección haya sido validada
+    if (!addressValidated) {
+      setError('Por favor valida la dirección antes de continuar')
+      return
+    }
+
+    if (!customerName || !customerPhone) {
       setError('Por favor completa todos los campos')
       return
     }
@@ -36,11 +107,23 @@ export default function CheckoutClient() {
     setError(null)
 
     try {
-      // 1. Crear o actualizar cliente
+      // 1. Crear o actualizar cliente con dirección completa y WhatsApp
+      const address: Address = {
+        calle,
+        numeroExterior,
+        numeroInterior,
+        colonia,
+        codigoPostal,
+        ciudad,
+        estado
+      }
+      const fullAddress = buildFullAddress(address)
+      const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
+      
       const customer = await upsertCustomer({
         name: customerName,
-        email: customerEmail,
-        phone: customerPhone
+        phone: whatsappPhone,
+        address: fullAddress
       })
 
       if (!customer) {
@@ -48,6 +131,7 @@ export default function CheckoutClient() {
       }
 
       // 2. Crear orden en Supabase con status 'pending'
+      // TODO: Agregar delivery_address al schema de orders
       const order = await createOrder(
         {
           customer_id: customer.id,
@@ -67,8 +151,7 @@ export default function CheckoutClient() {
       const result = await createConektaOrder({
         orderId: order.id,
         customerName,
-        customerEmail,
-        customerPhone,
+        customerPhone: whatsappPhone,
         totalAmount: order.total_amount,
         items: items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
@@ -131,11 +214,26 @@ export default function CheckoutClient() {
 
         <CustomerForm 
           name={customerName}
-          email={customerEmail}
           phone={customerPhone}
+          calle={calle}
+          numeroExterior={numeroExterior}
+          numeroInterior={numeroInterior}
+          colonia={colonia}
+          codigoPostal={codigoPostal}
+          ciudad={ciudad}
+          estado={estado}
           onNameChange={setCustomerName}
-          onEmailChange={setCustomerEmail}
           onPhoneChange={setCustomerPhone}
+          onCalleChange={setCalle}
+          onNumeroExteriorChange={setNumeroExterior}
+          onNumeroInteriorChange={setNumeroInterior}
+          onColoniaChange={setColonia}
+          onCodigoPostalChange={setCodigoPostal}
+          onCiudadChange={setCiudad}
+          onEstadoChange={setEstado}
+          onValidateAddress={handleValidateAddress}
+          isValidatingAddress={isValidatingAddress}
+          addressValidated={addressValidated}
           disabled={isProcessing}
           error={error}
         />
@@ -297,23 +395,72 @@ function IndividualItemSummary({ item, showBorder }: {
 
 function CustomerForm({ 
   name, 
-  email, 
-  phone, 
+  phone,
+  calle,
+  numeroExterior,
+  numeroInterior,
+  colonia,
+  codigoPostal,
+  ciudad,
+  estado,
   onNameChange, 
-  onEmailChange, 
-  onPhoneChange, 
+  onPhoneChange,
+  onCalleChange,
+  onNumeroExteriorChange,
+  onNumeroInteriorChange,
+  onColoniaChange,
+  onCodigoPostalChange,
+  onCiudadChange,
+  onEstadoChange,
+  onValidateAddress,
+  isValidatingAddress,
+  addressValidated,
   disabled,
   error
 }: {
   name: string
-  email: string
   phone: string
+  calle: string
+  numeroExterior: string
+  numeroInterior: string
+  colonia: string
+  codigoPostal: string
+  ciudad: string
+  estado: string
   onNameChange: (value: string) => void
-  onEmailChange: (value: string) => void
   onPhoneChange: (value: string) => void
+  onCalleChange: (value: string) => void
+  onNumeroExteriorChange: (value: string) => void
+  onNumeroInteriorChange: (value: string) => void
+  onColoniaChange: (value: string) => void
+  onCodigoPostalChange: (value: string) => void
+  onCiudadChange: (value: string) => void
+  onEstadoChange: (value: string) => void
+  onValidateAddress: () => void
+  isValidatingAddress: boolean
+  addressValidated: boolean
   disabled: boolean
   error: string | null
 }) {
+  const inputStyle = {
+    width: '100%',
+    padding: 14,
+    fontSize: 16,
+    borderRadius: 8,
+    border: `2px solid ${colors.grayLight}`,
+    background: colors.grayDark,
+    color: colors.white,
+    boxSizing: 'border-box' as const
+  }
+
+  const labelStyle = {
+    display: 'block',
+    marginBottom: 8,
+    fontWeight: 'bold',
+    color: colors.white,
+    fontSize: 14
+  }
+
   return (
     <div style={{ marginBottom: 32 }}>
       <h2 style={{ 
@@ -322,7 +469,7 @@ function CustomerForm({
         color: colors.textSecondary,
         fontWeight: 'normal'
       }}>
-        Información de contacto
+        Información de contacto y envío
       </h2>
       
       {error && (
@@ -338,74 +485,211 @@ function CustomerForm({
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        {/* Nombre */}
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
-            Nombre completo
+          <label style={labelStyle}>
+            Nombre completo *
           </label>
           <input
             type="text"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Juan Pérez"
+            placeholder="Juan Pérez García"
             disabled={disabled}
-            style={{
-              width: '100%',
-              padding: 14,
-              fontSize: 16,
-              borderRadius: 8,
-              border: `2px solid ${colors.grayLight}`,
-              background: colors.grayDark,
-              color: colors.white,
-              boxSizing: 'border-box'
-            }}
+            style={inputStyle}
           />
         </div>
 
+        {/* WhatsApp */}
         <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
-            Email
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            placeholder="juan@ejemplo.com"
-            disabled={disabled}
-            style={{
-              width: '100%',
-              padding: 14,
-              fontSize: 16,
-              borderRadius: 8,
-              border: `2px solid ${colors.grayLight}`,
-              background: colors.grayDark,
-              color: colors.white,
-              boxSizing: 'border-box'
-            }}
-          />
-        </div>
-
-        <div>
-          <label style={{ display: 'block', marginBottom: 8, fontWeight: 'bold', color: colors.white }}>
-            Teléfono
+          <label style={labelStyle}>
+            WhatsApp (10 dígitos) *
           </label>
           <input
             type="tel"
             value={phone}
-            onChange={(e) => onPhoneChange(e.target.value)}
-            placeholder="5512345678"
-            disabled={disabled}
-            style={{
-              width: '100%',
-              padding: 14,
-              fontSize: 16,
-              borderRadius: 8,
-              border: `2px solid ${colors.grayLight}`,
-              background: colors.grayDark,
-              color: colors.white,
-              boxSizing: 'border-box'
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '')
+              if (value.length <= 10) onPhoneChange(value)
             }}
+            placeholder="8112345678"
+            disabled={disabled}
+            style={inputStyle}
+          />
+          <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
+            Recibirás confirmación de pago por WhatsApp
+          </p>
+        </div>
+
+        {/* Separador visual */}
+        <div style={{ 
+          height: 1, 
+          background: colors.grayLight, 
+          margin: '8px 0' 
+        }} />
+
+        <h3 style={{ 
+          fontSize: 16, 
+          color: colors.orange, 
+          marginBottom: 0,
+          marginTop: 8,
+          textTransform: 'uppercase',
+          letterSpacing: 1
+        }}>
+          📍 Dirección de entrega
+        </h3>
+
+        {/* Calle */}
+        <div>
+          <label style={labelStyle}>
+            Calle *
+          </label>
+          <input
+            type="text"
+            value={calle}
+            onChange={(e) => onCalleChange(e.target.value)}
+            placeholder="Av. Constitución"
+            disabled={disabled}
+            style={inputStyle}
           />
         </div>
+
+        {/* Número exterior e interior */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={labelStyle}>
+              Núm. Exterior *
+            </label>
+            <input
+              type="text"
+              value={numeroExterior}
+              onChange={(e) => onNumeroExteriorChange(e.target.value)}
+              placeholder="123"
+              disabled={disabled}
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>
+              Núm. Interior
+            </label>
+            <input
+              type="text"
+              value={numeroInterior}
+              onChange={(e) => onNumeroInteriorChange(e.target.value)}
+              placeholder="Depto. 4B"
+              disabled={disabled}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Colonia */}
+        <div>
+          <label style={labelStyle}>
+            Colonia *
+          </label>
+          <input
+            type="text"
+            value={colonia}
+            onChange={(e) => onColoniaChange(e.target.value)}
+            placeholder="Centro"
+            disabled={disabled}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* CP y Ciudad */}
+        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
+          <div>
+            <label style={labelStyle}>
+              CP *
+            </label>
+            <input
+              type="text"
+              value={codigoPostal}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '')
+                if (value.length <= 5) onCodigoPostalChange(value)
+              }}
+              placeholder="64000"
+              disabled={disabled}
+              style={inputStyle}
+            />
+          </div>
+          <div>
+            <label style={labelStyle}>
+              Ciudad *
+            </label>
+            <input
+              type="text"
+              value={ciudad}
+              onChange={(e) => onCiudadChange(e.target.value)}
+              placeholder="Monterrey"
+              disabled={disabled}
+              style={inputStyle}
+            />
+          </div>
+        </div>
+
+        {/* Estado */}
+        <div>
+          <label style={labelStyle}>
+            Estado *
+          </label>
+          <input
+            type="text"
+            value={estado}
+            onChange={(e) => onEstadoChange(e.target.value)}
+            placeholder="Nuevo León"
+            disabled={disabled}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Botón de validación */}
+        <button
+          onClick={onValidateAddress}
+          disabled={disabled || isValidatingAddress}
+          style={{
+            width: '100%',
+            padding: '14px 20px',
+            fontSize: 16,
+            fontWeight: 'bold',
+            borderRadius: 8,
+            border: addressValidated 
+              ? `2px solid #10b981` 
+              : `2px solid ${colors.orange}`,
+            background: addressValidated 
+              ? '#10b981' 
+              : colors.orange,
+            color: colors.black,
+            cursor: disabled || isValidatingAddress ? 'not-allowed' : 'pointer',
+            textTransform: 'uppercase',
+            letterSpacing: 1,
+            opacity: disabled || isValidatingAddress ? 0.6 : 1
+          }}
+        >
+          {isValidatingAddress 
+            ? '⏳ Validando...' 
+            : addressValidated 
+              ? '✅ Dirección validada' 
+              : '🔍 Validar dirección'}
+        </button>
+
+        {addressValidated && (
+          <div style={{
+            background: '#10b98120',
+            border: '2px solid #10b981',
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 14,
+            color: '#10b981',
+            textAlign: 'center'
+          }}>
+            ✅ Dirección confirmada dentro del área de entrega
+          </div>
+        )}
       </div>
     </div>
   )

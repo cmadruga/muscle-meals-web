@@ -6,7 +6,6 @@ const CONEKTA_PRIVATE_KEY = process.env.CONEKTA_PRIVATE_KEY!
 export interface CreateConektaOrderData {
   orderId: string
   customerName: string
-  customerEmail: string
   customerPhone: string
   totalAmount: number // en centavos
   items: Array<{
@@ -41,8 +40,8 @@ export async function createConektaOrder(
         currency: 'MXN',
         customer_info: {
           name: data.customerName,
-          email: data.customerEmail,
-          phone: data.customerPhone
+          phone: data.customerPhone,
+          email: 'noreply@musclemealsmx.com' // Requerido por Conekta API pero no lo usamos
         },
         line_items: data.items.map(item => ({
           name: item.name,
@@ -53,8 +52,8 @@ export async function createConektaOrder(
           allowed_payment_methods: ['card', 'cash'],
           expires_at: Math.floor(Date.now() / 1000) + 86400, // 24 hours
           type: 'HostedPayment',
-          success_url: `http://localhost:3000/order-success?our_order_id=${data.orderId}`,
-          failure_url: 'http://localhost:3000/order-failed'
+          success_url: `https://unverdurous-neida-nonmutationally.ngrok-free.dev/order-success?our_order_id=${data.orderId}`,
+          failure_url: 'https://unverdurous-neida-nonmutationally.ngrok-free.dev/order-failed'
         },
         metadata: {
           order_id: data.orderId
@@ -103,8 +102,8 @@ export async function createConektaCardOrder(
         currency: 'MXN',
         customer_info: {
           name: data.customerName,
-          email: data.customerEmail,
-          phone: data.customerPhone
+          phone: data.customerPhone,
+          email: 'noreply@musclemealsmx.com' // Requerido por Conekta API pero no lo usamos
         },
         line_items: data.items.map(item => ({
           name: item.name,

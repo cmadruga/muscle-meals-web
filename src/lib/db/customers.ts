@@ -8,20 +8,20 @@ import type { Customer, CreateCustomerData } from '../types/customer'
 export async function upsertCustomer(data: CreateCustomerData): Promise<Customer | null> {
   const supabase = createClient()
 
-  // Primero buscar si ya existe por email
+  // Primero buscar si ya existe por teléfono
   const { data: existing } = await supabase
     .from('customers')
     .select('*')
-    .eq('email', data.email)
+    .eq('phone', data.phone)
     .single()
 
   if (existing) {
-    // Actualizar nombre y teléfono si cambiaron
+    // Actualizar nombre y dirección si cambiaron
     const { data: updated, error } = await supabase
       .from('customers')
       .update({
         full_name: data.name,
-        phone: data.phone
+        address: data.address
       })
       .eq('id', existing.id)
       .select()
@@ -40,8 +40,8 @@ export async function upsertCustomer(data: CreateCustomerData): Promise<Customer
     .from('customers')
     .insert({
       full_name: data.name,
-      email: data.email,
-      phone: data.phone
+      phone: data.phone,
+      address: data.address
     })
     .select()
     .single()

@@ -4,8 +4,8 @@
 export interface Customer {
   id: string
   full_name: string
-  email: string
-  phone: string | null
+  phone: string
+  address: string | null
   created_at: string
 }
 
@@ -14,6 +14,6 @@ export interface Customer {
  */
 export interface CreateCustomerData {
   name: string
-  email: string
   phone: string
+  address?: string
 }
