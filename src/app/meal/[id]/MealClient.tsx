@@ -2,25 +2,29 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
-import type { Size } from '@/lib/types'
+import { useRouter } from 'next/navigation'
+import type { Size, MealBasic } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 import { colors } from '@/lib/theme'
+import AddToCartModal from '@/components/AddToCartModal'
 
 interface MealClientProps {
   meal: MealWithRecipes
   sizes: Size[]
+  suggestedMeals?: MealBasic[] // Otros platillos para mostrar en modal
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes }: MealClientProps) {
+export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealClientProps) {
+  const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [qty, setQty] = useState(1)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showModal, setShowModal] = useState(false)
 
   const selectedSize = sizes.find(s => s.id === selectedSizeId)
 
@@ -46,9 +50,24 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
       unitPrice: selectedSize.price
     })
 
-    // Mostrar mensaje de éxito
-    setShowSuccess(true)
-    setTimeout(() => setShowSuccess(false), 2000)
+    // Mostrar modal de confirmación
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setQty(1) // Reset cantidad
+  }
+
+  const handleContinueShopping = () => {
+    setShowModal(false)
+    setQty(1)
+    router.push('/menu')
+  }
+
+  const handleMealClick = (mealId: string) => {
+    setShowModal(false)
+    router.push(`/meal/${mealId}`)
   }
 
   return (
@@ -192,18 +211,17 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
         </div>
       </div>
 
-      {showSuccess && (
-        <div style={{ 
-          color: colors.black, 
-          background: colors.orange,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16,
-          fontWeight: 'bold'
-        }}>
-          ✓ Agregado al carrito
-        </div>
-      )}
+      {/* Modal de confirmación */}
+      <AddToCartModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onContinueShopping={handleContinueShopping}
+        title="¡Agregado al carrito!"
+        message={`${qty} x ${meal.name} (${selectedSize?.name})`}
+        suggestedMeals={suggestedMeals}
+        selectedSize={selectedSize}
+        onMealClick={handleMealClick}
+      />
 
       {/* Quantity */}
       <div style={{ marginBottom: 24 }}>

@@ -2,11 +2,13 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import type { Package, Size } from '@/lib/types'
 import type { MealWithRecipes } from '@/lib/db/meals'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 import { colors } from '@/lib/theme'
+import AddToCartModal from '@/components/AddToCartModal'
 
 interface PackageClientProps {
   pkg: Package
@@ -27,10 +29,19 @@ interface SelectionItem {
  * 3. Crea orden
  */
 export default function PackageClient({ pkg, meals, sizes }: PackageClientProps) {
+  const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+
+  // Convertir meals a formato MealBasic para sugerencias
+  const suggestedMeals = meals.map(m => ({
+    id: m.id,
+    name: m.name,
+    description: m.description,
+    img: m.img
+  }))
 
   const selectedSize = sizes.find(s => s.id === selectedSizeId)
   
@@ -104,12 +115,24 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
       })
     })
 
-    // Mostrar mensaje de éxito
-    setShowSuccess(true)
-    setTimeout(() => {
-      setShowSuccess(false)
-      setSelection([]) // Limpiar selección
-    }, 2000)
+    // Mostrar modal de confirmación
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setSelection([]) // Limpiar selección
+  }
+
+  const handleContinueShopping = () => {
+    setShowModal(false)
+    setSelection([])
+    router.push('/menu')
+  }
+
+  const handleMealClick = (mealId: string) => {
+    setShowModal(false)
+    router.push(`/meal/${mealId}`)
   }
 
   return (
@@ -130,18 +153,17 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
       </h1>
       {pkg.description && <p style={{ color: colors.textMuted, marginBottom: 24 }}>{pkg.description}</p>}
 
-      {showSuccess && (
-        <div style={{ 
-          color: colors.black, 
-          background: colors.orange,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16,
-          fontWeight: 'bold'
-        }}>
-          ✓ Paquete agregado al carrito
-        </div>
-      )}
+      {/* Modal de confirmación */}
+      <AddToCartModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onContinueShopping={handleContinueShopping}
+        title="¡Agregado al carrito!"
+        message={`Tu paquete ${pkg.name} (${selection.length} platillos) ha sido agregado al carrito`}
+        suggestedMeals={suggestedMeals}
+        selectedSize={selectedSize}
+        onMealClick={handleMealClick}
+      />
 
       {/* Size Selector */}
       <div style={{ 

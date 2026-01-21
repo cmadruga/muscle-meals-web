@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation'
-import { getMealById } from '@/lib/db/meals'
+import { getMealById, getMealsBasic } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
 import MealClient from './MealClient'
 
@@ -13,16 +13,20 @@ interface MealPageProps {
 export default async function MealPage({ params }: MealPageProps) {
   const { id } = await params
 
-  const [meal, sizes] = await Promise.all([
+  const [meal, sizes, allMeals] = await Promise.all([
     getMealById(id),
-    getMainSizes()
+    getMainSizes(),
+    getMealsBasic()
   ])
 
   if (!meal) {
     notFound()
   }
 
-  return <MealClient meal={meal} sizes={sizes} />
+  // Filtrar otros meals (excluir el actual) para sugerencias
+  const suggestedMeals = allMeals.filter(m => m.id !== meal.id)
+
+  return <MealClient meal={meal} sizes={sizes} suggestedMeals={suggestedMeals} />
 }
 
 /**
