@@ -15,6 +15,8 @@ export interface OrderItem {
   unit_price: number // precio unitario al momento de la orden (centavos)
   package_id: string | null // si pertenece a un paquete
   created_at: string
+  meal_name?: string // nombre del meal (opcional, solo cuando se hace JOIN)
+  size_name?: string // nombre del tamaño (opcional, solo cuando se hace JOIN)
 }
 
 /**
@@ -42,6 +44,8 @@ export interface CreateOrderPayload {
  */
 export interface Order {
   id: string
+  order_number: string // Número de orden amigable (ej: MM-0001)
+  conekta_order_id: string | null // ID de Conekta para reconciliación
   customer_id: string | null
   total_amount: number
   status: OrderStatus

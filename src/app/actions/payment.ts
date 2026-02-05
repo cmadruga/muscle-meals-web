@@ -6,6 +6,7 @@ const CONEKTA_PRIVATE_KEY = process.env.CONEKTA_PRIVATE_KEY!
 export interface CreateConektaOrderData {
   orderId: string
   customerName: string
+  customerEmail: string
   customerPhone: string
   totalAmount: number // en centavos
   items: Array<{
@@ -41,7 +42,7 @@ export async function createConektaOrder(
         customer_info: {
           name: data.customerName,
           phone: data.customerPhone,
-          email: 'noreply@musclemealsmx.com' // Requerido por Conekta API pero no lo usamos
+          email: data.customerEmail
         },
         line_items: data.items.map(item => ({
           name: item.name,
@@ -103,7 +104,7 @@ export async function createConektaCardOrder(
         customer_info: {
           name: data.customerName,
           phone: data.customerPhone,
-          email: 'noreply@musclemealsmx.com' // Requerido por Conekta API pero no lo usamos
+          email: data.customerEmail
         },
         line_items: data.items.map(item => ({
           name: item.name,

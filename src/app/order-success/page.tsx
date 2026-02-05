@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCartStore } from '@/lib/store/cart'
-import { updateOrderStatus, getOrderWithItems } from '@/lib/db/orders'
+import { updateOrderStatus, updateConektaOrderId, getOrderWithItems } from '@/lib/db/orders'
 import type { OrderWithItems } from '@/lib/types'
 import { colors } from '@/lib/theme'
 
@@ -17,14 +17,20 @@ function OrderSuccessContent() {
   useEffect(() => {
     const processPayment = async () => {
       try {
-        // Conekta envía su propio order_id, pero nuestro UUID está en metadata
-        // Necesitamos obtener el metadata de Conekta primero
-        // Por ahora, usaremos el parámetro que nosotros agreguemos manualmente
+        // Conekta envía el order_id en la URL
+        const conektaId = searchParams.get('order_id')
+        
+        // Nuestro order_id está en el parámetro our_order_id
         const ourOrderId = searchParams.get('our_order_id')
         
         if (ourOrderId) {
           // Actualizar status de la orden a 'paid'
           await updateOrderStatus(ourOrderId, 'paid')
+          
+          // Guardar el ID de Conekta si lo tenemos
+          if (conektaId) {
+            await updateConektaOrderId(ourOrderId, conektaId)
+          }
           
           // Obtener los detalles de la orden
           const orderData = await getOrderWithItems(ourOrderId)
@@ -128,7 +134,7 @@ function OrderSuccessContent() {
                 color: colors.textMuted,
                 margin: '0 0 4px 0'
               }}>
-                <strong style={{ color: colors.white }}>ID de orden:</strong> {order.id}
+                <strong style={{ color: colors.white }}>ID de orden:</strong> {order.order_number}
               </p>
               <p style={{ 
                 fontSize: 14, 
@@ -160,12 +166,22 @@ function OrderSuccessContent() {
                     borderBottom: idx < order.items.length - 1 ? `1px solid ${colors.grayDark}` : 'none',
                     display: 'flex',
                     justifyContent: 'space-between',
+                    alignItems: 'center',
                     fontSize: 14,
                     color: colors.textMuted
                   }}
                 >
-                  <span>x{item.qty}</span>
-                  <span>${(item.unit_price * item.qty / 100).toFixed(0)} MXN</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ color: colors.white, marginBottom: 2 }}>
+                      {item.meal_name || 'Platillo'}
+                    </div>
+                    <div style={{ fontSize: 12 }}>
+                      {item.size_name && `${item.size_name} · `}x{item.qty}
+                    </div>
+                  </div>
+                  <span style={{ fontWeight: 'bold', color: colors.white }}>
+                    ${(item.unit_price * item.qty / 100).toFixed(0)} MXN
+                  </span>
                 </div>
               ))}
             </div>

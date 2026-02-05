@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
-import { updateOrderStatus } from '@/lib/db/orders'
+import { updateOrderStatus, updateConektaOrderId, getOrderById } from '@/lib/db/orders'
+import { getCustomerById } from '@/lib/db/customers'
 import type { ConektaOrder, ConektaCharge } from '@/lib/types/conekta'
 import { sendPaymentConfirmation, sendPaymentPending, sendOrderExpired } from '@/lib/whatsapp'
 
@@ -102,29 +103,44 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
 
     // Actualizar estado en nuestra DB
     await updateOrderStatus(ourOrderId, 'paid')
-
-    // Información del cliente viene de Conekta
-    const customerInfo = conektaOrder.customer_info
-    const totalAmount = conektaOrder.amount / 100 // convertir de centavos
-
-    console.log(`✅ Orden pagada: ${ourOrderId.slice(0, 8)}`)
-    console.log(`   Cliente: ${customerInfo.name}`)
-    console.log(`   Teléfono: ${customerInfo.phone}`)
-    console.log(`   Total: $${totalAmount}`)
-
-    // Enviar confirmación por WhatsApp
-    if (customerInfo.phone) {
-      await sendPaymentConfirmation(
-        customerInfo.phone,
-        customerInfo.name,
-        ourOrderId,
-        totalAmount
-      )
-      console.log(`📱 WhatsApp enviado a ${customerInfo.phone}`)
+    
+    // Guardar el ID de Conekta para referencia
+    await updateConektaOrderId(ourOrderId, conektaOrder.id)
+    
+    // Obtener la orden completa con customer_id
+    const order = await getOrderById(ourOrderId)
+    
+    if (!order) {
+      console.error('❌ No se encontró la orden en la base de datos')
+      return
     }
 
+    // Obtener el customer de nuestra DB (fuente de verdad)
+    const customer = order.customer_id ? await getCustomerById(order.customer_id) : null
+    
+    if (!customer) {
+      console.error('❌ No se encontró el customer asociado a la orden')
+      return
+    }
+
+    const totalAmount = conektaOrder.amount / 100 // convertir de centavos
+
+    console.log(`✅ Orden pagada: ${order.order_number}`)
+    console.log(`   Cliente: ${customer.full_name}`)
+    console.log(`   Teléfono: ${customer.phone}`)
+    console.log(`   Total: $${totalAmount}`)
+
+    // Enviar confirmación por WhatsApp usando datos de NUESTRA DB (no de Conekta)
+    await sendPaymentConfirmation(
+      customer.phone,
+      customer.full_name,
+      order.order_number,
+      totalAmount
+    )
+    console.log(`📱 WhatsApp enviado a ${customer.phone}`)
+
     // TODO: Notificar al equipo de cocina
-    console.log(`👨‍🍳 TODO: Notificar a cocina - nuevo pedido #${ourOrderId.slice(0, 8)}`)
+    console.log(`👨‍🍳 TODO: Notificar a cocina - nuevo pedido #${order.order_number}`)
 
   } catch (error) {
     console.error('Error en handleOrderPaid:', error)
@@ -160,20 +176,26 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
 
     console.log(`⏳ Orden pendiente: ${ourOrderId}`)
     await updateOrderStatus(ourOrderId, 'pending')
-
-    const customerInfo = conektaOrder.customer_info
+    await updateConektaOrderId(ourOrderId, conektaOrder.id)
+    
+    const order = await getOrderById(ourOrderId)
+    
+    if (!order || !order.customer_id) return
+    
+    const customer = await getCustomerById(order.customer_id)
+    
+    if (!customer) return
+    
     const totalAmount = conektaOrder.amount / 100
 
-    // Enviar instrucciones de pago por WhatsApp (importante para OXXO/efectivo)
-    if (customerInfo.phone) {
-      await sendPaymentPending(
-        customerInfo.phone,
-        customerInfo.name,
-        ourOrderId,
-        totalAmount
-      )
-      console.log(`📱 Instrucciones de pago enviadas a ${customerInfo.phone}`)
-    }
+    // Enviar instrucciones de pago por WhatsApp usando datos de nuestra DB
+    await sendPaymentPending(
+      customer.phone,
+      customer.full_name,
+      order.order_number,
+      totalAmount
+    )
+    console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
 
   } catch (error) {
     console.error('Error en handleOrderPending:', error)
@@ -191,18 +213,22 @@ async function handleOrderExpired(conektaOrder: ConektaOrder) {
 
     console.log(`❌ Orden expirada: ${ourOrderId}`)
     await updateOrderStatus(ourOrderId, 'cancelled')
+    
+    const order = await getOrderById(ourOrderId)
+    
+    if (!order || !order.customer_id) return
+    
+    const customer = await getCustomerById(order.customer_id)
+    
+    if (!customer) return
 
-    const customerInfo = conektaOrder.customer_info
-
-    // Notificar orden expirada por WhatsApp
-    if (customerInfo?.phone) {
-      await sendOrderExpired(
-        customerInfo.phone,
-        customerInfo.name,
-        ourOrderId
-      )
-      console.log(`📱 Notificación de expiración enviada a ${customerInfo.phone}`)
-    }
+    // Notificar orden expirada por WhatsApp usando datos de nuestra DB
+    await sendOrderExpired(
+      customer.phone,
+      customer.full_name,
+      order.order_number
+    )
+    console.log(`📱 Notificación de expiración enviada a ${customer.phone}`)
 
   } catch (error) {
     console.error('Error en handleOrderExpired:', error)

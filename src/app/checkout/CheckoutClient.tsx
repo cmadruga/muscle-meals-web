@@ -24,10 +24,10 @@ export default function CheckoutClient() {
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [isValidatingAddress, setIsValidatingAddress] = useState(false)
   
   // Datos del cliente
   const [customerName, setCustomerName] = useState('')
+  const [customerEmail, setCustomerEmail] = useState('')
   const [customerPhone, setCustomerPhone] = useState('')
   
   // Dirección separada
@@ -39,38 +39,19 @@ export default function CheckoutClient() {
   const [ciudad, setCiudad] = useState('Monterrey')
   const [estado, setEstado] = useState('Nuevo León')
   
-  // Estado de validación
-  const [addressValidated, setAddressValidated] = useState(false)
-
-  const handleValidateAddress = () => {
-    try {
-      setIsValidatingAddress(true)
-      setError(null)
-      
-      // 1. Validar formato de código postal
-      if (!validateCP(codigoPostal)) {
-        throw new Error('Código postal inválido (debe ser 5 dígitos)')
-      }
-      
-      // 2. Verificar que el CP esté en la lista de permitidos
-      if (!isValidPostalCode(codigoPostal)) {
-        throw new Error(
-          `Lo sentimos, no hacemos envíos a este código postal (${codigoPostal}). ` +
-          `Solo entregamos en el Área Metropolitana de Monterrey.`
-        )
-      }
-      
-      const zone = getZoneByPostalCode(codigoPostal)
-      setAddressValidated(true)
-      alert(`✅ Dirección validada - Zona: ${zone}`)
-      
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al validar dirección')
-      setAddressValidated(false)
-    } finally {
-      setIsValidatingAddress(false)
-    }
-  }
+  // Validación automática
+  const isAddressComplete = Boolean(
+    calle.trim() && 
+    numeroExterior.trim() && 
+    colonia.trim() && 
+    codigoPostal.trim() && 
+    ciudad.trim() && 
+    estado.trim()
+  )
+  
+  const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+  const addressValidated = isAddressComplete && isPostalCodeValid
+  const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
 
   const handleCheckout = async () => {
     // Validar teléfono
@@ -78,23 +59,21 @@ export default function CheckoutClient() {
       setError('Teléfono inválido (debe ser 10 dígitos)')
       return
     }
+    
+    // Validar email
+    if (!customerEmail.trim() || !customerEmail.includes('@')) {
+      setError('Por favor ingresa un email válido')
+      return
+    }
 
     // Validar campos básicos
-    if (!customerName.trim() || !customerPhone.trim() || 
-        !calle.trim() || !numeroExterior.trim() || !colonia.trim() || 
-        !codigoPostal.trim() || !ciudad.trim() || !estado.trim()) {
-      setError('Por favor completa todos los campos obligatorios')
+    if (!customerName.trim()) {
+      setError('Por favor ingresa tu nombre completo')
       return
     }
     
-    // Verificar que la dirección haya sido validada
     if (!addressValidated) {
-      setError('Por favor valida la dirección antes de continuar')
-      return
-    }
-
-    if (!customerName || !customerPhone) {
-      setError('Por favor completa todos los campos')
+      setError('Por favor completa todos los campos de la dirección con un código postal válido')
       return
     }
 
@@ -123,6 +102,7 @@ export default function CheckoutClient() {
       const customer = await upsertCustomer({
         name: customerName,
         phone: whatsappPhone,
+        email: customerEmail,
         address: fullAddress
       })
 
@@ -147,10 +127,11 @@ export default function CheckoutClient() {
         }))
       )
 
-      // 3. Crear orden en Conekta
+      // 3. Crear orden en Conekta con email real del cliente
       const result = await createConektaOrder({
         orderId: order.id,
         customerName,
+        customerEmail,
         customerPhone: whatsappPhone,
         totalAmount: order.total_amount,
         items: items.map(item => ({
@@ -214,6 +195,7 @@ export default function CheckoutClient() {
 
         <CustomerForm 
           name={customerName}
+          email={customerEmail}
           phone={customerPhone}
           calle={calle}
           numeroExterior={numeroExterior}
@@ -223,6 +205,7 @@ export default function CheckoutClient() {
           ciudad={ciudad}
           estado={estado}
           onNameChange={setCustomerName}
+          onEmailChange={setCustomerEmail}
           onPhoneChange={setCustomerPhone}
           onCalleChange={setCalle}
           onNumeroExteriorChange={setNumeroExterior}
@@ -231,17 +214,17 @@ export default function CheckoutClient() {
           onCodigoPostalChange={setCodigoPostal}
           onCiudadChange={setCiudad}
           onEstadoChange={setEstado}
-          onValidateAddress={handleValidateAddress}
-          isValidatingAddress={isValidatingAddress}
           addressValidated={addressValidated}
+          zone={zone}
           disabled={isProcessing}
           error={error}
         />
 
         <PaymentButton 
           onClick={handleCheckout}
-          disabled={isProcessing}
+          disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone)}
           isProcessing={isProcessing}
+          addressValidated={addressValidated}
         />
       </div>
     </main>
@@ -395,6 +378,7 @@ function IndividualItemSummary({ item, showBorder }: {
 
 function CustomerForm({ 
   name, 
+  email,
   phone,
   calle,
   numeroExterior,
@@ -404,6 +388,7 @@ function CustomerForm({
   ciudad,
   estado,
   onNameChange, 
+  onEmailChange,
   onPhoneChange,
   onCalleChange,
   onNumeroExteriorChange,
@@ -412,13 +397,13 @@ function CustomerForm({
   onCodigoPostalChange,
   onCiudadChange,
   onEstadoChange,
-  onValidateAddress,
-  isValidatingAddress,
   addressValidated,
+  zone,
   disabled,
   error
 }: {
   name: string
+  email: string
   phone: string
   calle: string
   numeroExterior: string
@@ -428,6 +413,7 @@ function CustomerForm({
   ciudad: string
   estado: string
   onNameChange: (value: string) => void
+  onEmailChange: (value: string) => void
   onPhoneChange: (value: string) => void
   onCalleChange: (value: string) => void
   onNumeroExteriorChange: (value: string) => void
@@ -436,9 +422,8 @@ function CustomerForm({
   onCodigoPostalChange: (value: string) => void
   onCiudadChange: (value: string) => void
   onEstadoChange: (value: string) => void
-  onValidateAddress: () => void
-  isValidatingAddress: boolean
   addressValidated: boolean
+  zone: string | null
   disabled: boolean
   error: string | null
 }) {
@@ -495,6 +480,21 @@ function CustomerForm({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Juan Pérez García"
+            disabled={disabled}
+            style={inputStyle}
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label style={labelStyle}>
+            Email *
+          </label>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => onEmailChange(e.target.value)}
+            placeholder="tu@email.com"
             disabled={disabled}
             style={inputStyle}
           />
@@ -614,7 +614,12 @@ function CustomerForm({
               }}
               placeholder="64000"
               disabled={disabled}
-              style={inputStyle}
+              style={{
+                ...inputStyle,
+                borderColor: codigoPostal.length === 5 
+                  ? (validateCP(codigoPostal) && isValidPostalCode(codigoPostal) ? '#10b981' : '#ef4444')
+                  : colors.grayLight
+              }}
             />
           </div>
           <div>
@@ -632,6 +637,29 @@ function CustomerForm({
           </div>
         </div>
 
+        {/* Mensaje de validación de CP */}
+        {codigoPostal.length === 5 && (
+          <div style={{
+            background: validateCP(codigoPostal) && isValidPostalCode(codigoPostal) 
+              ? '#10b98120' 
+              : '#ef444420',
+            border: validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+              ? '2px solid #10b981'
+              : '2px solid #ef4444',
+            borderRadius: 8,
+            padding: 12,
+            fontSize: 14,
+            color: validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+              ? '#10b981'
+              : '#ef4444',
+            textAlign: 'center'
+          }}>
+            {validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+              ? `✅ CP válido - Zona: ${zone}`
+              : '❌ CP fuera del área de entrega (Solo Área Metropolitana de Monterrey)'}
+          </div>
+        )}
+
         {/* Estado */}
         <div>
           <label style={labelStyle}>
@@ -642,41 +670,16 @@ function CustomerForm({
             value={estado}
             onChange={(e) => onEstadoChange(e.target.value)}
             placeholder="Nuevo León"
-            disabled={disabled}
-            style={inputStyle}
+            disabled={true}
+            style={{
+              ...inputStyle,
+              opacity: 0.6,
+              cursor: 'not-allowed'
+            }}
           />
         </div>
 
-        {/* Botón de validación */}
-        <button
-          onClick={onValidateAddress}
-          disabled={disabled || isValidatingAddress}
-          style={{
-            width: '100%',
-            padding: '14px 20px',
-            fontSize: 16,
-            fontWeight: 'bold',
-            borderRadius: 8,
-            border: addressValidated 
-              ? `2px solid #10b981` 
-              : `2px solid ${colors.orange}`,
-            background: addressValidated 
-              ? '#10b981' 
-              : colors.orange,
-            color: colors.black,
-            cursor: disabled || isValidatingAddress ? 'not-allowed' : 'pointer',
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-            opacity: disabled || isValidatingAddress ? 0.6 : 1
-          }}
-        >
-          {isValidatingAddress 
-            ? '⏳ Validando...' 
-            : addressValidated 
-              ? '✅ Dirección validada' 
-              : '🔍 Validar dirección'}
-        </button>
-
+        {/* Indicador de dirección completa */}
         {addressValidated && (
           <div style={{
             background: '#10b98120',
@@ -687,7 +690,7 @@ function CustomerForm({
             color: '#10b981',
             textAlign: 'center'
           }}>
-            ✅ Dirección confirmada dentro del área de entrega
+            ✅ Dirección completa y validada - Listo para proceder al pago
           </div>
         )}
       </div>
@@ -695,11 +698,18 @@ function CustomerForm({
   )
 }
 
-function PaymentButton({ onClick, disabled, isProcessing }: {
+function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
   onClick: () => void
   disabled: boolean
   isProcessing: boolean
+  addressValidated: boolean
 }) {
+  const getButtonText = () => {
+    if (isProcessing) return 'Procesando...'
+    if (!addressValidated) return '⚠️ Completa y valida la dirección primero'
+    return '💳 Proceder al pago'
+  }
+
   return (
     <button
       onClick={onClick}
@@ -709,16 +719,17 @@ function PaymentButton({ onClick, disabled, isProcessing }: {
         padding: '18px 24px',
         fontSize: 18,
         fontWeight: 'bold',
-        cursor: isProcessing ? 'not-allowed' : 'pointer',
-        opacity: isProcessing ? 0.5 : 1,
-        background: colors.orange,
-        color: colors.black,
-        border: 'none',
+        cursor: disabled ? 'not-allowed' : 'pointer',
+        opacity: disabled ? 0.4 : 1,
+        background: disabled ? colors.grayLight : colors.orange,
+        color: disabled ? colors.textMuted : colors.black,
+        border: disabled ? `2px solid ${colors.grayLight}` : 'none',
         borderRadius: 8,
-        textTransform: 'uppercase'
+        textTransform: 'uppercase',
+        transition: 'all 0.2s'
       }}
     >
-      {isProcessing ? 'Procesando...' : '💳 Proceder al pago'}
+      {getButtonText()}
     </button>
   )
 }

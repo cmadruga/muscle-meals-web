@@ -16,11 +16,12 @@ export async function upsertCustomer(data: CreateCustomerData): Promise<Customer
     .single()
 
   if (existing) {
-    // Actualizar nombre y dirección si cambiaron
+    // Actualizar nombre, email y dirección si cambiaron
     const { data: updated, error } = await supabase
       .from('customers')
       .update({
         full_name: data.name,
+        email: data.email,
         address: data.address
       })
       .eq('id', existing.id)
@@ -41,6 +42,7 @@ export async function upsertCustomer(data: CreateCustomerData): Promise<Customer
     .insert({
       full_name: data.name,
       phone: data.phone,
+      email: data.email,
       address: data.address
     })
     .select()
