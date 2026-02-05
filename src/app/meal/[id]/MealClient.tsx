@@ -25,6 +25,7 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [qty, setQty] = useState(1)
   const [showModal, setShowModal] = useState(false)
+  const [showRecipe, setShowRecipe] = useState(false)
 
   const selectedSize = sizes.find(s => s.id === selectedSizeId)
 
@@ -156,60 +157,78 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
         </div>
       )}
 
-      {/* Receta */}
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ color: colors.orange }}>Receta</h3>
-        <div style={{ 
-          padding: 20, 
-          background: colors.grayDark, 
-          borderRadius: 12,
-          border: `2px solid ${colors.grayLight}`
-        }}>
-          <h4 style={{ marginTop: 0, marginBottom: 12, color: colors.white }}>{meal.mainRecipe.name}</h4>
-          <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
-            {meal.mainRecipe.ingredients.map((ing, idx) => {
-              const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
-              if (!ingredient) return null
-              
-              // Mostrar cantidad ajustada por size si aplica
-              let displayQty = ing.qty
-              if (selectedSize) {
-                if (ingredient.type === 'pro') displayQty = selectedSize.protein_qty
-                else if (ingredient.type === 'carb') displayQty = selectedSize.carb_qty
-                else if (ingredient.type === 'veg') displayQty = selectedSize.veg_qty
-              }
-              
-              return (
-                <li key={idx} style={{ marginBottom: 4 }}>
-                  {ingredient.name} - {displayQty}{ing.unit}
-                </li>
-              )
-            })}
-          </ul>
-          
-          {meal.subRecipes.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              {meal.subRecipes.map((subRecipe, subIdx) => (
-                <div key={subIdx}>
-                  <h4 style={{ marginBottom: 8, color: colors.white }}>{subRecipe.name}</h4>
-                  <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
-                    {subRecipe.ingredients.map((ing, idx) => {
-                      const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
-                      if (!ingredient) return null
-                      
-                      return (
-                        <li key={idx} style={{ marginBottom: 4 }}>
-                          {ingredient.name} - {ing.qty}{ing.unit}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
+      {/* Botón Ver Receta */}
+      <button
+        onClick={() => setShowRecipe(!showRecipe)}
+        style={{
+          width: '100%',
+          padding: '14px 20px',
+          marginBottom: 16,
+          fontSize: 16,
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          background: 'transparent',
+          color: colors.orange,
+          border: `2px solid ${colors.orange}`,
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          transition: 'all 0.2s'
+        }}
+      >
+        <span>{showRecipe ? '▲' : '▼'}</span>
+        <span>{showRecipe ? 'Ocultar ingredientes' : 'Ver ingredientes'}</span>
+      </button>
+
+      {/* Receta (colapsable) */}
+      {showRecipe && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ 
+            padding: 20, 
+            background: colors.grayDark, 
+            borderRadius: 12,
+            border: `2px solid ${colors.grayLight}`
+          }}>
+            <h4 style={{ marginTop: 0, marginBottom: 12, color: colors.white }}>{meal.mainRecipe.name}</h4>
+            <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
+              {meal.mainRecipe.ingredients.map((ing, idx) => {
+                const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                if (!ingredient) return null
+                
+                return (
+                  <li key={idx} style={{ marginBottom: 4 }}>
+                    {ingredient.name}
+                  </li>
+                )
+              })}
+            </ul>
+            
+            {meal.subRecipes.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                {meal.subRecipes.map((subRecipe, subIdx) => (
+                  <div key={subIdx}>
+                    <h4 style={{ marginBottom: 8, color: colors.white }}>{subRecipe.name}</h4>
+                    <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
+                      {subRecipe.ingredients.map((ing, idx) => {
+                        const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                        if (!ingredient) return null
+                        
+                        return (
+                          <li key={idx} style={{ marginBottom: 4 }}>
+                            {ingredient.name}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Modal de confirmación */}
       <AddToCartModal

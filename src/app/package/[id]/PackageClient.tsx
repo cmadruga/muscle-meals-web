@@ -34,6 +34,7 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
   const [showModal, setShowModal] = useState(false)
+  const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set())
 
   // Convertir meals a formato MealBasic para sugerencias
   const suggestedMeals = meals.map(m => ({
@@ -91,6 +92,19 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
   const getQty = (mealId: string) => {
     const item = selection.find(s => s.mealId === mealId)
     return item?.qty || 0
+  }
+
+  // Toggle ingredientes
+  const toggleIngredients = (mealId: string) => {
+    setExpandedMealIds(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(mealId)) {
+        newSet.delete(mealId)
+      } else {
+        newSet.add(mealId)
+      }
+      return newSet
+    })
   }
 
   // Agregar paquete al carrito
@@ -211,6 +225,7 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {meals.map(meal => {
             const qty = getQty(meal.id)
+            const isExpanded = expandedMealIds.has(meal.id)
             
             // Calcular macros para este meal con el size seleccionado
             let macros = null
@@ -264,8 +279,8 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                   </p>
                 )}
 
-                {/* Quantity Controls */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                {/* Quantity Controls + Botón Ver Ingredientes */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <button
                     onClick={() => handleRemove(meal.id)}
                     disabled={qty === 0}
@@ -305,7 +320,71 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
                   >
                     +
                   </button>
+
+                  <button
+                    onClick={() => toggleIngredients(meal.id)}
+                    style={{
+                      flex: 1,
+                      padding: '8px 12px',
+                      fontSize: 12,
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      background: 'transparent',
+                      color: colors.orange,
+                      border: `1px solid ${colors.orange}`,
+                      borderRadius: 6,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: 4,
+                    }}
+                  >
+                    <span>{isExpanded ? '▲' : '▼'}</span>
+                    <span style={{ fontSize: 11 }}>{isExpanded ? 'Ocultar' : 'Ingredientes'}</span>
+                  </button>
                 </div>
+
+                {/* Lista de ingredientes (colapsable) */}
+                {isExpanded && (
+                  <div style={{
+                    marginBottom: 12,
+                    padding: 12,
+                    background: colors.black,
+                    borderRadius: 6,
+                    fontSize: 12
+                  }}>
+                    <div style={{ marginBottom: 8 }}>
+                      <ul style={{ margin: '6px 0 0 0', paddingLeft: 16, color: colors.textSecondary }}>
+                        {meal.mainRecipe.ingredients.map((ing, idx) => {
+                          const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                          if (!ingredient) return null
+                          return (
+                            <li key={idx} style={{ marginBottom: 2 }}>
+                              {ingredient.name}
+                            </li>
+                          )
+                        })}
+                      </ul>
+                    </div>
+                    
+                    {meal.subRecipes.length > 0 && meal.subRecipes.map((subRecipe, subIdx) => (
+                      <div key={subIdx} style={{ marginTop: 8 }}>
+                        <strong style={{ color: colors.white, fontSize: 13 }}>{subRecipe.name}</strong>
+                        <ul style={{ margin: '6px 0 0 0', paddingLeft: 16, color: colors.textSecondary }}>
+                          {subRecipe.ingredients.map((ing, idx) => {
+                            const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                            if (!ingredient) return null
+                            return (
+                              <li key={idx} style={{ marginBottom: 2 }}>
+                                {ingredient.name}
+                              </li>
+                            )
+                          })}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             )
           })}
