@@ -3,12 +3,13 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import type { Size, MealBasic } from '@/lib/types'
-import type { MealWithRecipes } from '@/lib/db/meals'
+import type { Size, MealBasic, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
+import { toCocido } from '@/lib/utils/conversions'
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
+import CustomSizePanel from '@/components/CustomSizePanel'
 
 interface MealClientProps {
   meal: MealWithRecipes
@@ -26,8 +27,16 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
   const [qty, setQty] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [showRecipe, setShowRecipe] = useState(false)
+  const [customSizes, setCustomSizes] = useState<Size[]>([])
+  const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
-  const selectedSize = sizes.find(s => s.id === selectedSizeId)
+  const allSizes = [...sizes, ...customSizes]
+  const selectedSize = allSizes.find(s => s.id === selectedSizeId)
+
+  const handleCustomSizeCreated = (size: Size) => {
+    setCustomSizes(prev => [...prev, size])
+    setSelectedSizeId(size.id)
+  }
 
   // Calcular macros según size seleccionado
   const macros = useMemo(() => {
@@ -58,6 +67,12 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
   const handleCloseModal = () => {
     setShowModal(false)
     setQty(1) // Reset cantidad
+  }
+
+  const handleGoToCart = () => {
+    setShowModal(false)
+    setQty(1)
+    router.push('/cart')
   }
 
   const handleContinueShopping = () => {
@@ -135,25 +150,92 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
         >
           {sizes.map(size => (
             <option key={size.id} value={size.id}>
-              {size.name} - ${(size.price / 100).toFixed(0)} MXN
+              {size.name} — ${(size.price / 100).toFixed(0)} MXN
             </option>
           ))}
+          {customSizes.map(size => (
+            <option key={size.id} value={size.id}>
+              ★ {size.name} — ${(size.price / 100).toFixed(0)} MXN
+            </option>
+          ))}
+          <option value="__custom__">＋ Crear tamaño personalizado…</option>
         </select>
+
+        {selectedSizeId === '__custom__' && (
+          <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
+        )}
       </div>
 
-      {/* Macros */}
-      {macros && (
-        <div style={{ 
-          padding: 20, 
-          background: colors.grayDark, 
+      {/* Macros + Porciones */}
+      {macros && selectedSize && (
+        <div style={{
+          padding: 20,
+          background: colors.grayDark,
           borderRadius: 12,
           border: `2px solid ${colors.grayLight}`,
           marginBottom: 24
         }}>
-          <h3 style={{ marginTop: 0, color: colors.orange }}>Información Nutricional ({selectedSize?.name})</h3>
-          <p style={{ fontSize: 16, margin: 0, color: colors.white }}>
+          <h3 style={{ marginTop: 0, color: colors.orange }}>
+            Información Nutricional ({selectedSize.name})
+          </h3>
+          <p style={{ fontSize: 16, margin: '0 0 16px 0', color: colors.white }}>
             {formatMacros(macros)}
           </p>
+
+          {/* Separador */}
+          <div style={{ borderTop: `1px solid ${colors.grayLight}`, marginBottom: 12 }} />
+
+          {/* Porciones con toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Porciones
+            </span>
+            {/* Toggle pill */}
+            <div style={{ display: 'flex', background: colors.black, borderRadius: 20, padding: 3, gap: 2, border: `1px solid ${colors.grayLight}` }}>
+              <button
+                onClick={() => setPortionMode('crudo')}
+                style={{
+                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                  background: portionMode === 'crudo' ? colors.orange : 'transparent',
+                  color: portionMode === 'crudo' ? colors.black : colors.textMuted,
+                }}
+              >Crudo</button>
+              <button
+                onClick={() => setPortionMode('cocido')}
+                style={{
+                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                  background: portionMode === 'cocido' ? colors.orange : 'transparent',
+                  color: portionMode === 'cocido' ? colors.black : colors.textMuted,
+                }}
+              >Cocido</button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            {[
+              { label: 'Proteína', raw: selectedSize.protein_qty, type: 'protein' as const },
+              { label: 'Carbos',   raw: selectedSize.carb_qty,    type: 'carbs' as const },
+              { label: 'Verduras', raw: selectedSize.veg_qty,     type: 'veg' as const },
+            ].map(({ label, raw, type }) => {
+              const grams = portionMode === 'crudo' ? raw : toCocido(raw, type)
+              return (
+                <div key={type} style={{
+                  flex: 1,
+                  background: colors.black,
+                  borderRadius: 8,
+                  padding: '8px 4px',
+                  textAlign: 'center',
+                  border: `1px solid ${colors.grayLight}`,
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 'bold', color: colors.white, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>{grams}g</div>
+                  <div style={{ fontSize: 10, color: colors.textTertiary, marginTop: 3 }}>
+                    {portionMode === 'crudo' ? `≈${toCocido(raw, type)}g coc.` : `${raw}g crudo`}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
         </div>
       )}
 
@@ -234,6 +316,7 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
       <AddToCartModal
         isOpen={showModal}
         onClose={handleCloseModal}
+        onGoToCart={handleGoToCart}
         onContinueShopping={handleContinueShopping}
         title="¡Agregado al carrito!"
         message={`${qty} x ${meal.name} (${selectedSize?.name})`}

@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation'
 import { getMealById, getMealsBasic } from '@/lib/db/meals'
-import { getMainSizes } from '@/lib/db/sizes'
+import { getGlobalSizes } from '@/lib/db/sizes'
 import MealClient from './MealClient'
 
 interface MealPageProps {
@@ -15,7 +15,7 @@ export default async function MealPage({ params }: MealPageProps) {
 
   const [meal, sizes, allMeals] = await Promise.all([
     getMealById(id),
-    getMainSizes(),
+    getGlobalSizes(),
     getMealsBasic()
   ])
 

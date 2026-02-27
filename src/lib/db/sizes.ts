@@ -6,7 +6,7 @@ import type { Size, SizeBasic } from '@/lib/types'
  */
 export async function getMainSizes(): Promise<Size[]> {
   const supabase = await createClient()
-  
+
   const { data, error } = await supabase
     .from('sizes')
     .select('*')
@@ -15,6 +15,27 @@ export async function getMainSizes(): Promise<Size[]> {
 
   if (error) {
     console.error('Error fetching sizes:', error)
+    throw new Error('No se pudieron cargar los tamaños')
+  }
+
+  return data as Size[]
+}
+
+/**
+ * Obtiene todos los sizes globales (customer_id IS NULL): LOW/FIT/PLUS + custom globales
+ */
+export async function getGlobalSizes(): Promise<Size[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('sizes')
+    .select('*')
+    .is('customer_id', null)
+    .order('is_main', { ascending: false }) // main primero
+    .order('price', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching global sizes:', error)
     throw new Error('No se pudieron cargar los tamaños')
   }
 
