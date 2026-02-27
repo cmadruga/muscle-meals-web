@@ -8,6 +8,7 @@ import { createOrder } from '@/lib/db/orders'
 import { createConektaOrder } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
+import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import { 
   isValidPostalCode,
@@ -19,11 +20,24 @@ import {
   type Address 
 } from '@/lib/address-validation'
 
-export default function CheckoutClient() {
+// Tipos de envío
+type ShippingType = 'standard' | 'priority' | 'pickup'
+
+const SHIPPING_COSTS = {
+  standard: 4900, // $49 MXN en centavos
+  priority: 0,    // A cotizar ($100-200 según zona/horario)
+  pickup: 0       // Gratis - recoger en local
+}
+
+export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpot[] }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  
+  // Tipo de envío
+  const [shippingType, setShippingType] = useState<ShippingType>('standard')
+  const [selectedPickupSpot, setSelectedPickupSpot] = useState<string>('')
   
   // Datos del cliente
   const [customerName, setCustomerName] = useState('')
@@ -52,6 +66,14 @@ export default function CheckoutClient() {
   const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
   const addressValidated = isAddressComplete && isPostalCodeValid
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
+  
+  // Calcular total con envío
+  const subtotal = getTotal()
+  const shippingCost = SHIPPING_COSTS[shippingType]
+  const total = subtotal + shippingCost
+  
+  // Validar pickup spot si es necesario
+  const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
 
   const handleCheckout = async () => {
     // Validar teléfono
@@ -111,12 +133,14 @@ export default function CheckoutClient() {
       }
 
       // 2. Crear orden en Supabase con status 'pending'
-      // TODO: Agregar delivery_address al schema de orders
       const order = await createOrder(
         {
           customer_id: customer.id,
-          total_amount: getTotal(),
-          status: 'pending'
+          total_amount: total,
+          status: 'pending',
+          shipping_type: shippingType,
+          pickup_spot_id: shippingType === 'pickup' ? selectedPickupSpot : null,
+          shipping_cost: shippingCost
         },
         items.map(item => ({
           meal_id: item.mealId,
@@ -128,17 +152,44 @@ export default function CheckoutClient() {
       )
 
       // 3. Crear orden en Conekta con email real del cliente
+      const conektaItems = [
+        ...items.map(item => ({
+          name: `${item.mealName} (${item.sizeName})`,
+          unit_price: item.unitPrice,
+          quantity: item.qty
+        }))
+      ]
+      
+      // Agregar envío solo si tiene costo
+      if (shippingCost > 0) {
+        conektaItems.push({
+          name: 'Envío Estándar',
+          unit_price: shippingCost,
+          quantity: 1
+        })
+      } else if (shippingType === 'priority') {
+        // Nota: Envío prioritario se cotiza después
+        conektaItems.push({
+          name: 'Envío Prioritario (A cotizar: $100-200)',
+          unit_price: 0,
+          quantity: 1
+        })
+      } else if (shippingType === 'pickup') {
+        const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
+        conektaItems.push({
+          name: `Recoger en: ${spot?.name || 'Pickup Spot'}`,
+          unit_price: 0,
+          quantity: 1
+        })
+      }
+      
       const result = await createConektaOrder({
         orderId: order.id,
         customerName,
         customerEmail,
         customerPhone: whatsappPhone,
         totalAmount: order.total_amount,
-        items: items.map(item => ({
-          name: `${item.mealName} (${item.sizeName})`,
-          unit_price: item.unitPrice,
-          quantity: item.qty
-        }))
+        items: conektaItems
       })
 
       if (result.success && result.checkoutUrl) {
@@ -189,7 +240,10 @@ export default function CheckoutClient() {
           <OrderSummary 
             packageGroups={packageGroups}
             individualItems={individualItems}
-            total={getTotal()}
+            subtotal={subtotal}
+            shippingCost={shippingCost}
+            shippingType={shippingType}
+            total={total}
           />
         </div>
 
@@ -220,9 +274,18 @@ export default function CheckoutClient() {
           error={error}
         />
 
+        <ShippingSelector
+          selectedType={shippingType}
+          onTypeChange={setShippingType}
+          selectedPickupSpot={selectedPickupSpot}
+          onPickupSpotChange={setSelectedPickupSpot}
+          pickupSpots={pickupSpots}
+          disabled={isProcessing}
+        />
+
         <PaymentButton 
           onClick={handleCheckout}
-          disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone)}
+          disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
           isProcessing={isProcessing}
           addressValidated={addressValidated}
         />
@@ -254,9 +317,12 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, total }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
+  subtotal: number
+  shippingCost: number
+  shippingType: 'standard' | 'priority' | 'pickup'
   total: number
 }) {
   return (
@@ -282,21 +348,71 @@ function OrderSummary({ packageGroups, individualItems, total }: {
         ))}
       </div>
 
-      {/* Total */}
+      {/* Desglose */}
       <div style={{
         marginTop: 16,
         padding: 20,
         background: colors.grayDark,
-        border: `2px solid ${colors.orange}`,
+        border: `2px solid ${colors.grayLight}`,
         borderRadius: 12,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
       }}>
-        <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
-        <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-          ${(total / 100).toFixed(0)} MXN
-        </span>
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          marginBottom: 12,
+          fontSize: 16,
+          color: colors.textSecondary
+        }}>
+          <span>Subtotal:</span>
+          <span>${(subtotal / 100).toFixed(0)} MXN</span>
+        </div>
+        
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          paddingBottom: 12,
+          borderBottom: `1px solid ${colors.grayLight}`,
+          fontSize: 16,
+          color: colors.textSecondary
+        }}>
+          <span>
+            Envío {
+              shippingType === 'standard' ? 'Estándar' : 
+              shippingType === 'priority' ? 'Prioritario' : 
+              'Pickup'
+            }:
+            {shippingType === 'pickup' && (
+              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>
+                (Sin costo)
+              </span>
+            )}
+          </span>
+          <span style={{ textAlign: 'right' }}>
+            {shippingCost > 0 
+              ? `$${(shippingCost / 100).toFixed(0)} MXN` 
+              : shippingType === 'priority' 
+                ? 'Pendiente' 
+                : 'Gratis'
+            }
+            {shippingType === 'priority' && (
+              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>
+                (Estimado: $100-200)
+              </span>
+            )}
+          </span>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginTop: 12
+        }}>
+          <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
+          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+            ${(total / 100).toFixed(0)} MXN
+          </span>
+        </div>
       </div>
     </>
   )
@@ -314,7 +430,7 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         alignItems: 'center'
       }}>
         <div>
-          <strong style={{ color: colors.orange }}>📦 {pkg.packageName}</strong>
+          <strong style={{ color: colors.orange }}>{pkg.packageName}</strong>
           <span style={{ marginLeft: 8, color: colors.textMuted }}>· {pkg.sizeName}</span>
         </div>
         <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
@@ -693,6 +809,397 @@ function CustomerForm({
             ✅ Dirección completa y validada - Listo para proceder al pago
           </div>
         )}
+      </div>
+    </div>
+  )
+}
+
+function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled }: {
+  selectedType: 'standard' | 'priority' | 'pickup'
+  onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
+  selectedPickupSpot: string
+  onPickupSpotChange: (spotId: string) => void
+  pickupSpots: PickupSpot[]
+  disabled: boolean
+}) {
+  return (
+    <div style={{ marginBottom: 32 }}>
+      <h2 style={{ 
+        fontSize: 20, 
+        marginBottom: 20,
+        color: colors.textSecondary,
+        fontWeight: 'normal'
+      }}>
+        Tipo de envío
+      </h2>
+
+
+
+      {/* Opciones de envío */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {/* Envío Estándar */}
+        <button
+          onClick={() => onTypeChange('standard')}
+          disabled={disabled}
+          style={{
+            padding: 20,
+            background: selectedType === 'standard' ? colors.grayLight : colors.grayDark,
+            border: selectedType === 'standard' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
+            borderRadius: 12,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            textAlign: 'left'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: `2px solid ${selectedType === 'standard' ? colors.orange : colors.grayLight}`,
+              background: selectedType === 'standard' ? colors.orange : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {selectedType === 'standard' && (
+                <div style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: colors.black
+                }} />
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: colors.white,
+                marginBottom: 4
+              }}>
+                Envío Estándar - $49 MXN
+              </div>
+              <div style={{ fontSize: 14, color: colors.textMuted }}>
+                Entrega en horario regular (Domingo 9AM - 4PM)
+              </div>
+
+              {/* Mensaje expandido cuando está seleccionado */}
+              {selectedType === 'standard' && (
+                <div style={{
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: `2px solid ${colors.orange}`,
+                }}>
+                  <div style={{
+                    background: colors.black,
+                    padding: 16,
+                    borderRadius: 8,
+                    border: `1px solid ${colors.grayLight}`
+                  }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontSize: 22 }}>📅</div>
+                      <div style={{
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                        color: colors.orange,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5
+                      }}>
+                        Horario Específico Dependiendo de Tu Zona
+                      </div>
+                    </div>
+                    
+                    <p style={{
+                      margin: '0 0 12px 0',
+                      fontSize: 14,
+                      color: colors.white,
+                      lineHeight: 1.6
+                    }}>
+                      Nos estaremos <strong style={{ color: colors.orange }}>comunicando el día Sábado</strong> para darte una hora estimada de entrega para el Domingo.
+                    </p>
+                    
+                    <div style={{
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: `1px solid ${colors.grayLight}`,
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      textAlign: 'center'
+                    }}>
+                      Entrega: <strong style={{ color: colors.orange }}>Domingo 9AM - 4PM</strong> · Horario específico según tu zona
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </button>
+
+        {/* Recoger en Pickup Spot */}
+        <button
+          onClick={() => onTypeChange('pickup')}
+          disabled={disabled}
+          style={{
+            padding: 20,
+            background: selectedType === 'pickup' ? colors.grayLight : colors.grayDark,
+            border: selectedType === 'pickup' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
+            borderRadius: 12,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            textAlign: 'left'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: `2px solid ${selectedType === 'pickup' ? colors.orange : colors.grayLight}`,
+              background: selectedType === 'pickup' ? colors.orange : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {selectedType === 'pickup' && (
+                <div style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: colors.black
+                }} />
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: colors.white,
+                marginBottom: 4
+              }}>
+                Recoger en Pickup Spot - Gratis
+              </div>
+              <div style={{ fontSize: 14, color: colors.textMuted }}>
+                Sin costo de envío, recoge tu pedido en el horario del local
+              </div>
+
+              {/* Selector de Pickup Spots expandido cuando está seleccionado */}
+              {selectedType === 'pickup' && (
+                <div style={{
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: `2px solid ${colors.orange}`,
+                }}>
+                  <h3 style={{
+                    fontSize: 14,
+                    color: colors.orange,
+                    marginTop: 0,
+                    marginBottom: 12,
+                    textTransform: 'uppercase',
+                    letterSpacing: 1,
+                    fontWeight: 'bold'
+                  }}>
+                    📍 Selecciona tu Pickup Spot
+                  </h3>
+                  
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {pickupSpots.map(spot => (
+                      <div
+                        key={spot.id}
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          onPickupSpotChange(spot.id)
+                        }}
+                        style={{
+                          padding: 14,
+                          background: selectedPickupSpot === spot.id ? colors.black : colors.grayDark,
+                          border: selectedPickupSpot === spot.id ? `2px solid ${colors.orange}` : `1px solid ${colors.grayLight}`,
+                          borderRadius: 8,
+                          cursor: disabled ? 'not-allowed' : 'pointer',
+                          transition: 'all 0.2s',
+                          textAlign: 'left',
+                          opacity: disabled ? 0.5 : 1
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'start', gap: 10 }}>
+                          <div style={{
+                            width: 18,
+                            height: 18,
+                            borderRadius: '50%',
+                            border: `2px solid ${selectedPickupSpot === spot.id ? colors.orange : colors.grayLight}`,
+                            background: selectedPickupSpot === spot.id ? colors.orange : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            marginTop: 2
+                          }}>
+                            {selectedPickupSpot === spot.id && (
+                              <div style={{
+                                width: 6,
+                                height: 6,
+                                borderRadius: '50%',
+                                background: colors.black
+                              }} />
+                            )}
+                          </div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{
+                              fontSize: 15,
+                              fontWeight: 'bold',
+                              color: colors.white,
+                              marginBottom: 4
+                            }}>
+                              {spot.name}
+                            </div>
+                            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 3 }}>
+                              📍 {spot.address}
+                            </div>
+                            <div style={{ fontSize: 12, color: colors.orange }}>
+                              🕐 {spot.schedule}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedPickupSpot === '' && (
+                    <div style={{
+                      marginTop: 12,
+                      padding: 10,
+                      background: '#ef444420',
+                      border: '1px solid #ef4444',
+                      borderRadius: 8,
+                      fontSize: 12,
+                      color: '#ef4444',
+                      textAlign: 'center'
+                    }}>
+                      ⚠️ Por favor selecciona un pickup spot para continuar
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </button>
+
+        {/* Envío Prioritario */}
+        <button
+          onClick={() => onTypeChange('priority')}
+          disabled={disabled}
+          style={{
+            padding: 20,
+            background: selectedType === 'priority' ? colors.grayLight : colors.grayDark,
+            border: selectedType === 'priority' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
+            borderRadius: 12,
+            cursor: disabled ? 'not-allowed' : 'pointer',
+            transition: 'all 0.2s',
+            textAlign: 'left'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{
+              width: 24,
+              height: 24,
+              borderRadius: '50%',
+              border: `2px solid ${selectedType === 'priority' ? colors.orange : colors.grayLight}`,
+              background: selectedType === 'priority' ? colors.orange : 'transparent',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              flexShrink: 0
+            }}>
+              {selectedType === 'priority' && (
+                <div style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: '50%',
+                  background: colors.black
+                }} />
+              )}
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                color: colors.white,
+                marginBottom: 4
+              }}>
+                Envío Prioritario - Pago por Separado
+              </div>
+              <div style={{ fontSize: 14, color: colors.textMuted }}>
+                Entrega en horario y zona específica
+              </div>
+              <div style={{ fontSize: 12, color: colors.orange, marginTop: 4 }}>
+                Rango estimado: $100-200 dependiendo zona y horario
+              </div>
+              
+              {/* Mensaje expandido cuando está seleccionado */}
+              {selectedType === 'priority' && (
+                <div style={{
+                  marginTop: 16,
+                  paddingTop: 16,
+                  borderTop: `2px solid ${colors.orange}`,
+                }}>
+                  <div style={{
+                    background: colors.black,
+                    padding: 16,
+                    borderRadius: 8,
+                    border: `1px solid ${colors.grayLight}`
+                  }}>
+                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                      <div style={{ fontSize: 22 }}>📞</div>
+                      <div style={{
+                        fontSize: 14,
+                        fontWeight: 'bold',
+                        color: colors.orange,
+                        textTransform: 'uppercase',
+                        letterSpacing: 0.5
+                      }}>
+                        Importante
+                      </div>
+                    </div>
+                    
+                    <p style={{
+                      margin: '0 0 12px 0',
+                      fontSize: 14,
+                      color: colors.white,
+                      lineHeight: 1.6
+                    }}>
+                      Después de completar tu orden, <strong style={{ color: colors.orange }}>nos contactaremos contigo</strong> para:
+                    </p>
+                    
+                    <ul style={{
+                      margin: '0 0 12px 0',
+                      paddingLeft: 20,
+                      color: colors.textSecondary,
+                      fontSize: 13,
+                      lineHeight: 1.7
+                    }}>
+                      <li>Acordar horario y zona de entrega específica</li>
+                      <li>Confirmar el costo de envío según tu ubicación</li>
+                      <li>Coordinar el <strong style={{ color: colors.white }}>pago por separado</strong> del envío</li>
+                    </ul>
+                    
+                    <div style={{
+                      marginTop: 12,
+                      paddingTop: 12,
+                      borderTop: `1px solid ${colors.grayLight}`,
+                      fontSize: 13,
+                      color: colors.textMuted,
+                      textAlign: 'center'
+                    }}>
+                      Costo estimado: <strong style={{ color: colors.orange }}>$100-200 MXN</strong> · Se paga por separado
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </button>
       </div>
     </div>
   )

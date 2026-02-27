@@ -17,7 +17,10 @@ export async function createOrder(
     .insert({
       customer_id: payload.customer_id || null,
       total_amount: payload.total_amount,
-      status: payload.status || 'pending'
+      status: payload.status || 'pending',
+      shipping_type: payload.shipping_type || 'standard',
+      pickup_spot_id: payload.pickup_spot_id || null,
+      shipping_cost: payload.shipping_cost || 0
     })
     .select()
     .single()

@@ -37,6 +37,9 @@ export interface CreateOrderPayload {
   customer_id?: string | null
   total_amount: number
   status?: OrderStatus
+  shipping_type?: 'standard' | 'priority' | 'pickup'
+  pickup_spot_id?: string | null
+  shipping_cost?: number
 }
 
 /**
@@ -49,6 +52,9 @@ export interface Order {
   customer_id: string | null
   total_amount: number
   status: OrderStatus
+  shipping_type: 'standard' | 'priority' | 'pickup'
+  pickup_spot_id: string | null
+  shipping_cost: number
   created_at: string
   updated_at: string
 }
