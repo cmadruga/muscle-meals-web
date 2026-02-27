@@ -8,6 +8,7 @@ import Modal from './Modal'
 interface AddToCartModalProps {
   isOpen: boolean
   onClose: () => void
+   onGoToCart: () => void
   onContinueShopping: () => void
   title: string
   message: string
@@ -23,6 +24,7 @@ interface AddToCartModalProps {
 export default function AddToCartModal({
   isOpen,
   onClose,
+  onGoToCart,
   onContinueShopping,
   title,
   message,
@@ -72,7 +74,7 @@ export default function AddToCartModal({
           marginBottom: suggestedMeals.length > 0 && selectedSize ? 32 : 0
         }}>
           <button
-            onClick={onClose}
+            onClick={onGoToCart}
             style={{
               width: '100%',
               padding: '16px 32px',
@@ -86,7 +88,7 @@ export default function AddToCartModal({
               textTransform: 'uppercase'
             }}
           >
-            OK
+            Ir al carrito
           </button>
 
           <button
