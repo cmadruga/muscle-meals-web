@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { getPackageById } from '@/lib/db/packages'
 import { getActiveMealsWithRecipes } from '@/lib/db/meals'
-import { getMainSizes } from '@/lib/db/sizes'
+import { getGlobalSizes } from '@/lib/db/sizes'
 import PackageClient from './PackageClient'
 
 interface PackagePageProps {
@@ -19,7 +19,7 @@ export default async function PackagePage({ params }: PackagePageProps) {
   const [pkg, meals, sizes] = await Promise.all([
     getPackageById(id),
     getActiveMealsWithRecipes(),
-    getMainSizes()
+    getGlobalSizes()
   ])
 
   if (!pkg) {

@@ -1,11 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
-import type { Meal, MealBasic, Recipe, Ingredient } from '@/lib/types'
+import type { Meal, MealBasic, MealWithRecipes, Recipe, Ingredient } from '@/lib/types'
 
-export interface MealWithRecipes extends Meal {
-  mainRecipe: Recipe
-  subRecipes: Recipe[]
-  ingredients: Ingredient[]
-}
+export type { MealWithRecipes }
 
 /**
  * Obtiene todos los meals activos
@@ -133,16 +129,23 @@ export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
 
   return meals.map(meal => {
     const mainRecipe = recipesMap.get(meal.main_recipe_id)
-    const subRecipeIds = mealSubRecipesMap.get(meal.id) || []
-    const mealSubRecipes = subRecipeIds
+    const mealSubRecipeIds = mealSubRecipesMap.get(meal.id) || []
+    const mealSubRecipes = mealSubRecipeIds
       .map(id => subRecipesMap.get(id))
       .filter(r => r !== undefined) as Recipe[]
+
+    // Filtrar solo los ingredientes que usa este meal específico
+    const usedIngredientIds = new Set([
+      ...(mainRecipe?.ingredients || []).map(i => i.ingredient_id),
+      ...mealSubRecipes.flatMap(r => r.ingredients.map(i => i.ingredient_id))
+    ])
+    const mealIngredients = (ingredients || []).filter(i => usedIngredientIds.has(i.id))
 
     return {
       ...meal,
       mainRecipe: mainRecipe!,
       subRecipes: mealSubRecipes,
-      ingredients: ingredients as Ingredient[]
+      ingredients: mealIngredients
     }
   }) as MealWithRecipes[]
 }

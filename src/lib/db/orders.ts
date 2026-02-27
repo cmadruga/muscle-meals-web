@@ -17,7 +17,10 @@ export async function createOrder(
     .insert({
       customer_id: payload.customer_id || null,
       total_amount: payload.total_amount,
-      status: payload.status || 'pending'
+      status: payload.status || 'pending',
+      shipping_type: payload.shipping_type || 'standard',
+      pickup_spot_id: payload.pickup_spot_id || null,
+      shipping_cost: payload.shipping_cost || 0
     })
     .select()
     .single()
@@ -69,7 +72,11 @@ export async function getOrderWithItems(id: string): Promise<OrderWithItems | nu
 
   const { data: items, error: itemsError } = await supabase
     .from('order_items')
-    .select('*')
+    .select(`
+      *,
+      meals:meal_id (name),
+      sizes:size_id (name)
+    `)
     .eq('order_id', id)
 
   if (itemsError) {
@@ -79,7 +86,11 @@ export async function getOrderWithItems(id: string): Promise<OrderWithItems | nu
 
   return {
     ...order,
-    items
+    items: items.map(item => ({
+      ...item,
+      meal_name: item.meals?.name || 'Platillo',
+      size_name: item.sizes?.name || ''
+    }))
   } as OrderWithItems
 }
 
@@ -121,6 +132,43 @@ export async function updateOrderStatus(
     console.error('Error updating order status:', error)
     throw new Error('Error al actualizar el estado de la orden')
   }
+}
+
+/**
+ * Actualiza el conekta_order_id de una orden
+ */
+export async function updateConektaOrderId(orderId: string, conektaOrderId: string): Promise<void> {
+  const { error } = await supabase
+    .from('orders')
+    .update({ 
+      conekta_order_id: conektaOrderId,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', orderId)
+
+  if (error) {
+    console.error('Error updating conekta_order_id:', error)
+    throw new Error('Error al actualizar el ID de Conekta')
+  }
+}
+
+/**
+ * Busca una orden por conekta_order_id
+ */
+export async function getOrderByConektaId(conektaOrderId: string): Promise<Order | null> {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('conekta_order_id', conektaOrderId)
+    .single()
+
+  if (error) {
+    if (error.code === 'PGRST116') return null
+    console.error('Error fetching order by Conekta ID:', error)
+    throw new Error('Error al buscar la orden')
+  }
+
+  return data as Order
 }
 
 /**

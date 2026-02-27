@@ -41,8 +41,8 @@ export async function createConektaOrder(
         currency: 'MXN',
         customer_info: {
           name: data.customerName,
-          email: data.customerEmail,
-          phone: data.customerPhone
+          phone: data.customerPhone,
+          email: data.customerEmail
         },
         line_items: data.items.map(item => ({
           name: item.name,
@@ -103,8 +103,8 @@ export async function createConektaCardOrder(
         currency: 'MXN',
         customer_info: {
           name: data.customerName,
-          email: data.customerEmail,
-          phone: data.customerPhone
+          phone: data.customerPhone,
+          email: data.customerEmail
         },
         line_items: data.items.map(item => ({
           name: item.name,

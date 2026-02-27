@@ -50,18 +50,20 @@ export default async function MenuPage() {
         maxWidth: 1200,
         margin: '0 auto'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 16, 
-          marginBottom: 12 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          marginBottom: 12,
+          borderLeft: `5px solid ${colors.orange}`,
+          paddingLeft: 20
         }}>
-          <span style={{ fontSize: 32 }}>📦</span>
-          <h2 style={{ 
-            fontSize: 32, 
+          <h2 style={{
+            fontSize: 38,
             textTransform: 'uppercase',
-            letterSpacing: 2,
-            margin: 0
+            letterSpacing: 3,
+            margin: 0,
+            lineHeight: 1
           }}>
             <span style={{ color: colors.orange }}>Nuestros</span> Paquetes
           </h2>
@@ -124,16 +126,28 @@ export default async function MenuPage() {
                   {pkg.description && ` · ${pkg.description}`}
                 </p>
                 <div style={{
+                  padding: '8px 12px',
+                  background: colors.black,
+                  borderRadius: 6,
+                  fontSize: 12,
+                  color: colors.textTertiary,
+                  marginBottom: 12,
+                  textAlign: 'center'
+                }}>
+                  Macros calculados según tamaño
+                </div>
+
+                <div style={{
                   display: 'flex',
                   justifyContent: 'space-between',
                   alignItems: 'center'
                 }}>
-                  <span style={{ 
-                    fontSize: 22, 
+                  <span style={{
+                    fontSize: 22,
                     fontWeight: 'bold',
-                    color: colors.white 
+                    color: colors.white
                   }}>
-                    Desde ${(lowestPackagePrice / 100).toFixed(0)} MXN
+                    Desde ${(lowestPackagePrice * pkg.meals_included / 100).toFixed(0)} MXN
                   </span>
                   <span style={{
                     padding: '8px 16px',
@@ -179,18 +193,20 @@ export default async function MenuPage() {
         maxWidth: 1200,
         margin: '0 auto'
       }}>
-        <div style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 16, 
-          marginBottom: 12 
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 0,
+          marginBottom: 12,
+          borderLeft: `5px solid ${colors.orange}`,
+          paddingLeft: 20
         }}>
-          <span style={{ fontSize: 32 }}>🍛</span>
-          <h2 style={{ 
-            fontSize: 32, 
+          <h2 style={{
+            fontSize: 38,
             textTransform: 'uppercase',
-            letterSpacing: 2,
-            margin: 0
+            letterSpacing: 3,
+            margin: 0,
+            lineHeight: 1
           }}>
             <span style={{ color: colors.orange }}>Comidas</span> Individuales
           </h2>
@@ -280,7 +296,7 @@ export default async function MenuPage() {
                     fontWeight: 'bold',
                     color: colors.white 
                   }}>
-                    ${(lowestPrice / 100).toFixed(0)} MXN
+                    Desde ${(lowestPrice / 100).toFixed(0)} MXN
                   </span>
                   <span style={{
                     padding: '6px 12px',

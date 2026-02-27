@@ -2,27 +2,41 @@
 
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
-import type { Size } from '@/lib/types'
-import type { MealWithRecipes } from '@/lib/db/meals'
+import { useRouter } from 'next/navigation'
+import type { Size, MealBasic, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
+import { toCocido } from '@/lib/utils/conversions'
 import { colors } from '@/lib/theme'
+import AddToCartModal from '@/components/AddToCartModal'
+import CustomSizePanel from '@/components/CustomSizePanel'
 
 interface MealClientProps {
   meal: MealWithRecipes
   sizes: Size[]
+  suggestedMeals?: MealBasic[] // Otros platillos para mostrar en modal
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes }: MealClientProps) {
+export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealClientProps) {
+  const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [qty, setQty] = useState(1)
-  const [showSuccess, setShowSuccess] = useState(false)
+  const [showModal, setShowModal] = useState(false)
+  const [showRecipe, setShowRecipe] = useState(false)
+  const [customSizes, setCustomSizes] = useState<Size[]>([])
+  const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
-  const selectedSize = sizes.find(s => s.id === selectedSizeId)
+  const allSizes = [...sizes, ...customSizes]
+  const selectedSize = allSizes.find(s => s.id === selectedSizeId)
+
+  const handleCustomSizeCreated = (size: Size) => {
+    setCustomSizes(prev => [...prev, size])
+    setSelectedSizeId(size.id)
+  }
 
   // Calcular macros según size seleccionado
   const macros = useMemo(() => {
@@ -46,9 +60,30 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
       unitPrice: selectedSize.price
     })
 
-    // Mostrar mensaje de éxito
-    setShowSuccess(true)
-    setTimeout(() => setShowSuccess(false), 2000)
+    // Mostrar modal de confirmación
+    setShowModal(true)
+  }
+
+  const handleCloseModal = () => {
+    setShowModal(false)
+    setQty(1) // Reset cantidad
+  }
+
+  const handleGoToCart = () => {
+    setShowModal(false)
+    setQty(1)
+    router.push('/cart')
+  }
+
+  const handleContinueShopping = () => {
+    setShowModal(false)
+    setQty(1)
+    router.push('/menu')
+  }
+
+  const handleMealClick = (mealId: string) => {
+    setShowModal(false)
+    router.push(`/meal/${mealId}`)
   }
 
   return (
@@ -115,95 +150,180 @@ export default function MealClient({ meal, sizes }: MealClientProps) {
         >
           {sizes.map(size => (
             <option key={size.id} value={size.id}>
-              {size.name} - ${(size.price / 100).toFixed(0)} MXN
+              {size.name} — ${(size.price / 100).toFixed(0)} MXN
             </option>
           ))}
+          {customSizes.map(size => (
+            <option key={size.id} value={size.id}>
+              ★ {size.name} — ${(size.price / 100).toFixed(0)} MXN
+            </option>
+          ))}
+          <option value="__custom__">＋ Crear tamaño personalizado…</option>
         </select>
+
+        {selectedSizeId === '__custom__' && (
+          <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
+        )}
       </div>
 
-      {/* Macros */}
-      {macros && (
-        <div style={{ 
-          padding: 20, 
-          background: colors.grayDark, 
+      {/* Macros + Porciones */}
+      {macros && selectedSize && (
+        <div style={{
+          padding: 20,
+          background: colors.grayDark,
           borderRadius: 12,
           border: `2px solid ${colors.grayLight}`,
           marginBottom: 24
         }}>
-          <h3 style={{ marginTop: 0, color: colors.orange }}>Información Nutricional ({selectedSize?.name})</h3>
-          <p style={{ fontSize: 16, margin: 0, color: colors.white }}>
+          <h3 style={{ marginTop: 0, color: colors.orange }}>
+            Información Nutricional ({selectedSize.name})
+          </h3>
+          <p style={{ fontSize: 16, margin: '0 0 16px 0', color: colors.white }}>
             {formatMacros(macros)}
           </p>
-        </div>
-      )}
 
-      {/* Receta */}
-      <div style={{ marginBottom: 32 }}>
-        <h3 style={{ color: colors.orange }}>Receta</h3>
-        <div style={{ 
-          padding: 20, 
-          background: colors.grayDark, 
-          borderRadius: 12,
-          border: `2px solid ${colors.grayLight}`
-        }}>
-          <h4 style={{ marginTop: 0, marginBottom: 12, color: colors.white }}>{meal.mainRecipe.name}</h4>
-          <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
-            {meal.mainRecipe.ingredients.map((ing, idx) => {
-              const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
-              if (!ingredient) return null
-              
-              // Mostrar cantidad ajustada por size si aplica
-              let displayQty = ing.qty
-              if (selectedSize) {
-                if (ingredient.type === 'pro') displayQty = selectedSize.protein_qty
-                else if (ingredient.type === 'carb') displayQty = selectedSize.carb_qty
-                else if (ingredient.type === 'veg') displayQty = selectedSize.veg_qty
-              }
-              
+          {/* Separador */}
+          <div style={{ borderTop: `1px solid ${colors.grayLight}`, marginBottom: 12 }} />
+
+          {/* Porciones con toggle */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+            <span style={{ fontSize: 13, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Porciones
+            </span>
+            {/* Toggle pill */}
+            <div style={{ display: 'flex', background: colors.black, borderRadius: 20, padding: 3, gap: 2, border: `1px solid ${colors.grayLight}` }}>
+              <button
+                onClick={() => setPortionMode('crudo')}
+                style={{
+                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                  background: portionMode === 'crudo' ? colors.orange : 'transparent',
+                  color: portionMode === 'crudo' ? colors.black : colors.textMuted,
+                }}
+              >Crudo</button>
+              <button
+                onClick={() => setPortionMode('cocido')}
+                style={{
+                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
+                  background: portionMode === 'cocido' ? colors.orange : 'transparent',
+                  color: portionMode === 'cocido' ? colors.black : colors.textMuted,
+                }}
+              >Cocido</button>
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', gap: 10 }}>
+            {[
+              { label: 'Proteína', raw: selectedSize.protein_qty, type: 'protein' as const },
+              { label: 'Carbos',   raw: selectedSize.carb_qty,    type: 'carbs' as const },
+              { label: 'Verduras', raw: selectedSize.veg_qty,     type: 'veg' as const },
+            ].map(({ label, raw, type }) => {
+              const grams = portionMode === 'crudo' ? raw : toCocido(raw, type)
               return (
-                <li key={idx} style={{ marginBottom: 4 }}>
-                  {ingredient.name} - {displayQty}{ing.unit}
-                </li>
+                <div key={type} style={{
+                  flex: 1,
+                  background: colors.black,
+                  borderRadius: 8,
+                  padding: '8px 4px',
+                  textAlign: 'center',
+                  border: `1px solid ${colors.grayLight}`,
+                }}>
+                  <div style={{ fontSize: 14, fontWeight: 'bold', color: colors.white, marginBottom: 4 }}>{label}</div>
+                  <div style={{ fontSize: 16, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>{grams}g</div>
+                  <div style={{ fontSize: 10, color: colors.textTertiary, marginTop: 3 }}>
+                    {portionMode === 'crudo' ? `≈${toCocido(raw, type)}g coc.` : `${raw}g crudo`}
+                  </div>
+                </div>
               )
             })}
-          </ul>
-          
-          {meal.subRecipes.length > 0 && (
-            <div style={{ marginTop: 16 }}>
-              {meal.subRecipes.map((subRecipe, subIdx) => (
-                <div key={subIdx}>
-                  <h4 style={{ marginBottom: 8, color: colors.white }}>{subRecipe.name}</h4>
-                  <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
-                    {subRecipe.ingredients.map((ing, idx) => {
-                      const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
-                      if (!ingredient) return null
-                      
-                      return (
-                        <li key={idx} style={{ marginBottom: 4 }}>
-                          {ingredient.name} - {ing.qty}{ing.unit}
-                        </li>
-                      )
-                    })}
-                  </ul>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {showSuccess && (
-        <div style={{ 
-          color: colors.black, 
-          background: colors.orange,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16,
-          fontWeight: 'bold'
-        }}>
-          ✓ Agregado al carrito
+          </div>
         </div>
       )}
+
+      {/* Botón Ver Receta */}
+      <button
+        onClick={() => setShowRecipe(!showRecipe)}
+        style={{
+          width: '100%',
+          padding: '14px 20px',
+          marginBottom: 16,
+          fontSize: 16,
+          fontWeight: 'bold',
+          cursor: 'pointer',
+          background: 'transparent',
+          color: colors.orange,
+          border: `2px solid ${colors.orange}`,
+          borderRadius: 8,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: 8,
+          transition: 'all 0.2s'
+        }}
+      >
+        <span>{showRecipe ? '▲' : '▼'}</span>
+        <span>{showRecipe ? 'Ocultar ingredientes' : 'Ver ingredientes'}</span>
+      </button>
+
+      {/* Receta (colapsable) */}
+      {showRecipe && (
+        <div style={{ marginBottom: 32 }}>
+          <div style={{ 
+            padding: 20, 
+            background: colors.grayDark, 
+            borderRadius: 12,
+            border: `2px solid ${colors.grayLight}`
+          }}>
+            <h4 style={{ marginTop: 0, marginBottom: 12, color: colors.white }}>{meal.mainRecipe.name}</h4>
+            <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
+              {meal.mainRecipe.ingredients.map((ing, idx) => {
+                const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                if (!ingredient) return null
+                
+                return (
+                  <li key={idx} style={{ marginBottom: 4 }}>
+                    {ingredient.name}
+                  </li>
+                )
+              })}
+            </ul>
+            
+            {meal.subRecipes.length > 0 && (
+              <div style={{ marginTop: 16 }}>
+                {meal.subRecipes.map((subRecipe, subIdx) => (
+                  <div key={subIdx}>
+                    <h4 style={{ marginBottom: 8, color: colors.white }}>{subRecipe.name}</h4>
+                    <ul style={{ margin: 0, paddingLeft: 20, color: colors.textSecondary }}>
+                      {subRecipe.ingredients.map((ing, idx) => {
+                        const ingredient = meal.ingredients.find(i => i.id === ing.ingredient_id)
+                        if (!ingredient) return null
+                        
+                        return (
+                          <li key={idx} style={{ marginBottom: 4 }}>
+                            {ingredient.name}
+                          </li>
+                        )
+                      })}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal de confirmación */}
+      <AddToCartModal
+        isOpen={showModal}
+        onClose={handleCloseModal}
+        onGoToCart={handleGoToCart}
+        onContinueShopping={handleContinueShopping}
+        title="¡Agregado al carrito!"
+        message={`${qty} x ${meal.name} (${selectedSize?.name})`}
+        suggestedMeals={suggestedMeals}
+        selectedSize={selectedSize}
+        onMealClick={handleMealClick}
+      />
 
       {/* Quantity */}
       <div style={{ marginBottom: 24 }}>
