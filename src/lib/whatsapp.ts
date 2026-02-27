@@ -140,6 +140,71 @@ export async function sendPaymentPending(
 }
 
 /**
+ * Alerta interna al número del negocio cuando se confirma/crea un pedido.
+ * No necesita template aprobado por Meta (es hacia nuestro propio número).
+ *
+ * Requiere env var: WHATSAPP_OWNER_PHONE
+ * Formato: 5218112345678 (sin +, con código de país)
+ */
+export async function sendInternalOrderAlert(data: {
+  orderNumber: string
+  status: 'paid' | 'pending_payment'
+  customerName: string
+  customerPhone: string
+  customerAddress: string | null
+  items: Array<{ mealName: string; sizeName: string; qty: number; unitPrice: number }> // unitPrice en pesos
+  shippingType: 'standard' | 'priority' | 'pickup'
+  shippingCost: number   // en pesos
+  totalAmount: number    // en pesos
+}): Promise<boolean> {
+  const ownerPhone = process.env.WHATSAPP_OWNER_PHONE
+  if (!ownerPhone) {
+    console.warn('⚠️ WHATSAPP_OWNER_PHONE no configurado — saltando alerta interna')
+    return false
+  }
+
+  const header = data.status === 'paid'
+    ? '🔔 *NUEVO PEDIDO PAGADO*'
+    : '⏳ *PEDIDO PENDIENTE DE PAGO (OXXO/Efectivo)*'
+
+  const shippingLabels: Record<string, string> = {
+    standard: 'Estándar',
+    priority: 'Prioritario',
+    pickup: 'Pickup (recoger en local)',
+  }
+
+  const itemLines = data.items.map(item =>
+    `  • ${item.mealName} (${item.sizeName}) ×${item.qty} — $${(item.unitPrice * item.qty).toFixed(0)}`
+  ).join('\n')
+
+  const shippingLine = data.shippingCost > 0
+    ? `${shippingLabels[data.shippingType]} — $${data.shippingCost.toFixed(0)} MXN`
+    : `${shippingLabels[data.shippingType]} — Gratis`
+
+  const lines = [
+    header,
+    '',
+    `📋 *${data.orderNumber}*`,
+    '',
+    '👤 *CLIENTE*',
+    `  ${data.customerName}`,
+    `  📱 ${data.customerPhone}`,
+    data.customerAddress ? `  📍 ${data.customerAddress}` : null,
+    '',
+    '🍽️ *PEDIDO*',
+    itemLines,
+    '',
+    '🚚 *ENVÍO*',
+    `  ${shippingLine}`,
+    '',
+    `💰 *TOTAL: $${data.totalAmount.toFixed(0)} MXN*`,
+  ]
+
+  const message = lines.filter(l => l !== null).join('\n')
+  return sendWhatsAppText(ownerPhone, message)
+}
+
+/**
  * Orden expirada sin pago
  */
 export async function sendOrderExpired(
