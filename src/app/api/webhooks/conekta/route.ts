@@ -130,14 +130,16 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
     console.log(`   Teléfono: ${customer.phone}`)
     console.log(`   Total: $${totalAmount}`)
 
-    // Enviar confirmación por WhatsApp usando datos de NUESTRA DB (no de Conekta)
-    await sendPaymentConfirmation(
-      customer.phone,
-      customer.full_name,
-      order.order_number,
-      totalAmount
-    )
-    console.log(`📱 WhatsApp enviado a ${customer.phone}`)
+    // Enviar confirmación por WhatsApp (solo si el cliente tiene teléfono)
+    if (customer.phone) {
+      await sendPaymentConfirmation(
+        customer.phone,
+        customer.full_name,
+        order.order_number,
+        totalAmount
+      )
+      console.log(`📱 WhatsApp enviado a ${customer.phone}`)
+    }
 
     // Notificar al equipo interno
     const orderWithItems = await getOrderWithItems(ourOrderId)
@@ -146,8 +148,8 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
         orderNumber: order.order_number,
         status: 'paid',
         customerName: customer.full_name,
-        customerPhone: customer.phone,
-        customerAddress: customer.address,
+        customerPhone: customer.phone ?? '',
+        customerAddress: customer.address ?? '',
         items: orderWithItems.items.map(item => ({
           mealName: item.meal_name || 'Platillo',
           sizeName: item.size_name || '',
@@ -204,17 +206,19 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
     const customer = await getCustomerById(order.customer_id)
     
     if (!customer) return
-    
+
     const totalAmount = conektaOrder.amount / 100
 
-    // Enviar instrucciones de pago por WhatsApp usando datos de nuestra DB
-    await sendPaymentPending(
-      customer.phone,
-      customer.full_name,
-      order.order_number,
-      totalAmount
-    )
-    console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
+    // Enviar instrucciones de pago por WhatsApp (solo si el cliente tiene teléfono)
+    if (customer.phone) {
+      await sendPaymentPending(
+        customer.phone,
+        customer.full_name,
+        order.order_number,
+        totalAmount
+      )
+      console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
+    }
 
     // Notificar al equipo interno (pedido pendiente de pago)
     const orderWithItems = await getOrderWithItems(ourOrderId)
@@ -223,8 +227,8 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
         orderNumber: order.order_number,
         status: 'pending_payment',
         customerName: customer.full_name,
-        customerPhone: customer.phone,
-        customerAddress: customer.address,
+        customerPhone: customer.phone ?? '',
+        customerAddress: customer.address ?? '',
         items: orderWithItems.items.map(item => ({
           mealName: item.meal_name || 'Platillo',
           sizeName: item.size_name || '',
@@ -263,13 +267,15 @@ async function handleOrderExpired(conektaOrder: ConektaOrder) {
     
     if (!customer) return
 
-    // Notificar orden expirada por WhatsApp usando datos de nuestra DB
-    await sendOrderExpired(
-      customer.phone,
-      customer.full_name,
-      order.order_number
-    )
-    console.log(`📱 Notificación de expiración enviada a ${customer.phone}`)
+    // Notificar orden expirada por WhatsApp (solo si el cliente tiene teléfono)
+    if (customer.phone) {
+      await sendOrderExpired(
+        customer.phone,
+        customer.full_name,
+        order.order_number
+      )
+      console.log(`📱 Notificación de expiración enviada a ${customer.phone}`)
+    }
 
   } catch (error) {
     console.error('Error en handleOrderExpired:', error)
