@@ -51,28 +51,52 @@ export default function Home() {
             Comida preparada con los macros exactos para alcanzar tus metas fitness
           </p>
           
-          <Link
-            href="/menu"
-            style={{
-              display: 'inline-block',
-              padding: '18px 60px',
-              fontSize: 20,
-              fontWeight: 'bold',
-              background: colors.orange,
-              color: colors.black,
-              borderRadius: 8,
-              textDecoration: 'none',
-              textTransform: 'uppercase',
-              letterSpacing: 1
-            }}
-          >
-            Ordenar Ahora
-          </Link>
+          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
+            <a
+              href="#info"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '18px 40px',
+                fontSize: 18,
+                fontWeight: 'bold',
+                background: 'transparent',
+                color: colors.white,
+                borderRadius: 8,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: 1,
+                border: `2px solid ${colors.white}`,
+                opacity: 0.85,
+              }}
+            >
+              ¿Cómo funciona? ↓
+            </a>
+            
+            <Link
+              href="/menu"
+              style={{
+                display: 'inline-block',
+                padding: '18px 60px',
+                fontSize: 20,
+                fontWeight: 'bold',
+                background: colors.orange,
+                color: colors.black,
+                borderRadius: 8,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: 1
+              }}
+            >
+              Ordenar Ahora
+            </Link>
+          </div>
         </div>
       </section>
 
       {/* Cómo Funciona */}
-      <section style={{
+      <section id="info" style={{
         padding: '60px 24px',
         background: colors.grayDark
       }}>
