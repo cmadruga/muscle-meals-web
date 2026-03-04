@@ -1,6 +1,6 @@
 import type { Metadata } from 'next'
 import './globals.css'
-import Navbar from '@/components/Navbar'
+import SiteShell from '@/components/SiteShell'
 
 export const metadata: Metadata = {
   title: 'Muscle Meals',
@@ -15,10 +15,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <body>
-        <Navbar />
-        <div style={{ paddingTop: 60 }}>
-          {children}
-        </div>
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   )

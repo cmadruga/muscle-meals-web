@@ -10,6 +10,7 @@ import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
+import LoginBanner from '@/components/LoginBanner'
 import { 
   isValidPostalCode,
   getZoneByPostalCode,
@@ -211,11 +212,12 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
   }
 
   return (
+    <>
     <main style={{
       minHeight: '100vh',
       background: colors.black,
       color: colors.white,
-      padding: '40px 24px'
+      padding: '40px 24px 100px'
     }}>
       <div style={{ maxWidth: 700, margin: '0 auto' }}>
         {/* Order Summary */}
@@ -283,7 +285,7 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
           disabled={isProcessing}
         />
 
-        <PaymentButton 
+        <PaymentButton
           onClick={handleCheckout}
           disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
           isProcessing={isProcessing}
@@ -291,6 +293,8 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
         />
       </div>
     </main>
+    <LoginBanner />
+    </>
   )
 }
 
