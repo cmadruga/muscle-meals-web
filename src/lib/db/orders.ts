@@ -1,5 +1,14 @@
 import { supabase } from '@/lib/supabase/client'
-import type { Order, OrderWithItems, CreateOrderPayload, CreateOrderItemData } from '@/lib/types'
+import type { SupabaseClient } from '@supabase/supabase-js'
+import type { Order, OrderItem, OrderWithItems, OrderWithCustomer, CreateOrderPayload, CreateOrderItemData } from '@/lib/types'
+
+// Tipos para los resultados de Supabase con joins (campos extra de relaciones)
+type RawItemJoin = OrderItem & { meals: { name: string } | null; sizes: { name: string } | null }
+type RawOrderWithItems = Order & { order_items: RawItemJoin[] }
+type RawOrderWithCustomer = Order & {
+  customers: { full_name: string; phone: string | null } | null
+  order_items: RawItemJoin[]
+}
 
 /**
  * Crea una nueva orden con sus items
@@ -169,6 +178,88 @@ export async function getOrderByConektaId(conektaOrderId: string): Promise<Order
   }
 
   return data as Order
+}
+
+/**
+ * Obtiene las últimas 20 órdenes de un cliente (server-side).
+ * Pasar el cliente de Supabase como parámetro para compatibilidad con SSR.
+ */
+export async function getOrdersByCustomerId(
+  client: SupabaseClient,
+  customerId: string
+): Promise<OrderWithItems[]> {
+  const { data, error } = await client
+    .from('orders')
+    .select(`
+      *,
+      order_items (
+        *,
+        meals:meal_id (name),
+        sizes:size_id (name)
+      )
+    `)
+    .eq('customer_id', customerId)
+    .order('created_at', { ascending: false })
+    .limit(20)
+
+  if (error) {
+    console.error('Error fetching customer orders:', error)
+    return []
+  }
+
+  return ((data ?? []) as RawOrderWithItems[]).map(({ order_items, ...order }) => ({
+    ...order,
+    items: order_items.map(({ meals, sizes, ...item }) => ({
+      ...item,
+      meal_name: meals?.name || 'Platillo',
+      size_name: sizes?.name || '',
+    })),
+  })) as OrderWithItems[]
+}
+
+/**
+ * Obtiene todas las órdenes de una semana (server-side, para panel admin).
+ * Pasar el cliente de Supabase como parámetro para compatibilidad con SSR.
+ */
+export async function getOrdersForWeek(
+  client: SupabaseClient,
+  weekStart: Date
+): Promise<OrderWithCustomer[]> {
+  const weekEnd = new Date(weekStart)
+  weekEnd.setDate(weekEnd.getDate() + 7)
+
+  const { data, error } = await client
+    .from('orders')
+    .select(`
+      *,
+      customers:customer_id (full_name, phone),
+      order_items (
+        *,
+        meals:meal_id (name),
+        sizes:size_id (name)
+      )
+    `)
+    .gte('created_at', weekStart.toISOString())
+    .lt('created_at', weekEnd.toISOString())
+    .order('created_at', { ascending: false })
+
+  if (error) {
+    console.error('Error fetching orders for week:', error)
+    return []
+  }
+
+  return ((data ?? []) as RawOrderWithCustomer[]).map(
+    ({ customers, order_items, ...order }) => ({
+      ...order,
+      customer_name: customers?.full_name ?? null,
+      customer_phone: customers?.phone ?? null,
+      items: order_items.map(({ meals, sizes, ...item }) => ({
+        ...item,
+        meal_name: meals?.name || 'Platillo',
+        size_name: sizes?.name || '',
+      })),
+    })
+  ) as unknown as OrderWithCustomer[]
 }
 
 /**

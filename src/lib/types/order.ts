@@ -65,3 +65,12 @@ export interface Order {
 export interface OrderWithItems extends Order {
   items: OrderItem[]
 }
+
+/**
+ * Orden con datos del cliente (para panel admin)
+ */
+export interface OrderWithCustomer extends Order {
+  items: OrderItem[]
+  customer_name: string | null
+  customer_phone: string | null
+}
