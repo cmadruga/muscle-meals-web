@@ -10,11 +10,13 @@ import { toCocido } from '@/lib/utils/conversions'
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
+import SizeSelect from '@/components/SizeSelect'
 
 interface PackageClientProps {
   pkg: Package
   meals: MealWithRecipes[]
   sizes: Size[]
+  customerSizes?: Size[]
 }
 
 interface SelectionItem {
@@ -29,14 +31,14 @@ interface SelectionItem {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ pkg, meals, sizes }: PackageClientProps) {
+export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }: PackageClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
   const [showModal, setShowModal] = useState(false)
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set())
-  const [customSizes, setCustomSizes] = useState<Size[]>([])
+  const [sessionSizes, setSessionSizes] = useState<Size[]>([])
   const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
   // Convertir meals a formato MealBasic para sugerencias
@@ -47,11 +49,11 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
     img: m.img
   }))
 
-  const allSizes = [...sizes, ...customSizes]
+  const allSizes = [...sizes, ...customerSizes, ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
   const handleCustomSizeCreated = (size: Size) => {
-    setCustomSizes(prev => [...prev, size])
+    setSessionSizes(prev => [...prev, size])
     setSelectedSizeId(size.id)
   }
   
@@ -159,9 +161,9 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
     router.push('/menu')
   }
 
-  const handleMealClick = (mealId: string) => {
+  const handleMealClick = (mealId: string, sizeId?: string) => {
     setShowModal(false)
-    router.push(`/meal/${mealId}`)
+    router.push(`/meal/${mealId}${sizeId ? `?sizeId=${sizeId}` : ''}`)
   }
 
   return (
@@ -207,35 +209,26 @@ export default function PackageClient({ pkg, meals, sizes }: PackageClientProps)
         <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           1. Selecciona tamaño
         </label>
-        <select
-          value={selectedSizeId}
-          onChange={(e) => setSelectedSizeId(e.target.value)}
-          style={{
-            width: '100%',
-            maxWidth: 400,
-            padding: 14,
-            fontSize: 16,
-            borderRadius: 8,
-            border: `2px solid ${colors.grayLight}`,
-            background: colors.grayLight,
-            color: colors.white
-          }}
-        >
-          {sizes.map(size => (
-            <option key={size.id} value={size.id}>
-              {size.name} — ${(size.package_price * pkg.meals_included / 100).toFixed(0)} MXN ({pkg.meals_included} comidas)
-            </option>
-          ))}
-          {customSizes.map(size => (
-            <option key={size.id} value={size.id}>
-              ★ {size.name} — ${(size.package_price * pkg.meals_included / 100).toFixed(0)} MXN ({pkg.meals_included} comidas)
-            </option>
-          ))}
-          <option value="__custom__">＋ Crear tamaño personalizado…</option>
-        </select>
+        <div style={{ maxWidth: 400 }}>
+          <SizeSelect
+            mainSizes={sizes.filter(s => s.is_main)}
+            customerSizes={customerSizes}
+            sessionSizes={sessionSizes}
+            selectedId={selectedSizeId}
+            onChange={setSelectedSizeId}
+            formatOption={size => `${size.name} — $${(size.package_price * pkg.meals_included / 100).toFixed(0)} MXN (${pkg.meals_included} comidas)`}
+          />
+        </div>
 
         {selectedSizeId === '__custom__' && (
           <CustomSizePanel onSizeCreated={handleCustomSizeCreated} mealsIncluded={pkg.meals_included} />
+        )}
+
+        {/* Descripción del size seleccionado */}
+        {selectedSize?.description && (
+          <p style={{ fontSize: 13, margin: '12px 0 0 0', color: colors.textMuted, fontStyle: 'italic' }}>
+            {selectedSize.description}
+          </p>
         )}
 
         {/* Toggle crudo/cocido + porciones del size */}

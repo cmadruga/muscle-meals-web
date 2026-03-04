@@ -10,31 +10,38 @@ import { toCocido } from '@/lib/utils/conversions'
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
+import SizeSelect from '@/components/SizeSelect'
 
 interface MealClientProps {
   meal: MealWithRecipes
   sizes: Size[]
-  suggestedMeals?: MealBasic[] // Otros platillos para mostrar en modal
+  customerSizes?: Size[]
+  suggestedMeals?: MealBasic[]
+  initialSizeId?: string
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealClientProps) {
+export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId }: MealClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
-  const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
+
+  const defaultSizeId = (initialSizeId && [...sizes, ...customerSizes].find(s => s.id === initialSizeId))
+    ? initialSizeId
+    : sizes[0]?.id || ''
+  const [selectedSizeId, setSelectedSizeId] = useState(defaultSizeId)
   const [qty, setQty] = useState(1)
   const [showModal, setShowModal] = useState(false)
   const [showRecipe, setShowRecipe] = useState(false)
-  const [customSizes, setCustomSizes] = useState<Size[]>([])
+  const [sessionSizes, setSessionSizes] = useState<Size[]>([])
   const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
-  const allSizes = [...sizes, ...customSizes]
+  const allSizes = [...sizes, ...customerSizes, ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
   const handleCustomSizeCreated = (size: Size) => {
-    setCustomSizes(prev => [...prev, size])
+    setSessionSizes(prev => [...prev, size])
     setSelectedSizeId(size.id)
   }
 
@@ -81,9 +88,10 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
     router.push('/menu')
   }
 
-  const handleMealClick = (mealId: string) => {
+  const handleMealClick = (mealId: string, sizeId?: string) => {
     setShowModal(false)
-    router.push(`/meal/${mealId}`)
+    setQty(1)
+    router.push(`/meal/${mealId}${sizeId ? `?sizeId=${sizeId}` : ''}`)
   }
 
   return (
@@ -135,31 +143,14 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
         <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           Tamaño
         </label>
-        <select
-          value={selectedSizeId}
-          onChange={(e) => setSelectedSizeId(e.target.value)}
-          style={{
-            width: '100%',
-            padding: 14,
-            fontSize: 16,
-            borderRadius: 8,
-            border: `2px solid ${colors.grayLight}`,
-            background: colors.grayDark,
-            color: colors.white
-          }}
-        >
-          {sizes.map(size => (
-            <option key={size.id} value={size.id}>
-              {size.name} — ${(size.price / 100).toFixed(0)} MXN
-            </option>
-          ))}
-          {customSizes.map(size => (
-            <option key={size.id} value={size.id}>
-              ★ {size.name} — ${(size.price / 100).toFixed(0)} MXN
-            </option>
-          ))}
-          <option value="__custom__">＋ Crear tamaño personalizado…</option>
-        </select>
+        <SizeSelect
+          mainSizes={sizes.filter(s => s.is_main)}
+          customerSizes={customerSizes}
+          sessionSizes={sessionSizes}
+          selectedId={selectedSizeId}
+          onChange={setSelectedSizeId}
+          formatOption={size => `${size.name} — $${(size.price / 100).toFixed(0)} MXN`}
+        />
 
         {selectedSizeId === '__custom__' && (
           <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
@@ -181,6 +172,11 @@ export default function MealClient({ meal, sizes, suggestedMeals = [] }: MealCli
           <p style={{ fontSize: 16, margin: '0 0 16px 0', color: colors.white }}>
             {formatMacros(macros)}
           </p>
+          {selectedSize.description && (
+            <p style={{ fontSize: 13, margin: '0 0 16px 0', color: colors.textMuted, fontStyle: 'italic' }}>
+              {selectedSize.description}
+            </p>
+          )}
 
           {/* Separador */}
           <div style={{ borderTop: `1px solid ${colors.grayLight}`, marginBottom: 12 }} />

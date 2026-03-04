@@ -84,6 +84,7 @@ CREATE TABLE meal_sub_recipes (
 CREATE TABLE sizes (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
+  description text,
   is_main boolean DEFAULT false,
   customer_id uuid,                    -- null = size global; uuid = size custom de cliente
   protein_qty integer NOT NULL,        -- gramos de ingrediente tipo 'pro'

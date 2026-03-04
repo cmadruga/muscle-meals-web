@@ -1,7 +1,10 @@
 import { notFound } from 'next/navigation'
 import { getPackageById } from '@/lib/db/packages'
 import { getActiveMealsWithRecipes } from '@/lib/db/meals'
-import { getGlobalSizes } from '@/lib/db/sizes'
+import { getGlobalSizes, getCustomerSizes } from '@/lib/db/sizes'
+import { getCustomerByUserId } from '@/lib/db/customers'
+import { createClient } from '@/lib/supabase/server'
+import type { Size } from '@/lib/types'
 import PackageClient from './PackageClient'
 
 interface PackagePageProps {
@@ -15,6 +18,17 @@ interface PackagePageProps {
 export default async function PackagePage({ params }: PackagePageProps) {
   const { id } = await params
 
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let customerSizes: Size[] = []
+  if (user) {
+    const customer = await getCustomerByUserId(user.id)
+    if (customer) {
+      customerSizes = await getCustomerSizes(customer.id)
+    }
+  }
+
   // Fetch paralelo
   const [pkg, meals, sizes] = await Promise.all([
     getPackageById(id),
@@ -26,7 +40,7 @@ export default async function PackagePage({ params }: PackagePageProps) {
     notFound()
   }
 
-  return <PackageClient pkg={pkg} meals={meals} sizes={sizes} />
+  return <PackageClient pkg={pkg} meals={meals} sizes={sizes} customerSizes={customerSizes} />
 }
 
 /**
