@@ -3,6 +3,7 @@
  * Uso: import { Package, Meal, Order } from '@/lib/types'
  */
 
+export * from './customer'
 export * from './ingredient'
 export * from './recipe'
 export * from './meal'

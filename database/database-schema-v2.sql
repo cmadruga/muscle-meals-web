@@ -128,11 +128,13 @@ CREATE TABLE pickup_spots (
 CREATE TABLE customers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   full_name text NOT NULL,
-  phone text NOT NULL UNIQUE,   -- lookup key (+5218112345678)
-  email text NOT NULL,          -- key de Conekta
-  address text NOT NULL,
+  phone text UNIQUE,            -- lookup key (+5218112345678); null para clientes OAuth sin checkout
+  email text NOT NULL,          -- key de Conekta y Google OAuth
+  address text,                 -- null para clientes OAuth antes de su primera orden
+  user_id uuid REFERENCES auth.users(id) ON DELETE SET NULL,  -- vinculado vía Google OAuth
   created_at timestamptz DEFAULT now()
 );
+CREATE INDEX idx_customers_user_id ON customers(user_id);
 
 -- ==========================================
 -- 10. ORDERS - Órdenes de compra

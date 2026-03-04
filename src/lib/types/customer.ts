@@ -4,9 +4,10 @@
 export interface Customer {
   id: string
   full_name: string
-  phone: string // Nuestro lookup key principal
-  email: string // Key de Conekta (almacenamiento)
+  phone: string | null  // null para clientes creados vía Google OAuth (sin checkout aún)
+  email: string
   address: string | null
+  user_id: string | null  // UUID de auth.users (vinculado vía Google OAuth)
   created_at: string
 }
 
