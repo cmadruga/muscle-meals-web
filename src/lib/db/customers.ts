@@ -94,3 +94,22 @@ export async function getCustomerByEmail(email: string): Promise<Customer | null
 
   return data as Customer
 }
+
+/**
+ * Obtener cliente por user_id (Google OAuth)
+ */
+export async function getCustomerByUserId(userId: string): Promise<Customer | null> {
+  const supabase = createClient()
+
+  const { data, error } = await supabase
+    .from('customers')
+    .select('*')
+    .eq('user_id', userId)
+    .single()
+
+  if (error) {
+    return null
+  }
+
+  return data as Customer
+}

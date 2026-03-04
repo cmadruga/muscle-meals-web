@@ -7,6 +7,7 @@ import { useCartGroups } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
+import LoginBanner from '@/components/LoginBanner'
 
 export default function CartPage() {
   const router = useRouter()
@@ -23,8 +24,9 @@ export default function CartPage() {
   }
 
   return (
-    <main style={{ 
-      padding: '40px 24px', 
+    <>
+    <main style={{
+      padding: '40px 24px 100px',
       minHeight: '100vh',
       background: colors.black,
       color: colors.white
@@ -69,6 +71,8 @@ export default function CartPage() {
       />
       </div>
     </main>
+    <LoginBanner />
+    </>
   )
 }
 

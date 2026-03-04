@@ -97,7 +97,7 @@ function OrderSuccessContent() {
           marginBottom: 32,
           lineHeight: 1.6
         }}>
-          Tu orden ha sido confirmada. Recibirás un email con los detalles de tu pedido.
+          Tu orden ha sido confirmada. Recibirás un whatsapp con los detalles de tu pedido.
         </p>
 
         {loading && (
