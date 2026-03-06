@@ -14,7 +14,6 @@ DROP TABLE IF EXISTS customers CASCADE;
 DROP TABLE IF EXISTS pickup_spots CASCADE;
 DROP TABLE IF EXISTS meal_sub_recipes CASCADE;
 DROP TABLE IF EXISTS meals CASCADE;
-DROP TABLE IF EXISTS packages CASCADE;
 DROP TABLE IF EXISTS sizes CASCADE;
 DROP TABLE IF EXISTS recipes CASCADE;
 DROP TABLE IF EXISTS ingredients CASCADE;
@@ -97,20 +96,7 @@ CREATE TABLE sizes (
 );
 
 -- ==========================================
--- 7. PACKAGES - Paquetes de comidas
--- ==========================================
-CREATE TABLE packages (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  name text NOT NULL,
-  description text,
-  img text,
-  meals_included integer NOT NULL,
-  active boolean DEFAULT true,
-  created_at timestamptz DEFAULT now()
-);
-
--- ==========================================
--- 8. PICKUP SPOTS - Puntos de recolección
+-- 7. PICKUP SPOTS - Puntos de recolección
 -- ==========================================
 CREATE TABLE pickup_spots (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -166,7 +152,6 @@ CREATE TABLE order_items (
   size_id uuid NOT NULL REFERENCES sizes(id) ON DELETE RESTRICT,
   qty integer NOT NULL CHECK (qty > 0),
   unit_price integer NOT NULL,                   -- precio al momento de la orden
-  package_id uuid REFERENCES packages(id) ON DELETE SET NULL,
   created_at timestamptz DEFAULT now()
 );
 
@@ -210,7 +195,6 @@ CREATE INDEX idx_meals_main_recipe ON meals(main_recipe_id);
 CREATE INDEX idx_meal_sub_recipes_meal ON meal_sub_recipes(meal_id);
 CREATE INDEX idx_meal_sub_recipes_recipe ON meal_sub_recipes(sub_recipe_id);
 CREATE INDEX idx_sizes_is_main ON sizes(is_main);
-CREATE INDEX idx_packages_active ON packages(active);
 CREATE INDEX idx_pickup_spots_active ON pickup_spots(active);
 CREATE INDEX idx_customers_phone ON customers(phone);
 CREATE INDEX idx_customers_email ON customers(email);
@@ -220,7 +204,6 @@ CREATE INDEX idx_orders_status ON orders(status);
 CREATE INDEX idx_orders_conekta ON orders(conekta_order_id);
 CREATE INDEX idx_order_items_order ON order_items(order_id);
 CREATE INDEX idx_order_items_meal ON order_items(meal_id);
-CREATE INDEX idx_order_items_package ON order_items(package_id);
 
 -- ==========================================
 -- 14. COMENTARIOS

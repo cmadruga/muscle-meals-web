@@ -8,8 +8,7 @@ export interface CartItem {
   sizeName: string
   qty: number
   unitPrice: number // en centavos
-  packageId?: string // ID del paquete en la DB (para metadata)
-  packageName?: string // Nombre del paquete
+  packageName?: string // Nombre del paquete (para display en checkout)
   packageInstanceId?: string // ID único de esta instancia del paquete en el carrito
 }
 

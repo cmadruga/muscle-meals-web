@@ -45,8 +45,7 @@ export async function createOrder(
     meal_id: item.meal_id,
     size_id: item.size_id,
     qty: item.qty,
-    unit_price: item.unit_price,
-    package_id: item.package_id || null
+    unit_price: item.unit_price
   }))
 
   const { error: itemsError } = await supabase
