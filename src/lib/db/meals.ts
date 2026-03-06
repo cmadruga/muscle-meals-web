@@ -151,6 +151,25 @@ export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
 }
 
 /**
+ * Obtiene todos los meals (activos e inactivos) para panel admin
+ */
+export async function getAllMeals(): Promise<Meal[]> {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('meals')
+    .select('*')
+    .order('name', { ascending: true })
+
+  if (error) {
+    console.error('Error fetching meals:', error)
+    throw new Error('No se pudieron cargar los platillos')
+  }
+
+  return data as Meal[]
+}
+
+/**
  * Obtiene un meal por ID con sus recetas e ingredientes completos
  */
 export async function getMealById(id: string): Promise<MealWithRecipes | null> {
