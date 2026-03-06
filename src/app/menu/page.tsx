@@ -18,11 +18,18 @@ export default async function MenuPage() {
   const lowestPackagePrice = sizes.length > 0 ? Math.min(...sizes.map(s => s.package_price)) : 0
 
   return (
-    <main style={{ 
+    <main style={{
       minHeight: '100vh',
       background: colors.black,
       color: colors.white
     }}>
+      <style>{`
+        .pkg-card { flex-direction: row; align-items: center; }
+        @media (max-width: 640px) {
+          .pkg-card { flex-direction: column; align-items: stretch; gap: 16px; padding: 20px !important; }
+          .pkg-card-btn { text-align: center; }
+        }
+      `}</style>
       {/* Header */}
       <section style={{
         padding: '40px 24px 60px',
@@ -72,9 +79,9 @@ export default async function MenuPage() {
         
         <Link
           href="/package/default"
+          className="pkg-card"
           style={{
             display: 'flex',
-            alignItems: 'center',
             justifyContent: 'space-between',
             gap: 24,
             width: '100%',
@@ -108,18 +115,21 @@ export default async function MenuPage() {
               </p>
             </div>
           </div>
-          <span style={{
-            flexShrink: 0,
-            padding: '12px 24px',
-            background: colors.orange,
-            color: colors.black,
-            borderRadius: 8,
-            fontSize: 15,
-            fontWeight: 'bold',
-            textTransform: 'uppercase',
-            letterSpacing: 1,
-            whiteSpace: 'nowrap',
-          }}>
+          <span
+            className="pkg-card-btn"
+            style={{
+              flexShrink: 0,
+              padding: '12px 24px',
+              background: colors.orange,
+              color: colors.black,
+              borderRadius: 8,
+              fontSize: 15,
+              fontWeight: 'bold',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              whiteSpace: 'nowrap',
+            }}
+          >
             Armar mi paquete →
           </span>
         </Link>
