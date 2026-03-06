@@ -65,6 +65,20 @@ export default function Navbar() {
 
   return (
     <>
+      <style>{`
+        .nav-back-label { }
+        .nav-cart-text { }
+        .nav-logo-full { display: inline; }
+        .nav-logo-short { display: none; }
+        .nav-login-btn { padding: 8px 28px; font-size: 14px; }
+        @media (max-width: 640px) {
+          .nav-back-label { display: none; }
+          .nav-cart-text { display: none; }
+          .nav-logo-full { display: none; }
+          .nav-logo-short { display: inline; }
+          .nav-login-btn { padding: 7px 12px; font-size: 13px; }
+        }
+      `}</style>
       <nav style={{
         position: 'fixed',
         top: 0,
@@ -93,8 +107,11 @@ export default function Navbar() {
               letterSpacing: 1
             }}
           >
-            <span style={{ color: colors.orange }}>MUSCLE</span>
-            <span style={{ marginLeft: 6 }}>MEALS</span>
+            <span className="nav-logo-full">
+              <span style={{ color: colors.orange }}>MUSCLE</span>
+              <span style={{ marginLeft: 6 }}>MEALS</span>
+            </span>
+            <span className="nav-logo-short" style={{ color: colors.orange }}>MM</span>
           </Link>
 
           {backButton.show && (
@@ -113,7 +130,7 @@ export default function Navbar() {
                 gap: 6
               }}
             >
-              {backButton.label}
+              ←<span className="nav-back-label">&nbsp;{backButton.label.replace('← ', '')}</span>
             </Link>
           )}
         </div>
@@ -204,13 +221,12 @@ export default function Navbar() {
               /* ── Botón Iniciar sesión ── */
               <button
                 onClick={() => setShowLogin(true)}
+                className="nav-login-btn"
                 style={{
                   background: colors.orange,
                   border: 'none',
                   borderRadius: 8,
-                  padding: '8px 28px',
                   color: colors.black,
-                  fontSize: 14,
                   fontWeight: 700,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
@@ -239,7 +255,7 @@ export default function Navbar() {
               fontWeight: 'bold'
             }}
           >
-            🛒 Carrito
+            🛒<span className="nav-cart-text">Carrito</span>
             {mounted && itemCount > 0 && (
               <span style={{
                 position: 'absolute',

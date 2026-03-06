@@ -517,26 +517,37 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
 
       </div>
       {/* Summary & Submit */}
-      <div style={{ 
-        position: 'sticky', 
-        bottom: 0, 
+      <style>{`
+        .pkg-footer { padding: 20px 24px; }
+        .pkg-footer-inner { display: flex; align-items: center; gap: 16px; }
+        .pkg-footer-price { font-size: 26px; }
+        .pkg-footer-btn { }
+        @media (max-width: 640px) {
+          .pkg-footer { padding: 12px 16px; }
+          .pkg-footer-inner { flex-direction: column; align-items: stretch; gap: 10px; }
+          .pkg-footer-price { font-size: 22px; }
+          .pkg-footer-btn { width: 100%; text-align: center; }
+        }
+      `}</style>
+      <div className="pkg-footer" style={{
+        position: 'sticky',
+        bottom: 0,
         background: colors.grayDark,
-        padding: '20px 24px',
         borderTop: `2px solid ${colors.grayLight}`
       }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div className="pkg-footer-inner" style={{ maxWidth: 1200, margin: '0 auto' }}>
           {totalSelected > 0 && (
-            <div style={{ flex: 1 }}>
-              <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 2 }}>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                 {totalSelected} platillo{totalSelected !== 1 ? 's' : ''} · {selectedSize?.name || ''}
               </div>
-              <div style={{ fontSize: 26, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>
+              <div className="pkg-footer-price" style={{ fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>
                 ${(totalPrice / 100).toFixed(0)} MXN
               </div>
             </div>
           )}
           <button
+            className="pkg-footer-btn"
             onClick={handleAddToCart}
             disabled={!canSubmit}
             style={{
@@ -559,7 +570,6 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
               : '🛒 Agregar al carrito'
             }
           </button>
-        </div>
         </div>
       </div>
     </main>

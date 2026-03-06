@@ -34,7 +34,18 @@ export default function AddToCartModal({
 }: AddToCartModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: '48px 48px 32px', textAlign: 'center' }}>
+      <style>{`
+        .atc-body { padding: 48px 48px 32px; }
+        .atc-meals-section { margin: 0 -48px; padding: 24px 0 0; }
+        .atc-meals-grid { padding: 4px 24px 16px; }
+        @media (max-width: 640px) {
+          .atc-body { padding: 32px 20px 24px; }
+          .atc-meals-section { margin: 0 -20px; padding: 20px 0 0; }
+          .atc-meals-grid { padding: 4px 16px 16px; overflow-x: auto; display: flex; gap: 10px; }
+          .atc-meals-grid > button { flex-shrink: 0; width: 100px; }
+        }
+      `}</style>
+      <div className="atc-body" style={{ textAlign: 'center' }}>
         {/* Ícono de éxito */}
         <div style={{
           width: 80,
@@ -104,12 +115,9 @@ export default function AddToCartModal({
 
         {/* Carrusel de platillos */}
         {suggestedMeals.length > 0 && (
-          <div style={{
+          <div className="atc-meals-section" style={{
             borderTop: `2px solid ${colors.grayLight}`,
-            paddingTop: 24,
             textAlign: 'left',
-            margin: '0 -48px',
-            padding: '24px 0 0',
           }}>
             <h3 style={{
               fontSize: 15,
@@ -124,11 +132,10 @@ export default function AddToCartModal({
             </h3>
 
             {/* Grid que llena el ancho */}
-            <div style={{
+            <div className="atc-meals-grid" style={{
               display: 'grid',
               gridTemplateColumns: `repeat(${suggestedMeals.length}, 1fr)`,
               gap: 10,
-              padding: '4px 24px 16px',
             }}>
               {suggestedMeals.map(meal => (
                 <button
