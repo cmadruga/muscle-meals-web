@@ -17,11 +17,11 @@ export async function adminLogin(token: string): Promise<{ error: string } | voi
     sameSite: 'lax'
   })
 
-  redirect('/panel/orders')
+  redirect('/admin/orders')
 }
 
 export async function adminLogout(): Promise<void> {
   const cookieStore = await cookies()
   cookieStore.delete('admin_token')
-  redirect('/panel/login')
+  redirect('/admin/login')
 }

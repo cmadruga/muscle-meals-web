@@ -54,7 +54,7 @@ export default function OrdersTable({
   const navigate = (direction: -1 | 1) => {
     const newDate = new Date(weekStart)
     newDate.setDate(newDate.getDate() + direction * 7)
-    router.push(`/panel/orders?semana=${newDate.toISOString().split('T')[0]}`)
+    router.push(`/admin/orders?semana=${newDate.toISOString().split('T')[0]}`)
   }
 
   const handleStatusChange = async (orderId: string, status: OrderStatus) => {
@@ -207,6 +207,7 @@ export default function OrdersTable({
                   {/* Selector de estado */}
                   <td style={tdStyle}>
                     <select
+                      suppressHydrationWarning
                       value={order.status}
                       disabled={loadingOrders.has(order.id)}
                       onChange={(e) => handleStatusChange(order.id, e.target.value as OrderStatus)}

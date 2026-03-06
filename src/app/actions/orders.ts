@@ -17,5 +17,5 @@ export async function changeOrderStatus(orderId: string, status: OrderStatus): P
     throw new Error('Error al actualizar el estado')
   }
 
-  revalidatePath('/panel/orders')
+  revalidatePath('/admin/orders')
 }
