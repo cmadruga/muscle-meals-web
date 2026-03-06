@@ -3,7 +3,7 @@
 import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import type { Package, Size, MealWithRecipes } from '@/lib/types'
+import type { Size, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros } from '@/lib/utils/macros'
 import { toCocido } from '@/lib/utils/conversions'
@@ -12,8 +12,13 @@ import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
 import SizeSelect from '@/components/SizeSelect'
 
+interface PackageConfig {
+  minMeals: number
+  name: string
+  description?: string | null
+}
+
 interface PackageClientProps {
-  pkg: Package
   meals: MealWithRecipes[]
   sizes: Size[]
   customerSizes?: Size[]
@@ -25,13 +30,19 @@ interface SelectionItem {
   qty: number
 }
 
+const pkg: PackageConfig = {
+  minMeals: 5,
+  name: 'Arma tu paquete',
+  description: 'Agrega mínimo 5 platillos. Precio especial activo al agregar 5 o más del mismo tamaño.'
+}
+
 /**
  * Client Component para armar un paquete
  * 1. Selecciona size
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [] }: PackageClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
   const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
@@ -63,14 +74,14 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
     [selection]
   )
 
-  // Precio total del paquete
-  const totalPrice = selectedSize ? selectedSize.package_price * pkg.meals_included : 0
+  // Precio total del paquete (dinámico: price × totalSelected)
+  const totalPrice = selectedSize ? selectedSize.package_price * totalSelected : 0
 
-  const canSubmit = totalSelected === pkg.meals_included && selectedSize
+  const canSubmit = totalSelected >= pkg.minMeals && !!selectedSize
 
-  // Agregar meal
+  // Agregar meal (sin límite superior)
   const handleAdd = (meal: MealWithRecipes) => {
-    if (totalSelected >= pkg.meals_included) return
+    if (!selectedSize) return
 
     setSelection(prev => {
       const existing = prev.find(item => item.mealId === meal.id)
@@ -134,9 +145,8 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
         sizeName: selectedSize.name,
         qty: item.qty,
         unitPrice: selectedSize.package_price,
-        packageId: pkg.id, // ID del paquete en la DB (para metadata/orden)
-        packageName: pkg.name, // Nombre del paquete
-        packageInstanceId // ID único de esta instancia en el carrito
+        packageName: pkg.name,
+        packageInstanceId
       })
     })
 
@@ -191,7 +201,7 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
         onGoToCart={handleGoToCart}
         onContinueShopping={handleContinueShopping}
         title="¡Agregado al carrito!"
-        message={`Tu paquete ${pkg.name} (${selection.length} platillos) ha sido agregado al carrito`}
+        message={`Tu paquete ${pkg.name} (${totalSelected} platillos) ha sido agregado al carrito`}
         suggestedMeals={suggestedMeals}
         selectedSize={selectedSize}
         onMealClick={handleMealClick}
@@ -216,12 +226,12 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
             sessionSizes={sessionSizes}
             selectedId={selectedSizeId}
             onChange={setSelectedSizeId}
-            formatOption={size => `${size.name} — $${(size.package_price * pkg.meals_included / 100).toFixed(0)} MXN (${pkg.meals_included} comidas)`}
+            formatOption={size => `${size.name} — $${(size.package_price / 100).toFixed(0)} MXN/platillo`}
           />
         </div>
 
         {selectedSizeId === '__custom__' && (
-          <CustomSizePanel onSizeCreated={handleCustomSizeCreated} mealsIncluded={pkg.meals_included} />
+          <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
         )}
 
         {/* Descripción del size seleccionado */}
@@ -288,11 +298,33 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
       {/* Meals Selection */}
       <div style={{ marginBottom: 24 }}>
         <h3 style={{ color: colors.orange, marginBottom: 8 }}>
-          2. Selecciona tus {pkg.meals_included} comidas
+          2. Elige tus platillos
         </h3>
-        <p style={{ color: colors.textMuted, marginBottom: 20 }}>
-          Seleccionadas: <strong style={{ color: colors.white }}>{totalSelected} / {pkg.meals_included}</strong>
-        </p>
+
+        {/* Progress bar */}
+        <div style={{ marginBottom: 20 }}>
+          <div style={{
+            height: 8,
+            background: colors.grayLight,
+            borderRadius: 4,
+            overflow: 'hidden',
+            marginBottom: 8
+          }}>
+            <div style={{
+              height: '100%',
+              width: `${Math.min(totalSelected / pkg.minMeals * 100, 100)}%`,
+              background: colors.orange,
+              borderRadius: 4,
+              transition: 'width 0.2s'
+            }} />
+          </div>
+          <p style={{ color: colors.textMuted, fontSize: 14, margin: 0 }}>
+            {totalSelected < pkg.minMeals
+              ? <><strong style={{ color: colors.white }}>{totalSelected} / {pkg.minMeals}</strong> mínimo · Agrega {pkg.minMeals - totalSelected} más para precio paquete</>
+              : <><strong style={{ color: colors.orange }}>✓ Precio paquete activo</strong> · {totalSelected} platillos seleccionados</>
+            }
+          </p>
+        </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {meals.map(meal => {
@@ -397,17 +429,17 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
 
                   <button
                     onClick={() => handleAdd(meal)}
-                    disabled={totalSelected >= pkg.meals_included}
-                    style={{ 
-                      width: 36, 
+                    disabled={!selectedSize}
+                    style={{
+                      width: 36,
                       height: 36,
                       fontSize: 18,
                       border: `1px solid ${colors.grayLight}`,
                       borderRadius: 8,
                       background: colors.grayLight,
                       color: colors.white,
-                      cursor: totalSelected >= pkg.meals_included ? 'not-allowed' : 'pointer',
-                      opacity: totalSelected >= pkg.meals_included ? 0.5 : 1
+                      cursor: !selectedSize ? 'not-allowed' : 'pointer',
+                      opacity: !selectedSize ? 0.5 : 1
                     }}
                   >
                     +
@@ -493,44 +525,41 @@ export default function PackageClient({ pkg, meals, sizes, customerSizes = [] }:
         borderTop: `2px solid ${colors.grayLight}`
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
-        {selection.length > 0 && (
-          <div style={{ marginBottom: 16, fontSize: 14, color: colors.textMuted }}>
-            <strong style={{ color: colors.orange }}>Tu selección:</strong>{' '}
-            {selection.map(s => `${s.mealName} x${s.qty}`).join(', ')}
-          </div>
-        )}
-
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-          <span style={{ fontSize: 18, color: colors.white }}>
-            Total ({selectedSize?.name || ''}):
-          </span>
-          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-            ${(totalPrice / 100).toFixed(0)} MXN
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+          {totalSelected > 0 && (
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 2 }}>
+                {totalSelected} platillo{totalSelected !== 1 ? 's' : ''} · {selectedSize?.name || ''}
+              </div>
+              <div style={{ fontSize: 26, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>
+                ${(totalPrice / 100).toFixed(0)} MXN
+              </div>
+            </div>
+          )}
+          <button
+            onClick={handleAddToCart}
+            disabled={!canSubmit}
+            style={{
+              flex: totalSelected > 0 ? 'none' : 1,
+              padding: '14px 24px',
+              fontSize: 16,
+              fontWeight: 'bold',
+              cursor: canSubmit ? 'pointer' : 'not-allowed',
+              opacity: canSubmit ? 1 : 0.5,
+              background: canSubmit ? colors.orange : colors.grayLight,
+              color: canSubmit ? colors.black : colors.textMuted,
+              border: 'none',
+              borderRadius: 8,
+              textTransform: 'uppercase',
+              whiteSpace: 'nowrap',
+            }}
+          >
+            {totalSelected < pkg.minMeals
+              ? `Agrega ${pkg.minMeals - totalSelected} más`
+              : '🛒 Agregar al carrito'
+            }
+          </button>
         </div>
-        
-        <button
-          onClick={handleAddToCart}
-          disabled={!canSubmit}
-          style={{
-            width: '100%',
-            padding: '16px 24px',
-            fontSize: 18,
-            fontWeight: 'bold',
-            cursor: canSubmit ? 'pointer' : 'not-allowed',
-            opacity: canSubmit ? 1 : 0.5,
-            background: canSubmit ? colors.orange : colors.grayLight,
-            color: canSubmit ? colors.black : colors.textMuted,
-            border: 'none',
-            borderRadius: 8,
-            textTransform: 'uppercase'
-          }}
-        >
-          {totalSelected < pkg.meals_included 
-            ? `Selecciona ${pkg.meals_included - totalSelected} más`
-            : '🛒 Agregar al carrito'
-          }
-        </button>
         </div>
       </div>
     </main>
