@@ -11,15 +11,15 @@ export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request: { headers: requestHeaders } })
 
   // ── Admin /panel ──────────────────────────────────────────
-  if (pathname.startsWith('/panel')) {
+  if (pathname.startsWith('/admin')) {
     // La página de login es pública
-    if (pathname === '/panel/login') {
+    if (pathname === '/admin/login') {
       return response
     }
 
     const adminToken = request.cookies.get('admin_token')?.value
     if (!adminToken || adminToken !== process.env.ADMIN_TOKEN) {
-      return NextResponse.redirect(new URL('/panel/login', request.url))
+      return NextResponse.redirect(new URL('/admin/login', request.url))
     }
 
     return response
@@ -65,5 +65,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/panel/:path*', '/cuenta/:path*']
+  matcher: ['/admin/:path*', '/cuenta/:path*']
 }

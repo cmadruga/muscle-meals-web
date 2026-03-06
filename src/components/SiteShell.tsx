@@ -4,11 +4,11 @@ import { usePathname } from 'next/navigation'
 import Navbar from './Navbar'
 
 /**
- * Wrapper del layout raíz que oculta la Navbar pública en rutas /panel
+ * Wrapper del layout raíz que oculta la Navbar pública en rutas /admin
  */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdmin = pathname.startsWith('/panel')
+  const isAdmin = pathname.startsWith('/admin')
 
   return (
     <>
