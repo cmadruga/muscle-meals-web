@@ -145,7 +145,7 @@ function PackageCard({ package: pkg, onRemove }: {
         alignItems: 'center'
       }}>
         <span style={{ fontWeight: 'bold', color: colors.orange }}>
-          {pkg.packageName} · {pkg.sizeName}
+          {pkg.packageName} · x{pkg.totalMeals} · {pkg.sizeName}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontWeight: 'bold', color: colors.white }}>
