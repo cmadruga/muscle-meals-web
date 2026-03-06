@@ -156,7 +156,7 @@ function OrderSuccessContent() {
                 marginBottom: 12,
                 color: colors.white
               }}>
-                Items ({order.items.length})
+                Items ({order.items.reduce((sum, item) => sum + item.qty, 0)})
               </h3>
               {order.items.map((item, idx) => (
                 <div 

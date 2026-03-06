@@ -8,18 +8,18 @@ import Modal from './Modal'
 interface AddToCartModalProps {
   isOpen: boolean
   onClose: () => void
-   onGoToCart: () => void
+  onGoToCart: () => void
   onContinueShopping: () => void
   title: string
   message: string
   suggestedMeals: MealBasic[]
   selectedSize: Size | undefined
-  onMealClick: (mealId: string) => void
+  onMealClick: (mealId: string, sizeId?: string) => void
 }
 
 /**
  * Modal reutilizable para confirmación de agregar al carrito
- * Incluye sugerencias de platillos adicionales
+ * Incluye carrusel de todos los platillos disponibles
  */
 export default function AddToCartModal({
   isOpen,
@@ -34,7 +34,7 @@ export default function AddToCartModal({
 }: AddToCartModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
-      <div style={{ padding: 48, textAlign: 'center' }}>
+      <div style={{ padding: '48px 48px 32px', textAlign: 'center' }}>
         {/* Ícono de éxito */}
         <div style={{
           width: 80,
@@ -50,28 +50,20 @@ export default function AddToCartModal({
           ✓
         </div>
 
-        <h2 style={{ 
-          fontSize: 28, 
-          marginBottom: 16,
-          color: colors.orange
-        }}>
+        <h2 style={{ fontSize: 28, marginBottom: 16, color: colors.orange }}>
           {title}
         </h2>
 
-        <p style={{ 
-          fontSize: 16, 
-          color: colors.textSecondary,
-          marginBottom: 32
-        }}>
+        <p style={{ fontSize: 16, color: colors.textSecondary, marginBottom: 32 }}>
           {message}
         </p>
 
         {/* Botones */}
-        <div style={{ 
-          display: 'flex', 
+        <div style={{
+          display: 'flex',
           gap: 12,
           flexDirection: 'column',
-          marginBottom: suggestedMeals.length > 0 && selectedSize ? 32 : 0
+          marginBottom: suggestedMeals.length > 0 ? 32 : 0
         }}>
           <button
             onClick={onGoToCart}
@@ -110,49 +102,56 @@ export default function AddToCartModal({
           </button>
         </div>
 
-        {/* Sugerencias de platillos */}
+        {/* Carrusel de platillos */}
         {suggestedMeals.length > 0 && (
-          <div style={{ 
-            borderTop: `2px solid ${colors.grayLight}`, 
+          <div style={{
+            borderTop: `2px solid ${colors.grayLight}`,
             paddingTop: 24,
-            textAlign: 'left'
+            textAlign: 'left',
+            margin: '0 -48px',
+            padding: '24px 0 0',
           }}>
-            <h3 style={{ 
-              fontSize: 18, 
-              marginBottom: 16, 
-              color: colors.white,
-              textAlign: 'center'
+            <h3 style={{
+              fontSize: 15,
+              marginBottom: 14,
+              color: colors.textSecondary,
+              textAlign: 'center',
+              textTransform: 'uppercase',
+              letterSpacing: 1,
+              fontWeight: 700,
             }}>
-              Otros platillos disponibles
+              Agregar más individuales
             </h3>
-            
+
+            {/* Grid que llena el ancho */}
             <div style={{
               display: 'grid',
-              gap: 12,
-              maxHeight: 300,
-              overflow: 'auto'
+              gridTemplateColumns: `repeat(${suggestedMeals.length}, 1fr)`,
+              gap: 10,
+              padding: '4px 24px 16px',
             }}>
-              {suggestedMeals.slice(0, 8).map(meal => (
+              {suggestedMeals.map(meal => (
                 <button
                   key={meal.id}
-                  onClick={() => onMealClick(meal.id)}
+                  onClick={() => onMealClick(meal.id, selectedSize?.id)}
                   style={{
                     display: 'flex',
+                    flexDirection: 'column',
                     alignItems: 'center',
-                    gap: 12,
-                    padding: 12,
+                    gap: 8,
+                    padding: '10px 8px',
                     background: colors.grayDark,
                     border: `2px solid ${colors.grayLight}`,
-                    borderRadius: 8,
+                    borderRadius: 10,
                     cursor: 'pointer',
-                    textAlign: 'left',
-                    transition: 'all 0.2s'
+                    textAlign: 'center',
+                    minWidth: 0,
                   }}
-                  onMouseEnter={(e) => {
+                  onMouseEnter={e => {
                     e.currentTarget.style.borderColor = colors.orange
                     e.currentTarget.style.background = colors.grayLight
                   }}
-                  onMouseLeave={(e) => {
+                  onMouseLeave={e => {
                     e.currentTarget.style.borderColor = colors.grayLight
                     e.currentTarget.style.background = colors.grayDark
                   }}
@@ -161,44 +160,35 @@ export default function AddToCartModal({
                     <Image
                       src={meal.img}
                       alt={meal.name}
-                      width={60}
-                      height={60}
-                      style={{ 
-                        width: 60, 
-                        height: 60, 
-                        objectFit: 'cover', 
-                        borderRadius: 6 
-                      }}
+                      width={90}
+                      height={70}
+                      style={{ width: '100%', height: 70, objectFit: 'cover', borderRadius: 6 }}
                     />
                   ) : (
                     <div style={{
-                      width: 60,
-                      height: 60,
+                      width: '100%',
+                      height: 70,
                       background: colors.black,
                       borderRadius: 6,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: 24
+                      fontSize: 28,
                     }}>
                       🍽️
                     </div>
                   )}
-                  <div style={{ flex: 1 }}>
-                    <div style={{ 
-                      fontSize: 15, 
-                      fontWeight: 'bold',
-                      color: colors.white,
-                      marginBottom: 4
-                    }}>
-                      {meal.name}
-                    </div>
-                    <div style={{ 
-                      fontSize: 12, 
-                      color: colors.textMuted 
-                    }}>
-                      Ver platillo →
-                    </div>
+                  <div style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: colors.white,
+                    lineHeight: 1.3,
+                    overflow: 'hidden',
+                    display: '-webkit-box',
+                    WebkitLineClamp: 3,
+                    WebkitBoxOrient: 'vertical' as React.CSSProperties['WebkitBoxOrient'],
+                  }}>
+                    {meal.name}
                   </div>
                 </button>
               ))}

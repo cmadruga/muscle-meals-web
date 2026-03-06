@@ -699,15 +699,6 @@ INSERT INTO meal_sub_recipes (meal_id, sub_recipe_id) VALUES
   );
 
 -- ==========================================
--- PARTE 4C: PACKAGES (3 paquetes)
--- ==========================================
-
-INSERT INTO packages (name, description, meals_included, active) VALUES
-  ('Paquete x5',  '5 comidas a elegir del menú',   5,  true),
-  ('Paquete x10', '10 comidas a elegir del menú',  10, true),
-  ('Paquete x15', '15 comidas a elegir del menú',  15, true);
-
--- ==========================================
 -- PARTE 4D: PICKUP SPOTS
 -- ==========================================
 

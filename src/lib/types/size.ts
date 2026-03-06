@@ -4,6 +4,7 @@
 export interface Size {
   id: string
   name: string // LOW, FIT, PLUS, o nombre custom
+  description: string | null
   is_main: boolean // true para principales, false para custom
   customer_id: string | null // null para main, customer_id para custom
   // Cantidades base por tipo de ingrediente

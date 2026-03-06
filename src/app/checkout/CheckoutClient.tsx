@@ -147,8 +147,7 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
           meal_id: item.mealId,
           size_id: item.sizeId,
           qty: item.qty,
-          unit_price: item.unitPrice,
-          package_id: item.packageId
+          unit_price: item.unitPrice
         }))
       )
 
