@@ -31,6 +31,11 @@ export interface Ingredient {
   carbs: number
   fats: number
   unit: Unit
+  cant: number          // cantidad/peso del empaque
+  precio: number        // precio del empaque
+  precio_por_unidad: number // generado: precio / cant
+  public_name: string | null
+  proveedor: string | null
   created_at: string
 }
 
@@ -41,4 +46,5 @@ export interface RecipeIngredient {
   ingredient_id: string
   qty: number
   unit: Unit
+  section?: 'pro' | 'carb' | 'veg'
 }

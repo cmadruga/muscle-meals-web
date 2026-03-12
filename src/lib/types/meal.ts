@@ -12,6 +12,7 @@ export interface Meal {
   main_recipe_id: string
   active: boolean
   created_at: string
+  sub_recipe_ids?: string[]
 }
 
 /**

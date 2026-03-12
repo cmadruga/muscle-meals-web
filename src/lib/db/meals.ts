@@ -156,17 +156,23 @@ export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
 export async function getAllMeals(): Promise<Meal[]> {
   const supabase = await createClient()
 
-  const { data, error } = await supabase
-    .from('meals')
-    .select('*')
-    .order('name', { ascending: true })
+  const [{ data, error }, { data: subRows }] = await Promise.all([
+    supabase.from('meals').select('*').order('name', { ascending: true }),
+    supabase.from('meal_sub_recipes').select('meal_id, sub_recipe_id'),
+  ])
 
   if (error) {
     console.error('Error fetching meals:', error)
     throw new Error('No se pudieron cargar los platillos')
   }
 
-  return data as Meal[]
+  const subMap = new Map<string, string[]>()
+  for (const row of subRows ?? []) {
+    if (!subMap.has(row.meal_id)) subMap.set(row.meal_id, [])
+    subMap.get(row.meal_id)!.push(row.sub_recipe_id)
+  }
+
+  return (data as Meal[]).map((m) => ({ ...m, sub_recipe_ids: subMap.get(m.id) ?? [] }))
 }
 
 /**

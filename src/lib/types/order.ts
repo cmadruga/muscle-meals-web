@@ -1,7 +1,7 @@
 /**
  * Estados posibles de una orden
  */
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled'
+export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled' | 'extra' | 'admin'
 
 /**
  * OrderItem - Item individual de una orden (cada meal)
@@ -53,6 +53,7 @@ export interface Order {
   shipping_type: 'standard' | 'priority' | 'pickup'
   pickup_spot_id: string | null
   shipping_cost: number
+  note: string | null
   created_at: string
   updated_at: string
 }
@@ -71,4 +72,5 @@ export interface OrderWithCustomer extends Order {
   items: OrderItem[]
   customer_name: string | null
   customer_phone: string | null
+  customer_address: string | null
 }
