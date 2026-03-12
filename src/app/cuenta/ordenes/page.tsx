@@ -93,6 +93,8 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
   preparing: 'Preparando',
   delivered: 'Entregado',
   cancelled: 'Cancelado',
+  extra: 'Extra',
+  admin: 'Admin',
 }
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
@@ -101,6 +103,8 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
   preparing: '#3b82f6',
   delivered: '#6b7280',
   cancelled: '#ef4444',
+  extra: '#a855f7',
+  admin: '#06b6d4',
 }
 
 function StatusBadge({ status }: { status: OrderStatus }) {
