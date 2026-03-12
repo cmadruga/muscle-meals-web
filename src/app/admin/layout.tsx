@@ -8,6 +8,11 @@ import { colors } from '@/lib/theme'
 
 const NAV_LINKS = [
   { href: '/admin/orders', label: 'Órdenes' },
+  { href: '/admin/lista', label: 'Lista' },
+  { href: '/admin/empaques', label: 'Empaques' },
+  { href: '/admin/recetario', label: 'Recetario' },
+  { href: '/admin/pinche', label: 'Pinche' },
+  { href: '/admin/stock', label: 'Stock' },
   { href: '/admin/database', label: 'Base de Datos' },
 ]
 
