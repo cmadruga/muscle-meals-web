@@ -1,15 +1,36 @@
+import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 import { getOrdersForWeek } from '@/lib/db/orders'
+import { getWeeklyProductionData } from '@/lib/db/production'
+import { buildMatrix } from '@/lib/utils/production'
+import { getActiveMeals } from '@/lib/db/meals'
+import { getAllSizesWithCustomer } from '@/lib/db/sizes'
+import type { CustomerBasic } from '@/lib/db/customers'
+import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import OrdersTable from './OrdersTable'
+import WeekNav from '../components/WeekNav'
+import NewOrderButton from './NewOrderButton'
 import { colors } from '@/lib/theme'
+
+function parseLocalDate(str: string): Date {
+  const [y, m, d] = str.split('-').map(Number)
+  return new Date(y, m - 1, d)
+}
 
 function getMondayOfWeek(date: Date): Date {
   const d = new Date(date)
   const day = d.getDay()
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1) // lunes = 1
+  const diff = d.getDate() - day + (day === 0 ? -6 : 1)
   d.setDate(diff)
   d.setHours(0, 0, 0, 0)
   return d
+}
+
+function toLocalDateStr(date: Date): string {
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  return `${y}-${m}-${d}`
 }
 
 export default async function PanelOrdersPage({
@@ -18,23 +39,72 @@ export default async function PanelOrdersPage({
   searchParams: Promise<{ semana?: string }>
 }) {
   const params = await searchParams
-  const weekStart = params.semana
-    ? getMondayOfWeek(new Date(params.semana))
+  const cookieStore = await cookies()
+  const semana = params.semana ?? cookieStore.get('admin_week')?.value
+  const weekStart = semana
+    ? getMondayOfWeek(parseLocalDate(semana))
     : getMondayOfWeek(new Date())
 
+  // Pass as string to avoid RSC Date serialization issues in the client component
+  const weekStr = toLocalDateStr(weekStart)
+
   const supabase = await createClient()
-  const orders = await getOrdersForWeek(supabase, weekStart)
+
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots] = await Promise.all([
+    getOrdersForWeek(supabase, weekStart),
+    getWeeklyProductionData(supabase, weekStart),
+    getActiveMeals(),
+    getAllSizesWithCustomer(),
+    supabase.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
+    getActivePickupSpots(),
+  ])
+
+  const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
+
+  const matrixData = buildMatrix(productionData)
+
+  const STATUS_ES: Record<string, string> = {
+    paid: 'Pagado', pending: 'Pendiente', preparing: 'Preparando',
+    delivered: 'Entregado', cancelled: 'Cancelado', extra: 'Extra', admin: 'Admin',
+  }
+  const byStatus: Record<string, { orders: number; meals: number }> = {}
+  for (const order of orders) {
+    const portions = order.items.reduce((s, i) => s + i.qty, 0)
+    const key = order.status === 'admin' ? 'paid' : order.status
+    if (!byStatus[key]) byStatus[key] = { orders: 0, meals: 0 }
+    byStatus[key].orders += 1
+    byStatus[key].meals += portions
+  }
+  const totalMeals = orders.reduce((s, o) => s + o.items.reduce((ss, i) => ss + i.qty, 0), 0)
+  const statusBreakdown = Object.entries(byStatus)
+    .map(([status, { orders: o, meals: m }]) => `${STATUS_ES[status] ?? status}: ${o} (${m})`)
+    .join(' · ')
 
   return (
     <div>
-      <h1 style={{ color: colors.white, fontSize: 26, fontWeight: 700, marginBottom: 4 }}>
-        Órdenes
-      </h1>
-      <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 32 }}>
-        {orders.length} orden{orders.length !== 1 ? 'es' : ''} en esta semana
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, marginBottom: 4 }}>
+        <h1 style={{ color: colors.white, fontSize: 26, fontWeight: 700, margin: 0 }}>
+          Pedidos
+        </h1>
+        <NewOrderButton
+          weekStr={weekStr}
+          meals={meals.map(m => ({ id: m.id, name: m.name }))}
+          sizes={sizes.map(s => ({ id: s.id, name: s.customer_name ? `${s.name} (${s.customer_name})` : s.name }))}
+          customers={customers}
+          pickupSpots={pickupSpots}
+        />
+      </div>
+      <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 2 }}>
+        {orders.length} órdenes esta semana ({totalMeals} comidas)
       </p>
+      {statusBreakdown && (
+        <p style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
+          {statusBreakdown}
+        </p>
+      )}
 
-      <OrdersTable orders={orders} weekStart={weekStart} />
+      <WeekNav weekStr={weekStr} />
+      <OrdersTable orders={orders} weekStr={weekStr} matrixData={matrixData} customers={customers} />
     </div>
   )
 }
