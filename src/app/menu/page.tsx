@@ -25,9 +25,12 @@ export default async function MenuPage() {
     }}>
       <style>{`
         .pkg-card { flex-direction: row; align-items: center; }
+        .pkg-img { width: 220px; height: 140px; flex-shrink: 0; border-radius: 10px; overflow: hidden; }
+        .pkg-img img { width: 100%; height: 100%; object-fit: cover; }
         @media (max-width: 640px) {
           .pkg-card { flex-direction: column; align-items: stretch; gap: 16px; padding: 20px !important; }
           .pkg-card-btn { text-align: center; }
+          .pkg-img { width: 100%; height: 180px; }
         }
       `}</style>
       {/* Header */}
@@ -95,7 +98,15 @@ export default async function MenuPage() {
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
-            <span style={{ fontSize: 40, lineHeight: 1 }}>🥡</span>
+            <div className="pkg-img">
+              <Image
+                src="/paquete.png"
+                alt="Paquete Muscle Meals"
+                width={220}
+                height={140}
+              />
+            </div>
+
             <div>
               <h3 style={{
                 fontSize: 26,
@@ -130,7 +141,7 @@ export default async function MenuPage() {
               whiteSpace: 'nowrap',
             }}
           >
-            Armar mi paquete →
+            Armar mi paquete
           </span>
         </Link>
       </section>
