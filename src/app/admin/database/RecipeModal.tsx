@@ -259,7 +259,7 @@ export default function RecipeModal({ recipe, ingredients, onClose, onSaved }: R
       if (result.error) {
         setError(result.error)
       } else {
-        onSaved({ id: recipe?.id ?? '', name: data.name, type: data.type, ingredients: data.ingredients, description: recipe?.description ?? null, created_at: recipe?.created_at ?? new Date().toISOString() })
+        onSaved({ id: recipe?.id ?? '', name: data.name, type: data.type, ingredients: data.ingredients, description: recipe?.description ?? null, created_at: recipe?.created_at ?? new Date().toISOString(), portions: data.portions })
         onClose()
       }
     })
