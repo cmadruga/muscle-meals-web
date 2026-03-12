@@ -2,12 +2,19 @@ import { colors } from '@/lib/theme'
 import { getAllMeals } from '@/lib/db/meals'
 import { getAllIngredients } from '@/lib/db/ingredients'
 import { getAllRecipes } from '@/lib/db/recipes'
+import { getAllMaterials } from '@/lib/db/materials'
+import { getAllPincheVessels } from '@/lib/db/pinche-vessels'
+import { getMainSizes } from '@/lib/db/sizes'
 import MealsTab from './MealsTab'
 import IngredientesTab from './IngredientesTab'
 import RecetasTab from './RecetasTab'
+import MaterialesTab from './MaterialesTab'
+import PincheTab from './PincheTab'
 import Link from 'next/link'
 
 const TABS = [
+  { id: 'materiales', label: 'Materiales' },
+  { id: 'pinche', label: 'Pinche' },
   { id: 'ingredientes', label: 'Ingredientes' },
   { id: 'recetas', label: 'Recetas' },
   { id: 'meals', label: 'Platillos' },
@@ -26,10 +33,13 @@ export default async function DatabasePage({
       ? (params.tab as Tab)
       : 'meals'
 
-  const [meals, ingredients, recipes] = await Promise.all([
+  const [meals, ingredients, recipes, materials, vessels, mainSizes] = await Promise.all([
     activeTab === 'meals' ? getAllMeals() : Promise.resolve(null),
-    activeTab === 'ingredientes' || activeTab === 'recetas' ? getAllIngredients() : Promise.resolve(null),
+    activeTab === 'ingredientes' || activeTab === 'recetas' || activeTab === 'meals' ? getAllIngredients() : Promise.resolve(null),
     activeTab === 'recetas' || activeTab === 'meals' ? getAllRecipes() : Promise.resolve(null),
+    activeTab === 'materiales' ? getAllMaterials() : Promise.resolve(null),
+    activeTab === 'pinche' ? getAllPincheVessels() : Promise.resolve(null),
+    activeTab === 'meals' ? getMainSizes() : Promise.resolve(null),
   ])
 
   return (
@@ -63,9 +73,11 @@ export default async function DatabasePage({
       </div>
 
       {/* Tab content */}
-      {activeTab === 'meals' && meals && recipes && <MealsTab meals={meals} recipes={recipes} />}
+      {activeTab === 'meals' && meals && recipes && ingredients && mainSizes && <MealsTab meals={meals} recipes={recipes} ingredients={ingredients} mainSizes={mainSizes} />}
       {activeTab === 'ingredientes' && ingredients && <IngredientesTab ingredients={ingredients} />}
       {activeTab === 'recetas' && recipes && ingredients && <RecetasTab recipes={recipes} ingredients={ingredients} />}
+      {activeTab === 'materiales' && materials && <MaterialesTab materials={materials} />}
+      {activeTab === 'pinche' && vessels && <PincheTab vessels={vessels} />}
     </div>
   )
 }

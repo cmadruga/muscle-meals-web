@@ -1,9 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useTransition } from 'react'
 import type { Recipe, Ingredient } from '@/lib/types'
 import { colors } from '@/lib/theme'
 import RecipeModal from './RecipeModal'
+import { deleteRecipe } from '@/app/actions/database'
 
 const TYPE_LABEL: Record<string, string> = { main: 'Principal', sub: 'Sub-receta' }
 const TYPE_COLOR: Record<string, string> = { main: colors.orange, sub: '#60a5fa' }
@@ -20,6 +21,18 @@ export default function RecetasTab({
   const [showModal, setShowModal] = useState(false)
   const [search, setSearch] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'main' | 'sub'>('all')
+  const [deleteError, setDeleteError] = useState('')
+  const [deletePending, startDelete] = useTransition()
+
+  function handleDelete(r: Recipe) {
+    setDeleteError('')
+    if (!confirm(`¿Borrar "${r.name}"?`)) return
+    startDelete(async () => {
+      const result = await deleteRecipe(r.id)
+      if (result.error) setDeleteError(result.error)
+      else setRecipes((prev) => prev.filter((x) => x.id !== r.id))
+    })
+  }
 
   function handleSaved(saved: Recipe) {
     setRecipes((prev) => {
@@ -66,11 +79,17 @@ export default function RecetasTab({
         </button>
       </div>
 
+      {deleteError && (
+        <div style={{ background: '#ef444422', border: '1px solid #ef444455', borderRadius: 8, padding: '10px 14px', color: colors.error, fontSize: 13, marginBottom: 16 }}>
+          {deleteError}
+        </div>
+      )}
+
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.grayLight}` }}>
-              {['Nombre', 'Tipo', ''].map((h) => (
+              {['Nombre', 'Tipo', 'Porciones', ''].map((h) => (
                 <th key={h} style={{ padding: '10px 12px', textAlign: 'left', color: colors.textMuted, fontWeight: 600 }}>
                   {h}
                 </th>
@@ -94,22 +113,31 @@ export default function RecetasTab({
                     {TYPE_LABEL[r.type]}
                   </span>
                 </td>
-                {/* <td style={{ padding: '12px', color: colors.textSecondary }}>
-                  {r.ingredients.length} ingrediente{r.ingredients.length !== 1 ? 's' : ''}
-                </td> */}
+                <td style={{ padding: '12px', color: r.type === 'sub' ? colors.textSecondary : colors.textMuted, fontSize: 13 }}>
+                  {r.type === 'sub' ? `${r.portions} porc.` : '—'}
+                </td>
                 <td style={{ padding: '12px' }}>
-                  <button
-                    onClick={() => { setModal(r); setShowModal(true) }}
-                    style={{ padding: '4px 14px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.white, cursor: 'pointer', fontSize: 13 }}
-                  >
-                    Editar
-                  </button>
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button
+                      onClick={() => { setModal(r); setShowModal(true) }}
+                      style={{ padding: '4px 12px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.white, cursor: 'pointer', fontSize: 13 }}
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => handleDelete(r)}
+                      disabled={deletePending}
+                      style={{ padding: '4px 10px', borderRadius: 6, border: '1px solid #ef444455', background: '#ef444411', color: colors.error, cursor: deletePending ? 'not-allowed' : 'pointer', fontSize: 13 }}
+                    >
+                      Borrar
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={3} style={{ padding: 32, textAlign: 'center', color: colors.textMuted }}>
+                <td colSpan={4} style={{ padding: 32, textAlign: 'center', color: colors.textMuted }}>
                   {search || typeFilter !== 'all' ? 'Sin resultados' : 'Sin recetas'}
                 </td>
               </tr>
