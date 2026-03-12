@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import { useAuth } from '@/hooks/useAuth'
@@ -95,23 +96,23 @@ export default function Navbar() {
       }}>
         {/* Left */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-          <Link
-            href="/"
-            style={{
-              fontSize: 18,
-              fontWeight: 'bold',
-              textDecoration: 'none',
-              display: 'flex',
-              alignItems: 'center',
-              color: colors.white,
-              letterSpacing: 1
-            }}
-          >
-            <span className="nav-logo-full">
-              <span style={{ color: colors.orange }}>MUSCLE</span>
-              <span style={{ marginLeft: 6 }}>MEALS</span>
-            </span>
-            <span className="nav-logo-short" style={{ color: colors.orange }}>MM</span>
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
+            <Image
+              src="/logo.png"
+              alt="Muscle Meals"
+              width={140}
+              height={40}
+              className="nav-logo-full"
+              style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+            />
+            <Image
+              src="/logo-sm.png"
+              alt="Muscle Meals"
+              width={40}
+              height={40}
+              className="nav-logo-short"
+              style={{ height: 40, width: 'auto', objectFit: 'contain' }}
+            />
           </Link>
 
           {backButton.show && (
