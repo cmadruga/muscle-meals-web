@@ -11,6 +11,7 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
+import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
 import { 
   isValidPostalCode,
   getZoneByPostalCode,
@@ -30,21 +31,34 @@ const SHIPPING_COSTS = {
   pickup: 0       // Gratis - recoger en local
 }
 
-export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpot[] }) {
+export default function CheckoutClient({
+  pickupSpots,
+  prefill,
+}: {
+  pickupSpots: PickupSpot[]
+  prefill?: { name: string; email: string; phone: string; address: string | null } | null
+}) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [showCutoffModal, setShowCutoffModal] = useState(false)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
   const [selectedPickupSpot, setSelectedPickupSpot] = useState<string>('')
   
-  // Datos del cliente
-  const [customerName, setCustomerName] = useState('')
-  const [customerEmail, setCustomerEmail] = useState('')
-  const [customerPhone, setCustomerPhone] = useState('')
+  // Datos del cliente (pre-llenados si hay sesión activa)
+  const [customerName, setCustomerName] = useState(prefill?.name ?? '')
+  const [customerEmail, setCustomerEmail] = useState(prefill?.email ?? '')
+  const [customerPhone, setCustomerPhone] = useState(prefill?.phone ?? '')
   
+  // Dirección guardada vs nueva
+  const savedAddress = prefill?.address ?? null
+  const [addressOption, setAddressOption] = useState<'saved' | 'new'>(
+    savedAddress ? 'saved' : 'new'
+  )
+
   // Dirección separada
   const [calle, setCalle] = useState('')
   const [numeroExterior, setNumeroExterior] = useState('')
@@ -65,7 +79,11 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
   )
   
   const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
-  const addressValidated = isAddressComplete && isPostalCodeValid
+  const addressValidated = shippingType === 'pickup'
+    ? true
+    : addressOption === 'saved'
+      ? true
+      : isAddressComplete && isPostalCodeValid
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
   
   // Calcular total con envío
@@ -109,24 +127,19 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
     setError(null)
 
     try {
-      // 1. Crear o actualizar cliente con dirección completa y WhatsApp
-      const address: Address = {
-        calle,
-        numeroExterior,
-        numeroInterior,
-        colonia,
-        codigoPostal,
-        ciudad,
-        estado
-      }
-      const fullAddress = buildFullAddress(address)
+      // 1. Crear o actualizar cliente
       const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
-      
+      const fullAddress = shippingType === 'pickup'
+        ? null
+        : addressOption === 'saved'
+          ? savedAddress
+          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
+
       const customer = await upsertCustomer({
         name: customerName,
         phone: whatsappPhone,
         email: customerEmail,
-        address: fullAddress
+        address: fullAddress ?? undefined
       })
 
       if (!customer) {
@@ -229,15 +242,37 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
           }}>
             💳 <span style={{ color: colors.orange }}>Checkout</span>
           </h1>
-          <h2 style={{ 
-            fontSize: 20, 
+          <h2 style={{
+            fontSize: 20,
             marginBottom: 16,
             color: colors.textSecondary,
             fontWeight: 'normal'
           }}>
             Detalle de la orden
           </h2>
-          
+
+          {/* Delivery date */}
+          <div style={{
+            padding: '12px 16px',
+            background: '#10b98112',
+            border: '2px solid #10b981',
+            borderRadius: 10,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+            marginBottom: 16,
+          }}>
+            <span style={{ fontSize: 20 }}>📅</span>
+            <div>
+              <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: 14 }}>
+                Entrega: {formatDeliveryDate(getDeliveryDate())}
+              </p>
+              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
+                Entregamos cada domingo · Pedidos cortados el viernes a mediodía
+              </p>
+            </div>
+          </div>
+
           <OrderSummary 
             packageGroups={packageGroups}
             individualItems={individualItems}
@@ -248,7 +283,16 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
           />
         </div>
 
-        <CustomerForm 
+        <ShippingSelector
+          selectedType={shippingType}
+          onTypeChange={setShippingType}
+          selectedPickupSpot={selectedPickupSpot}
+          onPickupSpotChange={setSelectedPickupSpot}
+          pickupSpots={pickupSpots}
+          disabled={isProcessing}
+        />
+
+        <CustomerForm
           name={customerName}
           email={customerEmail}
           phone={customerPhone}
@@ -271,25 +315,34 @@ export default function CheckoutClient({ pickupSpots }: { pickupSpots: PickupSpo
           onEstadoChange={setEstado}
           addressValidated={addressValidated}
           zone={zone}
+          showAddress={shippingType !== 'pickup'}
+          savedAddress={savedAddress}
+          addressOption={addressOption}
+          onAddressOptionChange={setAddressOption}
           disabled={isProcessing}
           error={error}
         />
 
-        <ShippingSelector
-          selectedType={shippingType}
-          onTypeChange={setShippingType}
-          selectedPickupSpot={selectedPickupSpot}
-          onPickupSpotChange={setSelectedPickupSpot}
-          pickupSpots={pickupSpots}
-          disabled={isProcessing}
-        />
-
         <PaymentButton
-          onClick={handleCheckout}
+          onClick={() => {
+            if (isInCutoffWindow()) {
+              setShowCutoffModal(true)
+            } else {
+              handleCheckout()
+            }
+          }}
           disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
           isProcessing={isProcessing}
           addressValidated={addressValidated}
         />
+
+        {showCutoffModal && (
+          <CutoffConfirmModal
+            deliveryDate={getDeliveryDate()}
+            onConfirm={() => { setShowCutoffModal(false); handleCheckout() }}
+            onCancel={() => setShowCutoffModal(false)}
+          />
+        )}
       </div>
     </main>
     <LoginBanner />
@@ -495,8 +548,8 @@ function IndividualItemSummary({ item, showBorder }: {
   )
 }
 
-function CustomerForm({ 
-  name, 
+function CustomerForm({
+  name,
   email,
   phone,
   calle,
@@ -506,7 +559,7 @@ function CustomerForm({
   codigoPostal,
   ciudad,
   estado,
-  onNameChange, 
+  onNameChange,
   onEmailChange,
   onPhoneChange,
   onCalleChange,
@@ -518,6 +571,10 @@ function CustomerForm({
   onEstadoChange,
   addressValidated,
   zone,
+  showAddress,
+  savedAddress,
+  addressOption,
+  onAddressOptionChange,
   disabled,
   error
 }: {
@@ -543,6 +600,10 @@ function CustomerForm({
   onEstadoChange: (value: string) => void
   addressValidated: boolean
   zone: string | null
+  showAddress: boolean
+  savedAddress: string | null
+  addressOption: 'saved' | 'new'
+  onAddressOptionChange: (v: 'saved' | 'new') => void
   disabled: boolean
   error: string | null
 }) {
@@ -640,23 +701,69 @@ function CustomerForm({
           </p>
         </div>
 
+        {showAddress && (<>
         {/* Separador visual */}
-        <div style={{ 
-          height: 1, 
-          background: colors.grayLight, 
-          margin: '8px 0' 
-        }} />
+        <div style={{ height: 1, background: colors.grayLight, margin: '8px 0' }} />
 
-        <h3 style={{ 
-          fontSize: 16, 
-          color: colors.orange, 
-          marginBottom: 0,
-          marginTop: 8,
-          textTransform: 'uppercase',
-          letterSpacing: 1
+        <h3 style={{
+          fontSize: 16, color: colors.orange, marginBottom: 0, marginTop: 8,
+          textTransform: 'uppercase', letterSpacing: 1
         }}>
           📍 Dirección de entrega
         </h3>
+
+        {/* Selector dirección guardada / nueva */}
+        {savedAddress && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <label style={{
+              display: 'flex', alignItems: 'flex-start', gap: 12, cursor: disabled ? 'default' : 'pointer',
+              background: addressOption === 'saved' ? '#10b98112' : colors.grayDark,
+              border: `2px solid ${addressOption === 'saved' ? '#10b981' : colors.grayLight}`,
+              borderRadius: 10, padding: 14,
+            }}>
+              <input
+                type="radio"
+                name="addressOption"
+                value="saved"
+                checked={addressOption === 'saved'}
+                onChange={() => onAddressOptionChange('saved')}
+                disabled={disabled}
+                style={{ marginTop: 2, accentColor: '#10b981', flexShrink: 0 }}
+              />
+              <div>
+                <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: colors.white }}>
+                  Usar dirección guardada
+                </p>
+                <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
+                  {savedAddress}
+                </p>
+              </div>
+            </label>
+
+            <label style={{
+              display: 'flex', alignItems: 'center', gap: 12, cursor: disabled ? 'default' : 'pointer',
+              background: addressOption === 'new' ? '#ffffff08' : colors.grayDark,
+              border: `2px solid ${addressOption === 'new' ? colors.orange : colors.grayLight}`,
+              borderRadius: 10, padding: 14,
+            }}>
+              <input
+                type="radio"
+                name="addressOption"
+                value="new"
+                checked={addressOption === 'new'}
+                onChange={() => onAddressOptionChange('new')}
+                disabled={disabled}
+                style={{ accentColor: colors.orange, flexShrink: 0 }}
+              />
+              <span style={{ fontSize: 14, color: colors.white, fontWeight: 600 }}>
+                Ingresar nueva dirección
+              </span>
+            </label>
+          </div>
+        )}
+
+        {/* Form campos — solo si no hay guardada O eligen nueva */}
+        {(!savedAddress || addressOption === 'new') && (<>
 
         {/* Calle */}
         <div>
@@ -799,7 +906,7 @@ function CustomerForm({
         </div>
 
         {/* Indicador de dirección completa */}
-        {addressValidated && (
+        {addressValidated && addressOption === 'new' && (
           <div style={{
             background: '#10b98120',
             border: '2px solid #10b981',
@@ -812,6 +919,8 @@ function CustomerForm({
             ✅ Dirección completa y validada - Listo para proceder al pago
           </div>
         )}
+        </>)}
+        </>)}
       </div>
     </div>
   )
@@ -1203,6 +1312,83 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
             </div>
           </div>
         </button>
+      </div>
+    </div>
+  )
+}
+
+function CutoffConfirmModal({ deliveryDate, onConfirm, onCancel }: {
+  deliveryDate: Date
+  onConfirm: () => void
+  onCancel: () => void
+}) {
+  return (
+    <div style={{
+      position: 'fixed',
+      inset: 0,
+      background: '#000000cc',
+      zIndex: 200,
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 24,
+    }}>
+      <div style={{
+        background: colors.grayDark,
+        border: `2px solid ${colors.orange}`,
+        borderRadius: 16,
+        padding: 32,
+        maxWidth: 460,
+        width: '100%',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
+        <h2 style={{ color: colors.orange, fontSize: 22, marginBottom: 12 }}>
+          Pedidos de esta semana ya cerraron
+        </h2>
+        <p style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
+          Los pedidos de esta semana ya están cerrados. Tu orden se procesará para:
+        </p>
+        <p style={{ color: colors.white, fontSize: 20, fontWeight: 700, marginBottom: 24 }}>
+          {formatDeliveryDate(deliveryDate)}
+        </p>
+        <p style={{ color: colors.textMuted, fontSize: 13, marginBottom: 28, lineHeight: 1.5 }}>
+          Al confirmar, aceptas que tu entrega será el domingo de la próxima semana.
+        </p>
+        <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
+          <button
+            onClick={onConfirm}
+            style={{
+              width: '100%',
+              padding: '14px 24px',
+              fontSize: 16,
+              fontWeight: 'bold',
+              background: colors.orange,
+              color: colors.black,
+              border: 'none',
+              borderRadius: 8,
+              cursor: 'pointer',
+              textTransform: 'uppercase',
+            }}
+          >
+            Entendido, continuar al pago
+          </button>
+          <button
+            onClick={onCancel}
+            style={{
+              width: '100%',
+              padding: '12px 24px',
+              fontSize: 15,
+              background: 'transparent',
+              color: colors.textMuted,
+              border: `1px solid ${colors.grayLight}`,
+              borderRadius: 8,
+              cursor: 'pointer',
+            }}
+          >
+            Cancelar
+          </button>
+        </div>
       </div>
     </div>
   )
