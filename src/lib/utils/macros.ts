@@ -36,14 +36,14 @@ export function calculateMealMacros(
     totals.fats += ingredient.fats * ratio
   }
 
-  // 2. Calcular macros de sub-recetas (cantidades fijas, no se ajustan)
+  // 2. Calcular macros de sub-recetas (dividir entre porciones de la sub-receta)
   for (const subRecipe of subRecipes) {
+    const subPortions = subRecipe.portions > 0 ? subRecipe.portions : 1
     for (const recipeIng of subRecipe.ingredients) {
       const ingredient = ingredients.get(recipeIng.ingredient_id)
       if (!ingredient) continue
 
-      // Sub-recetas usan cantidad fija de la receta
-      const ratio = recipeIng.qty / 100
+      const ratio = (recipeIng.qty / subPortions) / 100
       totals.calories += ingredient.calories * ratio
       totals.protein += ingredient.protein * ratio
       totals.carbs += ingredient.carbs * ratio

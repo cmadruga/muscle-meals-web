@@ -14,6 +14,7 @@ export interface Recipe {
   description: string | null
   type: RecipeType
   ingredients: RecipeIngredient[]
+  portions: number
   created_at: string
 }
 

@@ -1,6 +1,32 @@
 import { createClient } from '@/lib/supabase/server'
 import type { Size, SizeBasic } from '@/lib/types'
 
+export type SizeWithCustomer = Size & { customer_name: string | null }
+
+/**
+ * Obtiene todos los sizes con nombre del customer si aplica.
+ * Main sizes primero, luego custom ordenados por nombre de customer.
+ */
+export async function getAllSizesWithCustomer(): Promise<SizeWithCustomer[]> {
+  const supabase = await createClient()
+
+  const [sizesRes, customersRes] = await Promise.all([
+    supabase.from('sizes').select('*').order('is_main', { ascending: false }).order('name', { ascending: true }),
+    supabase.from('customers').select('id, full_name'),
+  ])
+
+  if (sizesRes.error) throw new Error('No se pudieron cargar los tamaños')
+
+  const customerMap = new Map<string, string>(
+    (customersRes.data ?? []).map((c: { id: string; full_name: string }) => [c.id, c.full_name])
+  )
+
+  return (sizesRes.data ?? []).map((s: Size) => ({
+    ...s,
+    customer_name: s.customer_id ? (customerMap.get(s.customer_id) ?? null) : null,
+  }))
+}
+
 /**
  * Obtiene los sizes principales (LOW, FIT, PLUS)
  */

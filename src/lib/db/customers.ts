@@ -1,6 +1,8 @@
 import { createClient } from '../supabase/client'
 import type { Customer, CreateCustomerData } from '../types/customer'
 
+export type CustomerBasic = { id: string; full_name: string; phone: string | null; address: string | null }
+
 /**
  * Crea o actualiza un cliente
  * Si ya existe (por email), retorna el existente
