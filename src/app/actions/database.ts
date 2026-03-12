@@ -19,6 +19,37 @@ export async function updateMeal(
   return {}
 }
 
+export async function updateMealFull(
+  id: string,
+  data: { mainRecipeId: string; subRecipeIds: string[]; description: string | null; img?: string | null }
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+
+  const { data: recipe, error: recipeError } = await supabase
+    .from('recipes').select('name').eq('id', data.mainRecipeId).single()
+  if (recipeError) return { error: recipeError.message }
+
+  const { error: mealError } = await supabase.from('meals').update({
+    name: recipe.name,
+    main_recipe_id: data.mainRecipeId,
+    description: data.description,
+    ...(data.img !== undefined ? { img: data.img } : {}),
+  }).eq('id', id)
+  if (mealError) return { error: mealError.message }
+
+  await supabase.from('meal_sub_recipes').delete().eq('meal_id', id)
+  if (data.subRecipeIds.length > 0) {
+    const { error: subError } = await supabase
+      .from('meal_sub_recipes')
+      .insert(data.subRecipeIds.map((sub_recipe_id) => ({ meal_id: id, sub_recipe_id })))
+    if (subError) return { error: subError.message }
+  }
+
+  revalidatePath('/admin/database')
+  revalidatePath('/menu')
+  return {}
+}
+
 export async function toggleMealActive(
   id: string,
   active: boolean
@@ -58,7 +89,7 @@ export async function uploadMealImage(
 export async function createMeal(
   mainRecipeId: string,
   subRecipeIds: string[]
-): Promise<{ error?: string }> {
+): Promise<{ id?: string; error?: string }> {
   const supabase = await createClient()
 
   // Nombre = nombre de la receta principal
@@ -86,7 +117,7 @@ export async function createMeal(
   }
 
   revalidatePath('/admin/database')
-  return {}
+  return { id: meal.id }
 }
 
 export async function deleteMeal(id: string): Promise<{ error?: string }> {
@@ -109,11 +140,13 @@ export interface RecipeIngredientInput {
   ingredient_id: string
   qty: number
   unit: Unit
+  section?: 'pro' | 'carb' | 'veg'
 }
 
 export interface RecipeFormData {
   name: string
   type: RecipeType
+  portions: number
   ingredients: RecipeIngredientInput[]
 }
 
@@ -124,6 +157,7 @@ export async function createRecipe(
   const { error } = await supabase.from('recipes').insert({
     name: data.name,
     type: data.type,
+    portions: data.portions,
     ingredients: data.ingredients,
   })
   if (error) return { error: error.message }
@@ -139,8 +173,17 @@ export async function updateRecipe(
   const { error } = await supabase.from('recipes').update({
     name: data.name,
     type: data.type,
+    portions: data.portions,
     ingredients: data.ingredients,
   }).eq('id', id)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/database')
+  return {}
+}
+
+export async function deleteRecipe(id: string): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { error } = await supabase.from('recipes').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
   return {}
@@ -156,6 +199,10 @@ export interface IngredientFormData {
   carbs: number
   fats: number
   unit: Unit
+  cant: number
+  precio: number
+  public_name: string | null
+  proveedor: string | null
 }
 
 export async function createIngredient(
@@ -166,6 +213,20 @@ export async function createIngredient(
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
   return {}
+}
+
+export async function createIngredientInline(
+  data: IngredientFormData
+): Promise<{ ingredient?: import('@/lib/types').Ingredient; error?: string }> {
+  const supabase = await createClient()
+  const { data: created, error } = await supabase
+    .from('ingredients')
+    .insert(data)
+    .select()
+    .single()
+  if (error) return { error: error.message }
+  revalidatePath('/admin/database')
+  return { ingredient: created as import('@/lib/types').Ingredient }
 }
 
 export async function updateIngredient(

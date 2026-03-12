@@ -1,10 +1,12 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
-import type { Meal, Recipe } from '@/lib/types'
+import { useState, useTransition, useMemo } from 'react'
+import type { Meal, Recipe, Ingredient, Size } from '@/lib/types'
 import { colors } from '@/lib/theme'
-import { updateMeal, toggleMealActive, uploadMealImage, deleteMeal } from '@/app/actions/database'
+import { toggleMealActive, deleteMeal } from '@/app/actions/database'
+import { calculateMealMacros } from '@/lib/utils/macros'
 import MealModal from './MealModal'
+import MealDetailModal from './MealDetailModal'
 
 function ActiveSwitch({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
@@ -48,147 +50,16 @@ function ActiveSwitch({ active, onClick }: { active: boolean; onClick: () => voi
   )
 }
 
-interface EditModalProps {
-  meal: Meal
-  onClose: () => void
-  onSaved: (updated: Pick<Meal, 'id' | 'name' | 'description' | 'img'>) => void
-}
-
-function EditModal({ meal, onClose, onSaved }: EditModalProps) {
-  const [name, setName] = useState(meal.name)
-  const [description, setDescription] = useState(meal.description ?? '')
-  const [imgUrl, setImgUrl] = useState(meal.img ?? '')
-  const [preview, setPreview] = useState(meal.img ?? '')
-  const [uploading, setUploading] = useState(false)
-  const [saving, startSave] = useTransition()
-  const [error, setError] = useState('')
-  const fileRef = useRef<HTMLInputElement>(null)
-
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setUploading(true)
-    setError('')
-
-    const fd = new FormData()
-    fd.append('file', file)
-    const result = await uploadMealImage(meal.id, fd)
-
-    if (result.error) {
-      setError(`Error al subir imagen: ${result.error}`)
-      setUploading(false)
-      return
-    }
-
-    setImgUrl(result.publicUrl!)
-    setPreview(result.publicUrl!)
-    setUploading(false)
-  }
-
-  function handleSave() {
-    setError('')
-    startSave(async () => {
-      const result = await updateMeal(meal.id, {
-        name: name.trim(),
-        description: description.trim() || null,
-        img: imgUrl || null,
-      })
-      if (result.error) {
-        setError(result.error)
-      } else {
-        onSaved({ id: meal.id, name: name.trim(), description: description.trim() || null, img: imgUrl || null })
-        onClose()
-      }
-    })
-  }
-
-  const inputStyle: React.CSSProperties = {
-    width: '100%',
-    background: colors.grayDark,
-    border: `1px solid ${colors.grayLight}`,
-    borderRadius: 8,
-    padding: '8px 12px',
-    color: colors.white,
-    fontSize: 14,
-    boxSizing: 'border-box',
-  }
-  const labelStyle: React.CSSProperties = { color: colors.textMuted, fontSize: 12, marginBottom: 4, display: 'block' }
-
-  return (
-    <div style={{
-      position: 'fixed', inset: 0, background: '#000000bb', zIndex: 100,
-      display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
-    }}>
-      <div style={{
-        background: colors.grayDark, borderRadius: 12, padding: 28,
-        width: '100%', maxWidth: 480, border: `1px solid ${colors.grayLight}`
-      }}>
-        <h3 style={{ color: colors.white, fontSize: 18, fontWeight: 700, marginBottom: 24 }}>
-          Editar platillo
-        </h3>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <label style={labelStyle}>Nombre</label>
-            <input style={inputStyle} value={name} onChange={(e) => setName(e.target.value)} />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Descripción</label>
-            <textarea
-              style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div>
-            <label style={labelStyle}>Imagen</label>
-            {preview && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={preview}
-                alt="Preview"
-                style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 8, marginBottom: 10, display: 'block' }}
-              />
-            )}
-            <input ref={fileRef} type="file" accept="image/*" onChange={handleFileChange} style={{ display: 'none' }} />
-            <button
-              onClick={() => fileRef.current?.click()}
-              disabled={uploading}
-              style={{ padding: '6px 16px', borderRadius: 8, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.white, cursor: 'pointer', fontSize: 13 }}
-            >
-              {uploading ? 'Subiendo…' : 'Subir imagen'}
-            </button>
-          </div>
-        </div>
-
-        {error && <p style={{ color: colors.error, fontSize: 13, marginTop: 16 }}>{error}</p>}
-
-        <div style={{ display: 'flex', gap: 12, marginTop: 24, justifyContent: 'flex-end' }}>
-          <button
-            onClick={onClose}
-            style={{ padding: '8px 20px', borderRadius: 8, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.textMuted, cursor: 'pointer', fontSize: 14 }}
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving || uploading || !name.trim()}
-            style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: colors.orange, color: colors.white, cursor: 'pointer', fontSize: 14, fontWeight: 600, opacity: saving ? 0.7 : 1 }}
-          >
-            {saving ? 'Guardando…' : 'Guardar'}
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-export default function MealsTab({ meals: initial, recipes }: { meals: Meal[]; recipes: Recipe[] }) {
+export default function MealsTab({ meals: initial, recipes, ingredients, mainSizes }: {
+  meals: Meal[]
+  recipes: Recipe[]
+  ingredients: Ingredient[]
+  mainSizes: Size[]
+}) {
   const [meals, setMeals] = useState(initial)
-  const [editMeal, setEditMeal] = useState<Meal | null>(null)
-  const [showCreate, setShowCreate] = useState(false)
+  const [modalMeal, setModalMeal] = useState<Meal | null | 'new'>(null)
+  const [detailMeal, setDetailMeal] = useState<Meal | null>(null)
+  const [selectedSizeId, setSelectedSizeId] = useState(mainSizes[0]?.id ?? '')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [, startToggle] = useTransition()
@@ -196,6 +67,26 @@ export default function MealsTab({ meals: initial, recipes }: { meals: Meal[]; r
 
   const mainRecipes = recipes.filter((r) => r.type === 'main')
   const subRecipes = recipes.filter((r) => r.type === 'sub')
+
+  const selectedSize = mainSizes.find(s => s.id === selectedSizeId)
+
+  const recipesById = useMemo(() => new Map(recipes.map(r => [r.id, r])), [recipes])
+  const ingredientsById = useMemo(() => new Map(ingredients.map(i => [i.id, i])), [ingredients])
+
+  // Precalcular macros por meal para el size seleccionado
+  const macrosMap = useMemo(() => {
+    if (!selectedSize) return new Map<string, { calories: number; protein: number; carbs: number; fats: number }>()
+    const recipesById = new Map(recipes.map(r => [r.id, r]))
+    const ingredientsMap = new Map(ingredients.map(i => [i.id, i]))
+    const result = new Map<string, { calories: number; protein: number; carbs: number; fats: number }>()
+    for (const meal of meals) {
+      const mainRecipe = recipesById.get(meal.main_recipe_id)
+      if (!mainRecipe) continue
+      const subs = (meal.sub_recipe_ids ?? []).map(id => recipesById.get(id)).filter((r): r is Recipe => !!r)
+      result.set(meal.id, calculateMealMacros(mainRecipe, subs, ingredientsMap, selectedSize))
+    }
+    return result
+  }, [meals, recipes, ingredients, selectedSize])
 
   function handleToggle(meal: Meal) {
     // optimistic update
@@ -264,65 +155,109 @@ export default function MealsTab({ meals: initial, recipes }: { meals: Meal[]; r
         </div>
 
         <button
-          onClick={() => setShowCreate(true)}
+          onClick={() => setModalMeal('new')}
           style={{ padding: '8px 20px', borderRadius: 8, border: 'none', background: colors.orange, color: colors.white, cursor: 'pointer', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap' }}
         >
           + Nuevo platillo
         </button>
       </div>
 
+      {/* Toggle sizes */}
+      {mainSizes.length > 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <span style={{ color: colors.textMuted, fontSize: 12 }}>Macros para:</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            {mainSizes.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedSizeId(s.id)}
+                style={{
+                  padding: '5px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: s.id === selectedSizeId ? 700 : 400,
+                  border: `1px solid ${s.id === selectedSizeId ? colors.orange : colors.grayLight}`,
+                  background: s.id === selectedSizeId ? colors.orange + '22' : 'transparent',
+                  color: s.id === selectedSizeId ? colors.orange : colors.textMuted,
+                }}
+              >
+                {s.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div style={{ overflowX: 'auto' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
           <thead>
             <tr style={{ borderBottom: `1px solid ${colors.grayLight}` }}>
-              {['', 'Nombre', 'Descripción', 'Estado', ''].map((h, i) => (
+              {['', 'Nombre', 'Descripción', 'Macros', 'Estado', ''].map((h, i) => (
                 <th key={i} style={{ padding: '10px 12px', textAlign: 'left', color: colors.textMuted, fontWeight: 600 }}>{h}</th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {filtered.map((meal) => (
-              <tr key={meal.id} style={{ borderBottom: `1px solid ${colors.grayLight}` }}>
-                <td style={{ padding: '10px 12px', width: 56 }}>
-                  {meal.img ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={meal.img} alt={meal.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />
-                  ) : (
-                    <div style={{ width: 40, height: 40, borderRadius: 6, background: colors.grayLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textMuted, fontSize: 10 }}>
-                      sin img
+            {filtered.map((meal) => {
+              const m = macrosMap.get(meal.id)
+              return (
+                <tr key={meal.id} style={{ borderBottom: `1px solid ${colors.grayLight}` }}>
+                  <td style={{ padding: '10px 12px', width: 56 }}>
+                    {meal.img ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={meal.img} alt={meal.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6 }} />
+                    ) : (
+                      <div style={{ width: 40, height: 40, borderRadius: 6, background: colors.grayLight, display: 'flex', alignItems: 'center', justifyContent: 'center', color: colors.textMuted, fontSize: 10 }}>
+                        sin img
+                      </div>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 12px', color: colors.white, fontWeight: 600 }}>{meal.name}</td>
+                  <td style={{ padding: '10px 12px', color: colors.textSecondary, maxWidth: 220 }}>
+                    <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                      {meal.description ?? '—'}
+                    </span>
+                  </td>
+                  <td style={{ padding: '10px 12px', whiteSpace: 'nowrap' }}>
+                    {m ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        <span style={{ color: colors.orange, fontWeight: 700, fontSize: 13 }}>{Math.round(m.calories)} kcal</span>
+                        <span style={{ color: colors.textMuted, fontSize: 11 }}>
+                          P {Math.round(m.protein)}g · C {Math.round(m.carbs)}g · G {Math.round(m.fats)}g
+                        </span>
+                      </div>
+                    ) : (
+                      <span style={{ color: colors.textMuted, fontSize: 12 }}>—</span>
+                    )}
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <ActiveSwitch active={meal.active} onClick={() => handleToggle(meal)} />
+                  </td>
+                  <td style={{ padding: '10px 12px' }}>
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button
+                        onClick={() => setDetailMeal(meal)}
+                        style={{ padding: '4px 12px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.textMuted, cursor: 'pointer', fontSize: 13 }}
+                      >
+                        Detalle
+                      </button>
+                      <button
+                        onClick={() => setModalMeal(meal)}
+                        style={{ padding: '4px 14px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.white, cursor: 'pointer', fontSize: 13 }}
+                      >
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => handleDelete(meal)}
+                        style={{ padding: '4px 12px', borderRadius: 6, border: `1px solid #ef444455`, background: '#ef444411', color: colors.error, cursor: 'pointer', fontSize: 13 }}
+                      >
+                        Borrar
+                      </button>
                     </div>
-                  )}
-                </td>
-                <td style={{ padding: '10px 12px', color: colors.white, fontWeight: 600 }}>{meal.name}</td>
-                <td style={{ padding: '10px 12px', color: colors.textSecondary, maxWidth: 260 }}>
-                  <span style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
-                    {meal.description ?? '—'}
-                  </span>
-                </td>
-                <td style={{ padding: '10px 12px' }}>
-                  <ActiveSwitch active={meal.active} onClick={() => handleToggle(meal)} />
-                </td>
-                <td style={{ padding: '10px 12px' }}>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <button
-                      onClick={() => setEditMeal(meal)}
-                      style={{ padding: '4px 14px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.white, cursor: 'pointer', fontSize: 13 }}
-                    >
-                      Editar
-                    </button>
-                    <button
-                      onClick={() => handleDelete(meal)}
-                      style={{ padding: '4px 12px', borderRadius: 6, border: `1px solid #ef444455`, background: '#ef444411', color: colors.error, cursor: 'pointer', fontSize: 13 }}
-                    >
-                      Borrar
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+                  </td>
+                </tr>
+              )
+            })}
             {filtered.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: 32, textAlign: 'center', color: colors.textMuted }}>
+                <td colSpan={6} style={{ padding: 32, textAlign: 'center', color: colors.textMuted }}>
                   {search || statusFilter !== 'all' ? 'Sin resultados' : 'Sin platillos'}
                 </td>
               </tr>
@@ -331,23 +266,30 @@ export default function MealsTab({ meals: initial, recipes }: { meals: Meal[]; r
         </table>
       </div>
 
-      {editMeal && (
-        <EditModal
-          meal={editMeal}
-          onClose={() => setEditMeal(null)}
+      {modalMeal !== null && (
+        <MealModal
+          meal={modalMeal === 'new' ? undefined : modalMeal}
+          mainRecipes={mainRecipes}
+          subRecipes={subRecipes}
+          onClose={() => setModalMeal(null)}
           onSaved={(updated) => {
-            setMeals((prev) => prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m))
-            setEditMeal(null)
+            setMeals((prev) =>
+              updated.id
+                ? prev.map((m) => m.id === updated.id ? { ...m, ...updated } : m)
+                : [...prev, updated]
+            )
+            setModalMeal(null)
           }}
         />
       )}
 
-      {showCreate && (
-        <MealModal
-          mainRecipes={mainRecipes}
-          subRecipes={subRecipes}
-          onClose={() => setShowCreate(false)}
-          onSaved={() => setShowCreate(false)}
+      {detailMeal && selectedSize && (
+        <MealDetailModal
+          meal={detailMeal}
+          recipesById={recipesById}
+          ingredientsById={ingredientsById}
+          selectedSize={selectedSize}
+          onClose={() => setDetailMeal(null)}
         />
       )}
     </div>
