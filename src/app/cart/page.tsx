@@ -8,6 +8,7 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
+import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
 
 export default function CartPage() {
   const router = useRouter()
@@ -32,14 +33,17 @@ export default function CartPage() {
       color: colors.white
     }}>
       <div style={{ maxWidth: 800, margin: '0 auto' }}>
-      <h1 style={{ 
-        fontSize: 32, 
-        marginBottom: 32,
+      <h1 style={{
+        fontSize: 32,
+        marginBottom: 24,
         textTransform: 'uppercase',
         letterSpacing: 2
       }}>
         🛒 <span style={{ color: colors.orange }}>Tu</span> Carrito
       </h1>
+
+      {/* Delivery date banner */}
+      <DeliveryBanner />
 
       {/* Items */}
       <div style={{ marginBottom: 24 }}>
@@ -318,6 +322,59 @@ function CartSummary({ total }: { total: number }) {
           ${(total / 100).toFixed(0)} MXN
         </span>
       </div>
+    </div>
+  )
+}
+
+function DeliveryBanner() {
+  const deliveryDate = getDeliveryDate()
+  const inCutoff = isInCutoffWindow()
+
+  return (
+    <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      {/* Always-visible delivery date */}
+      <div style={{
+        padding: '14px 18px',
+        background: '#10b98112',
+        border: '2px solid #10b981',
+        borderRadius: 10,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 12,
+      }}>
+        <span style={{ fontSize: 22, lineHeight: 1 }}>📅</span>
+        <div>
+          <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: 15 }}>
+            Entrega estimada: {formatDeliveryDate(deliveryDate)}
+          </p>
+          <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textMuted }}>
+            Entregamos cada domingo · Pedidos cortados el viernes a mediodía
+          </p>
+        </div>
+      </div>
+
+      {/* Cutoff warning (only Fri 12pm – Sun) */}
+      {inCutoff && (
+        <div style={{
+          padding: '14px 18px',
+          background: '#f59e0b15',
+          border: `2px solid ${colors.orange}`,
+          borderRadius: 10,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+        }}>
+          <span style={{ fontSize: 22, lineHeight: 1 }}>⚠️</span>
+          <div>
+            <p style={{ margin: 0, fontWeight: 700, color: colors.orange, fontSize: 15 }}>
+              Pedidos de esta semana ya cerraron
+            </p>
+            <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textSecondary }}>
+              Tu orden se procesará para el <strong style={{ color: colors.white }}>próximo domingo</strong>. Confirmarás en el checkout.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
