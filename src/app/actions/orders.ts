@@ -35,6 +35,7 @@ export async function createAdminOrder(
 
   // Determinar customer_id
   let customerId: string | null = data.customerId ?? null
+  let createdCustomerId: string | null = null
 
   if (data.type === 'cliente' && !customerId && data.customerName?.trim()) {
     const email = `admin_${Date.now()}@mm.internal`
@@ -52,6 +53,7 @@ export async function createAdminOrder(
 
     if (custError) return { error: custError.message }
     customerId = customer.id
+    createdCustomerId = customer.id
   }
 
   // Setear created_at al lunes de la semana seleccionada (mediodía)
@@ -74,7 +76,10 @@ export async function createAdminOrder(
     .select('id')
     .single()
 
-  if (orderError) return { error: orderError.message }
+  if (orderError) {
+    if (createdCustomerId) await supabase.from('customers').delete().eq('id', createdCustomerId)
+    return { error: orderError.message }
+  }
 
   // Crear items
   const { error: itemsError } = await supabase.from('order_items').insert(
@@ -88,6 +93,7 @@ export async function createAdminOrder(
   )
 
   if (itemsError) {
+    if (createdCustomerId) await supabase.from('customers').delete().eq('id', createdCustomerId)
     await supabase.from('orders').delete().eq('id', order.id)
     return { error: itemsError.message }
   }
