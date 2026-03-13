@@ -5,7 +5,6 @@ export interface PickupSpot {
   name: string
   address: string
   schedule: string
-  zone: string
 }
 
 export async function getActivePickupSpots(): Promise<PickupSpot[]> {
@@ -13,7 +12,7 @@ export async function getActivePickupSpots(): Promise<PickupSpot[]> {
 
   const { data, error } = await supabase
     .from('pickup_spots')
-    .select('id, name, address, schedule, zone')
+    .select('id, name, address, schedule')
     .eq('active', true)
     .order('name', { ascending: true })
 
