@@ -251,7 +251,7 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
                 style={{ ...inputStyle, cursor: 'pointer', marginTop: 8 }}
               >
                 {pickupSpots.map(s => (
-                  <option key={s.id} value={s.id}>{s.name} — {s.zone}</option>
+                  <option key={s.id} value={s.id}>{s.name}</option>
                 ))}
               </select>
             )}
