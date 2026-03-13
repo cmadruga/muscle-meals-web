@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect } from 'react'
+import React, { useEffect } from 'react'
 import type { Meal, Recipe, Ingredient, Size } from '@/lib/types'
 import { colors } from '@/lib/theme'
 
@@ -131,9 +131,9 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
-                  {sections.map(({ sec, ings }) => (
-                    <>
-                      {sec && <SectionDivider key={`div-${sec}`} label={SECTION_LABEL[sec]} color={SECTION_COLOR[sec]} />}
+                  {sections.map(({ sec, ings }, sectionIndex) => (
+                    <React.Fragment key={sec ?? `section-${sectionIndex}`}>
+                      {sec && <SectionDivider label={SECTION_LABEL[sec]} color={SECTION_COLOR[sec]} />}
                       {ings.map((ri, i) => {
                         const ing = ingredientsById.get(ri.ingredient_id)
                         if (!ing) return null
@@ -141,7 +141,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                         const cal = qty * ing.calories / 100
                         return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ing.unit} calories={cal} section={sec} />
                       })}
-                    </>
+                    </React.Fragment>
                   ))}
                 </tbody>
               </table>
