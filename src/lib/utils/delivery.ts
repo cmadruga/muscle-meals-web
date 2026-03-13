@@ -16,9 +16,9 @@ export function getDeliveryDate(): Date {
     dayOfWeek === 6 ||
     dayOfWeek === 0
 
-  // Days to this coming Sunday (7 if today is Sunday)
-  const daysToThisSunday = ((7 - dayOfWeek) % 7) || 7
-  const daysUntilDelivery = isPastCutoff ? daysToThisSunday + 7 : daysToThisSunday
+  // Days to upcoming Sunday: 0 on Sunday, 1 on Saturday, ..., 6 on Monday
+  const daysToUpcomingSunday = (7 - dayOfWeek) % 7
+  const daysUntilDelivery = daysToUpcomingSunday + (isPastCutoff ? 7 : 0)
 
   const delivery = new Date(now)
   delivery.setDate(now.getDate() + daysUntilDelivery)
