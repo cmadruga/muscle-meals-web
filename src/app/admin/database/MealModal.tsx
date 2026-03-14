@@ -112,12 +112,17 @@ export default function MealModal({ meal, mainRecipes, subRecipes, onClose, onSa
     if (isEdit) {
       setUploading(true)
       setError('')
-      const fd = new FormData()
-      fd.append('file', file)
-      const result = await uploadMealImage(meal.id, fd)
-      if (result.error) { setError(`Error al subir imagen: ${result.error}`); setUploading(false); return }
-      setImgUrl(result.publicUrl!)
-      setUploading(false)
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        const result = await uploadMealImage(meal.id, fd)
+        if (result.error) { setError(`Error al subir imagen: ${result.error}`); return }
+        setImgUrl(result.publicUrl!)
+      } catch (e) {
+        setError(`Error al subir imagen: ${e instanceof Error ? e.message : 'Error desconocido'}`)
+      } finally {
+        setUploading(false)
+      }
     } else {
       setPendingFile(file)
     }

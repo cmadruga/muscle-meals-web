@@ -154,6 +154,7 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
                 <input
                   style={inputStyle}
                   type="number"
+                  step="any"
                   value={form[key]}
                   onChange={(e) => set(key, parseFloat(e.target.value) || 0)}
                 />

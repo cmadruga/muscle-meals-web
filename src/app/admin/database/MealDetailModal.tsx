@@ -12,8 +12,8 @@ function fmt(n: number) {
   return r % 1 === 0 ? r.toFixed(0) : r.toFixed(1)
 }
 
-function IngRow({ name, qty, unit, calories, section }: {
-  name: string; qty: number; unit: string; calories: number; section?: string
+function IngRow({ name, qty, unit, calories, protein, carbs, fats, section }: {
+  name: string; qty: number; unit: string; calories: number; protein: number; carbs: number; fats: number; section?: string
 }) {
   const color = section ? (SECTION_COLOR[section] ?? colors.white) : colors.white
   return (
@@ -26,6 +26,9 @@ function IngRow({ name, qty, unit, calories, section }: {
       <td style={{ padding: '7px 12px', textAlign: 'right', whiteSpace: 'nowrap', color: colors.textMuted, fontSize: 12 }}>
         {fmt(calories)} kcal
       </td>
+      <td style={{ padding: '7px 12px', textAlign: 'right', whiteSpace: 'nowrap', color: '#f87171', fontSize: 12 }}>{fmt(protein)}P</td>
+      <td style={{ padding: '7px 12px', textAlign: 'right', whiteSpace: 'nowrap', color: '#fbbf24', fontSize: 12 }}>{fmt(carbs)}C</td>
+      <td style={{ padding: '7px 12px', textAlign: 'right', whiteSpace: 'nowrap', color: '#60a5fa', fontSize: 12 }}>{fmt(fats)}G</td>
     </tr>
   )
 }
@@ -33,7 +36,7 @@ function IngRow({ name, qty, unit, calories, section }: {
 function SectionDivider({ label, color }: { label: string; color: string }) {
   return (
     <tr>
-      <td colSpan={3} style={{
+      <td colSpan={6} style={{
         padding: '6px 12px 4px',
         fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em',
         color, borderBottom: `1px solid ${color}33`,
@@ -83,12 +86,16 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
     : []
 
   // Totales
-  let totalCal = 0
+  let totalCal = 0, totalPro = 0, totalCarb = 0, totalFat = 0
   if (mainRecipe) {
     for (const ri of mainRecipe.ingredients) {
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
-      totalCal += effectiveQty(ri.qty, ing.type) * ing.calories / 100
+      const qty = effectiveQty(ri.qty, ing.type)
+      totalCal  += qty * ing.calories / 100
+      totalPro  += qty * ing.protein / 100
+      totalCarb += qty * ing.carbs / 100
+      totalFat  += qty * ing.fats / 100
     }
   }
   for (const sub of subRecipes) {
@@ -96,7 +103,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
     for (const ri of sub.ingredients) {
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
-      totalCal += (ri.qty / p) * ing.calories / 100
+      const qty = ri.qty / p
+      totalCal  += qty * ing.calories / 100
+      totalPro  += qty * ing.protein / 100
+      totalCarb += qty * ing.carbs / 100
+      totalFat  += qty * ing.fats / 100
     }
   }
 
@@ -115,7 +126,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
           <div>
             <span style={{ color: colors.white, fontWeight: 700, fontSize: 16 }}>{meal.name}</span>
             <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginLeft: 12 }}>
-              {Math.round(totalCal)} kcal · {selectedSize.name}
+              {Math.round(totalCal)} kcal · <span style={{ color: '#f87171' }}>{Math.round(totalPro)}P</span> · <span style={{ color: '#fbbf24' }}>{Math.round(totalCarb)}C</span> · <span style={{ color: '#60a5fa' }}>{Math.round(totalFat)}G</span> · {selectedSize.name}
             </span>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0 }}>✕</button>
@@ -127,7 +138,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
             <div style={{ borderBottom: `1px solid ${colors.grayLight}` }}>
               <div style={{ padding: '10px 12px 4px', display: 'flex', justifyContent: 'space-between' }}>
                 <span style={{ color: colors.textMuted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{mainRecipe.name}</span>
-                <span style={{ color: colors.textMuted, fontSize: 11 }}>CANTIDAD · CALS</span>
+                <span style={{ color: colors.textMuted, fontSize: 11 }}>CANTIDAD · CALS · P · C · G</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
@@ -138,8 +149,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                         const ing = ingredientsById.get(ri.ingredient_id)
                         if (!ing) return null
                         const qty = effectiveQty(ri.qty, ing.type)
-                        const cal = qty * ing.calories / 100
-                        return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ing.unit} calories={cal} section={sec} />
+                        const cal  = qty * ing.calories / 100
+                        const pro  = qty * ing.protein / 100
+                        const carb = qty * ing.carbs / 100
+                        const fat  = qty * ing.fats / 100
+                        return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ing.unit} calories={cal} protein={pro} carbs={carb} fats={fat} section={sec} />
                       })}
                     </React.Fragment>
                   ))}
@@ -155,16 +169,19 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                 <span style={{ color: colors.textMuted, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
                   {sub.name} <span style={{ opacity: 0.6, fontWeight: 400 }}>÷ {sub.portions} porc.</span>
                 </span>
-                <span style={{ color: colors.textMuted, fontSize: 11 }}>CANTIDAD · CALS</span>
+                <span style={{ color: colors.textMuted, fontSize: 11 }}>CANTIDAD · CALS · P · C · G</span>
               </div>
               <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                 <tbody>
                   {sub.ingredients.map((ri, i) => {
                     const ing = ingredientsById.get(ri.ingredient_id)
                     if (!ing) return null
-                    const qty = ri.qty / (sub.portions > 0 ? sub.portions : 1)
-                    const cal = qty * ing.calories / 100
-                    return <IngRow key={i} name={ing.name} qty={qty} unit={ing.unit} calories={cal} />
+                    const qty  = ri.qty / (sub.portions > 0 ? sub.portions : 1)
+                    const cal  = qty * ing.calories / 100
+                    const pro  = qty * ing.protein / 100
+                    const carb = qty * ing.carbs / 100
+                    const fat  = qty * ing.fats / 100
+                    return <IngRow key={i} name={ing.name} qty={qty} unit={ing.unit} calories={cal} protein={pro} carbs={carb} fats={fat} />
                   })}
                 </tbody>
               </table>
