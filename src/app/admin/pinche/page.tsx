@@ -48,7 +48,7 @@ export default async function PinchePage() {
   return (
     <div>
       <h1 style={{ color: colors.white, fontSize: 26, fontWeight: 700, marginBottom: 4 }}>
-        Pinche de la Semana
+        Pinche
       </h1>
       <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 16 }}>
         {totalPlatos} porciones
