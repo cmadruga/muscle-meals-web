@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import type { PincheMeal, PincheSizeRow } from '@/lib/utils/production'
 import type { PincheVessel } from '@/lib/types'
 import { colors } from '@/lib/theme'
@@ -213,8 +213,6 @@ export default function PincheCarousel({
   weekKey: string
   vessels?: PincheVessel[]
 }) {
-  const [idx, setIdx] = useState(0)
-  const touchStartX = useRef<number | null>(null)
   const storageKey = `pinche_${weekKey}`
 
   const [inputs, setInputs] = useState<PincheInputs>(() => {
@@ -244,72 +242,28 @@ export default function PincheCarousel({
     return <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay datos esta semana.</p>
   }
 
-  const meal = meals[idx]
-  const hasPrev = idx > 0
-  const hasNext = idx < meals.length - 1
-
-  const onTouchStart = (e: React.TouchEvent) => { touchStartX.current = e.touches[0].clientX }
-  const onTouchEnd = (e: React.TouchEvent) => {
-    if (touchStartX.current === null) return
-    const delta = touchStartX.current - e.changedTouches[0].clientX
-    if (delta > 50 && hasNext) setIdx(i => i + 1)
-    else if (delta < -50 && hasPrev) setIdx(i => i - 1)
-    touchStartX.current = null
-  }
-
-  const btnStyle = (enabled: boolean): React.CSSProperties => ({
-    background: enabled ? colors.orange : colors.grayDark,
-    border: `1px solid ${enabled ? colors.orange : colors.grayLight}`,
-    borderRadius: 8,
-    color: enabled ? colors.white : colors.textMuted,
-    width: 36, height: 36,
-    cursor: enabled ? 'pointer' : 'default',
-    fontSize: 16,
-    display: 'flex', alignItems: 'center', justifyContent: 'center',
-    flexShrink: 0,
-  })
-
   const getState = (mealId: string, type: IngType): SectionState =>
     inputs[mealId]?.[type] ?? { cocido: '', sarten: '' }
 
   return (
-    <div onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{ touchAction: 'pan-y' }}>
-      {/* Nav */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <button style={btnStyle(hasPrev)} onClick={() => hasPrev && setIdx(i => i - 1)} disabled={!hasPrev}>‹</button>
-        <div style={{ flex: 1 }}>
-          <div style={{ color: colors.white, fontWeight: 700, fontSize: 17 }}>{meal.mealName}</div>
-          <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
-            {idx + 1} de {meals.length} · {meal.totalPortions} porciones
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
+      {meals.map(meal => (
+        <div key={meal.mealId}>
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ color: colors.white, fontWeight: 700, fontSize: 17 }}>{meal.mealName}</div>
+            <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{meal.totalPortions} porciones</div>
           </div>
-        </div>
-        <button style={btnStyle(hasNext)} onClick={() => hasNext && setIdx(i => i + 1)} disabled={!hasNext}>›</button>
-      </div>
-
-      {/* Dots */}
-      {meals.length > 1 && (
-        <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
-          {meals.map((m, i) => (
-            <button key={m.mealId} onClick={() => setIdx(i)} title={m.mealName} style={{
-              width: i === idx ? 24 : 8, height: 8, borderRadius: 4, border: 'none',
-              cursor: 'pointer', padding: 0,
-              background: i === idx ? colors.orange : colors.grayLight,
-              transition: 'width 0.2s ease, background 0.2s ease',
-            }} />
+          {ING_ORDER.map(type => (
+            <IngSection
+              key={`${meal.mealId}-${type}`}
+              meal={meal}
+              type={type}
+              state={getState(meal.mealId, type)}
+              onChange={(field, value) => updateInput(meal.mealId, type, field, value)}
+              vessels={vessels}
+            />
           ))}
         </div>
-      )}
-
-      {/* 3 sections */}
-      {ING_ORDER.map(type => (
-        <IngSection
-          key={`${meal.mealId}-${type}`}
-          meal={meal}
-          type={type}
-          state={getState(meal.mealId, type)}
-          onChange={(field, value) => updateInput(meal.mealId, type, field, value)}
-          vessels={vessels}
-        />
       ))}
     </div>
   )
