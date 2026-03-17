@@ -21,12 +21,6 @@ function getMondayOfWeek(date: Date): Date {
   return d
 }
 
-function formatWeekRange(weekStart: Date): string {
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekEnd.getDate() + 6)
-  const opts: Intl.DateTimeFormatOptions = { day: 'numeric', month: 'short' }
-  return `${weekStart.toLocaleDateString('es-MX', opts)} – ${weekEnd.toLocaleDateString('es-MX', opts)}`
-}
 
 export default async function PinchePage() {
   const cookieStore = await cookies()

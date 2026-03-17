@@ -99,7 +99,7 @@ export default function MealModal({ meal, mainRecipes, subRecipes, onClose, onSa
   function toggleSub(id: string) {
     setSelectedSubs((prev) => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) { next.delete(id) } else { next.add(id) }
       return next
     })
   }
