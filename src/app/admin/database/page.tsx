@@ -38,7 +38,7 @@ export default async function DatabasePage({
     activeTab === 'ingredientes' || activeTab === 'recetas' || activeTab === 'meals' ? getAllIngredients() : Promise.resolve(null),
     activeTab === 'recetas' || activeTab === 'meals' ? getAllRecipes() : Promise.resolve(null),
     activeTab === 'materiales' ? getAllMaterials() : Promise.resolve(null),
-    activeTab === 'pinche' ? getAllPincheVessels() : Promise.resolve(null),
+    activeTab === 'pinche' || activeTab === 'recetas' ? getAllPincheVessels() : Promise.resolve(null),
     activeTab === 'meals' ? getMainSizes() : Promise.resolve(null),
   ])
 
@@ -75,7 +75,7 @@ export default async function DatabasePage({
       {/* Tab content */}
       {activeTab === 'meals' && meals && recipes && ingredients && mainSizes && <MealsTab meals={meals} recipes={recipes} ingredients={ingredients} mainSizes={mainSizes} />}
       {activeTab === 'ingredientes' && ingredients && <IngredientesTab ingredients={ingredients} />}
-      {activeTab === 'recetas' && recipes && ingredients && <RecetasTab recipes={recipes} ingredients={ingredients} />}
+      {activeTab === 'recetas' && recipes && ingredients && <RecetasTab recipes={recipes} ingredients={ingredients} vessels={vessels ?? []} />}
       {activeTab === 'materiales' && materials && <MaterialesTab materials={materials} />}
       {activeTab === 'pinche' && vessels && <PincheTab vessels={vessels} />}
     </div>

@@ -1,12 +1,21 @@
 'use client'
 
 import { useState } from 'react'
-import type { MealTotal } from '@/lib/utils/production'
+import type { MealTotal, MealIngredientRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
 
 function formatQty(n: number): string {
   const rounded = Math.round(n * 10) / 10
   return rounded % 1 === 0 ? rounded.toFixed(0) : rounded.toFixed(1)
+}
+
+function formatCups(gr: number, grPerCup: number): string {
+  const cups = gr / grPerCup
+  return cups % 1 === 0 ? cups.toFixed(0) : cups.toFixed(1)
+}
+
+function computeBatches(totalGr: number, maxGr: number): number {
+  return maxGr > 0 ? Math.ceil(totalGr / maxGr) : 1
 }
 
 function SizeBreakdown({ portionsBySize }: { portionsBySize: Record<string, number> }) {
@@ -24,6 +33,9 @@ function SizeBreakdown({ portionsBySize }: { portionsBySize: Record<string, numb
   )
 }
 
+const SECTION_LABEL: Record<string, string> = { pro: 'PROTEÍNA', carb: 'CARBO', veg: 'VERDURA' }
+const SECTION_COLOR: Record<string, string> = { pro: '#f87171', carb: '#fbbf24', veg: '#4ade80' }
+
 function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
   const [selectedId, setSelectedId] = useState<string>(mealTotals[0]?.mealId ?? '')
   const meal = mealTotals.find(m => m.mealId === selectedId) ?? mealTotals[0]
@@ -40,6 +52,41 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
     borderBottom: `1px solid ${colors.grayLight}`,
+  }
+
+  // Group main ingredients by section for split display
+  const sections: Array<'pro' | 'carb' | 'veg'> = ['pro', 'carb', 'veg']
+  const noSectionRows = mainIngredients.filter(i => !i.section)
+
+  // Build section groups
+  const sectionGroups: Array<{
+    section: 'pro' | 'carb' | 'veg'
+    rows: MealIngredientRow[]
+    nBatches: number
+    vesselName?: string
+    grPerCup?: number
+  }> = []
+
+  for (const section of sections) {
+    const rows = mainIngredients.filter(i => i.section === section)
+    if (rows.length === 0) continue
+
+    const vesselCfg = meal.vesselConfig?.[section]
+    let nBatches = 1
+    let vesselName: string | undefined
+    let grPerCup: number | undefined
+
+    if (vesselCfg) {
+      // Find the typed ingredient (ingredientType === section) as the trigger
+      const typedIng = rows.find(r => r.ingredientType === section)
+      if (typedIng) {
+        nBatches = computeBatches(typedIng.totalQty, vesselCfg.max_gr)
+      }
+      vesselName = vesselCfg.vessel_name
+      grPerCup = vesselCfg.gr_per_cup
+    }
+
+    sectionGroups.push({ section, rows, nBatches, vesselName, grPerCup })
   }
 
   return (
@@ -88,18 +135,75 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
             </tr>
           </thead>
           <tbody>
-            {mainIngredients.map((ing) => {
-              const sectionColor = ing.section === 'pro' ? '#f87171' : ing.section === 'carb' ? '#fbbf24' : ing.section === 'veg' ? '#4ade80' : undefined
+            {sectionGroups.map(({ section, rows, nBatches, vesselName, grPerCup }) => {
+              const sectionColor = SECTION_COLOR[section]
+              const label = SECTION_LABEL[section]
+              const hasCups = (ing: MealIngredientRow) => grPerCup && grPerCup > 0 && ing.ingredientType === section
+
               return (
-                <tr key={ing.key} style={{ borderLeft: sectionColor ? `3px solid ${sectionColor}44` : '3px solid transparent' }}>
-                  <td style={{ padding: '9px 16px', color: sectionColor ?? colors.white }}>{ing.name}</td>
-                  <td style={{ padding: '9px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
-                    <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
-                  </td>
-                </tr>
+                <>
+                  {nBatches > 1 && (
+                    <tr key={`sep_${section}`}>
+                      <td colSpan={2} style={{
+                        padding: '6px 16px',
+                        fontSize: 11,
+                        fontWeight: 700,
+                        color: sectionColor,
+                        background: sectionColor + '18',
+                        borderTop: `1px solid ${sectionColor}44`,
+                        borderBottom: `1px solid ${sectionColor}44`,
+                        letterSpacing: '0.05em',
+                      }}>
+                        ── {label}{vesselName ? ` · ${vesselName}` : ''} · {nBatches} tandas ──
+                      </td>
+                    </tr>
+                  )}
+                  {rows.map((ing) => (
+                    <tr key={ing.key} style={{ borderLeft: `3px solid ${sectionColor}44` }}>
+                      <td style={{ padding: '9px 16px', color: sectionColor }}>{ing.name}</td>
+                      <td style={{ padding: '9px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                        {nBatches > 1 ? (
+                          <>
+                            <span style={{ color: colors.white, fontWeight: 700 }}>
+                              {formatQty(ing.totalQty / nBatches)}
+                            </span>
+                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
+                            {hasCups(ing) && (
+                              <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 4 }}>
+                                ({formatCups(ing.totalQty / nBatches, grPerCup!)} tazas)
+                              </span>
+                            )}
+                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 8 }}>
+                              (total: {formatQty(ing.totalQty)} {ing.unit}{hasCups(ing) ? ` / ${formatCups(ing.totalQty, grPerCup!)} tazas` : ''})
+                            </span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
+                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
+                            {hasCups(ing) && (
+                              <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 6 }}>
+                                ({formatCups(ing.totalQty, grPerCup!)} tazas)
+                              </span>
+                            )}
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </>
               )
             })}
+
+            {noSectionRows.map((ing) => (
+              <tr key={ing.key} style={{ borderLeft: '3px solid transparent' }}>
+                <td style={{ padding: '9px 16px', color: colors.white }}>{ing.name}</td>
+                <td style={{ padding: '9px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
+                  <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
+                  <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
+                </td>
+              </tr>
+            ))}
 
             {subIngredients.length > 0 && (
               <>

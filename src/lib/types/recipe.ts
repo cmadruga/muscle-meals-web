@@ -5,6 +5,19 @@ import type { RecipeIngredient } from './ingredient'
  */
 export type RecipeType = 'main' | 'sub'
 
+export interface SectionVesselConfig {
+  vessel_id: string
+  vessel_name: string
+  max_gr: number
+  gr_per_cup?: number
+}
+
+export interface RecipeVesselConfig {
+  pro?: SectionVesselConfig
+  carb?: SectionVesselConfig
+  veg?: SectionVesselConfig
+}
+
 /**
  * Receta base
  */
@@ -16,6 +29,7 @@ export interface Recipe {
   ingredients: RecipeIngredient[]
   portions: number
   created_at: string
+  vessel_config?: RecipeVesselConfig | null
 }
 
 /**
