@@ -153,7 +153,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                         const pro  = qty * ing.protein / 100
                         const carb = qty * ing.carbs / 100
                         const fat  = qty * ing.fats / 100
-                        return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ing.unit} calories={cal} protein={pro} carbs={carb} fats={fat} section={sec} />
+                        return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ri.unit} calories={cal} protein={pro} carbs={carb} fats={fat} section={sec} />
                       })}
                     </React.Fragment>
                   ))}
@@ -181,7 +181,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                     const pro  = qty * ing.protein / 100
                     const carb = qty * ing.carbs / 100
                     const fat  = qty * ing.fats / 100
-                    return <IngRow key={i} name={ing.name} qty={qty} unit={ing.unit} calories={cal} protein={pro} carbs={carb} fats={fat} />
+                    return <IngRow key={i} name={ing.name} qty={qty} unit={ri.unit} calories={cal} protein={pro} carbs={carb} fats={fat} />
                   })}
                 </tbody>
               </table>

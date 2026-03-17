@@ -1,4 +1,10 @@
-import type { Recipe, Size, Ingredient, Macros } from '@/lib/types'
+import type { Recipe, Size, Ingredient, Macros, Unit } from '@/lib/types'
+
+function toGrams(qty: number, unit: Unit, ingredient: Ingredient): number {
+  if (unit === 'g') return qty
+  const conv = ingredient.unit_conversions?.find(c => c.unit === unit)
+  return conv ? qty * conv.gr_equiv : qty
+}
 
 /**
  * Calcula los macros totales de un meal basado en sus recetas y el size seleccionado
@@ -29,7 +35,7 @@ export function calculateMealMacros(
     // Si type es null, usa la cantidad original de la receta
 
     // Calcular macros proporcionales (ingredient tiene macros por 100g)
-    const ratio = qty / 100
+    const ratio = toGrams(qty, recipeIng.unit, ingredient) / 100
     totals.calories += ingredient.calories * ratio
     totals.protein += ingredient.protein * ratio
     totals.carbs += ingredient.carbs * ratio
@@ -43,7 +49,7 @@ export function calculateMealMacros(
       const ingredient = ingredients.get(recipeIng.ingredient_id)
       if (!ingredient) continue
 
-      const ratio = (recipeIng.qty / subPortions) / 100
+      const ratio = toGrams(recipeIng.qty / subPortions, recipeIng.unit, ingredient) / 100
       totals.calories += ingredient.calories * ratio
       totals.protein += ingredient.protein * ratio
       totals.carbs += ingredient.carbs * ratio
