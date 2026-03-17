@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useTransition, useEffect } from 'react'
-import type { Ingredient, IngredientType, Unit } from '@/lib/types'
+import type { Ingredient, IngredientType, Unit, UnitConversion } from '@/lib/types'
 import { colors } from '@/lib/theme'
 import {
   createIngredient,
@@ -26,6 +26,7 @@ export const emptyIngredientForm = (): IngredientFormData => ({
   precio: 0,
   public_name: null,
   proveedor: null,
+  unit_conversions: [],
 })
 
 export function toIngredientForm(ing: Ingredient): IngredientFormData {
@@ -41,6 +42,7 @@ export function toIngredientForm(ing: Ingredient): IngredientFormData {
     precio: ing.precio,
     public_name: ing.public_name,
     proveedor: ing.proveedor,
+    unit_conversions: ing.unit_conversions ?? [],
   }
 }
 
@@ -188,6 +190,61 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
           <div>
             <label style={labelStyle}>Proveedor</label>
             <input style={inputStyle} value={form.proveedor ?? ''} onChange={(e) => set('proveedor', e.target.value || null)} placeholder="Opcional" />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Equivalencias de unidad</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {form.unit_conversions.map((conv, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span style={{ color: colors.textMuted, fontSize: 13, minWidth: 24, textAlign: 'right' }}>1</span>
+                  <select
+                    value={conv.unit}
+                    onChange={(e) => {
+                      const next = [...form.unit_conversions]
+                      next[i] = { ...conv, unit: e.target.value as Unit }
+                      set('unit_conversions', next)
+                    }}
+                    style={{ ...inputStyle, width: 90 }}
+                  >
+                    {UNITS.filter(u => u !== form.unit).map(u => <option key={u} value={u}>{u}</option>)}
+                  </select>
+                  <span style={{ color: colors.textMuted, fontSize: 13 }}>=</span>
+                  <input
+                    type="number"
+                    min={0}
+                    step="any"
+                    value={conv.gr_equiv}
+                    onChange={(e) => {
+                      const next = [...form.unit_conversions]
+                      next[i] = { ...conv, gr_equiv: parseFloat(e.target.value) || 0 }
+                      set('unit_conversions', next)
+                    }}
+                    style={{ ...inputStyle, width: 80 }}
+                  />
+                  <span style={{ color: colors.textMuted, fontSize: 13 }}>{form.unit}</span>
+                  <button
+                    type="button"
+                    onClick={() => set('unit_conversions', form.unit_conversions.filter((_, j) => j !== i))}
+                    style={{ background: 'none', border: 'none', color: colors.error, cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 4px' }}
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  const usedUnits = new Set(form.unit_conversions.map(c => c.unit))
+                  const available = UNITS.filter(u => u !== form.unit && !usedUnits.has(u))
+                  if (available.length === 0) return
+                  set('unit_conversions', [...form.unit_conversions, { unit: available[0], gr_equiv: 0 }])
+                }}
+                style={{ alignSelf: 'flex-start', padding: '5px 12px', borderRadius: 6, border: `1px solid ${colors.grayLight}`, background: 'transparent', color: colors.textMuted, cursor: 'pointer', fontSize: 12 }}
+              >
+                + Agregar equivalencia
+              </button>
+            </div>
           </div>
         </div>
 

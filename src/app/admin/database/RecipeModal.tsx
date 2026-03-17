@@ -109,6 +109,10 @@ function IngredientRow({
 }) {
   const ing = ingredients.find((i) => i.id === row.ingredient_id)
 
+  const availableUnits = ing
+    ? [ing.unit, ...(ing.unit_conversions ?? []).map(c => c.unit)]
+    : [row.unit]
+
   function handleIngredientChange(id: string) {
     const found = ingredients.find((i) => i.id === id)
     onChange({ ...row, ingredient_id: id, unit: found?.unit ?? 'g' })
@@ -129,7 +133,17 @@ function IngredientRow({
         onChange={(e) => onChange({ ...row, qty: parseFloat(e.target.value) || 0 })}
         style={{ width: 80, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 8px', color: colors.white, fontSize: 13, textAlign: 'right' }}
       />
-      <span style={{ color: colors.textMuted, fontSize: 13, width: 36, flexShrink: 0 }}>{ing?.unit ?? '—'}</span>
+      {availableUnits.length > 1 ? (
+        <select
+          value={row.unit}
+          onChange={(e) => onChange({ ...row, unit: e.target.value as import('@/lib/types').Unit })}
+          style={{ width: 60, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '7px 6px', color: colors.white, fontSize: 13, flexShrink: 0 }}
+        >
+          {availableUnits.map(u => <option key={u} value={u}>{u}</option>)}
+        </select>
+      ) : (
+        <span style={{ color: colors.textMuted, fontSize: 13, width: 36, flexShrink: 0 }}>{ing?.unit ?? '—'}</span>
+      )}
       <button onClick={onRemove} style={{ background: 'transparent', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 4px', flexShrink: 0 }}>✕</button>
     </div>
   )

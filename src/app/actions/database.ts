@@ -3,7 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { IngredientType, RecipeType, Unit } from '@/lib/types'
+import type { IngredientType, RecipeType, Unit, UnitConversion } from '@/lib/types'
+import type { RecipeVesselConfig } from '@/lib/types/recipe'
 
 // ─── Meals ───────────────────────────────────────────────────────────────────
 
@@ -189,6 +190,21 @@ export async function deleteRecipe(id: string): Promise<{ error?: string }> {
   return {}
 }
 
+export async function updateRecipeVesselConfig(
+  recipeId: string,
+  config: RecipeVesselConfig
+): Promise<{ error?: string }> {
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('recipes')
+    .update({ vessel_config: config })
+    .eq('id', recipeId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/database')
+  revalidatePath('/admin/recetario')
+  return {}
+}
+
 // ─── Ingredientes ─────────────────────────────────────────────────────────────
 
 export interface IngredientFormData {
@@ -203,6 +219,7 @@ export interface IngredientFormData {
   precio: number
   public_name: string | null
   proveedor: string | null
+  unit_conversions: UnitConversion[]
 }
 
 export async function createIngredient(

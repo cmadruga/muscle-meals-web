@@ -18,6 +18,11 @@ export interface Macros {
   fats: number // gramos
 }
 
+export interface UnitConversion {
+  unit: Unit
+  gr_equiv: number  // cuántos gramos equivale 1 unidad de `unit`
+}
+
 /**
  * Ingrediente base
  */
@@ -37,6 +42,7 @@ export interface Ingredient {
   public_name: string | null
   proveedor: string | null
   created_at: string
+  unit_conversions: UnitConversion[]
 }
 
 /**

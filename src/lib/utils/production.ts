@@ -1,4 +1,5 @@
 import type { WeeklyProductionData } from '@/lib/db/production'
+import type { RecipeVesselConfig } from '@/lib/types/recipe'
 import { calculateMealMacros } from './macros'
 
 export type MealIngredientRow = {
@@ -9,6 +10,7 @@ export type MealIngredientRow = {
   totalQty: number
   isSubRecipe: boolean
   section?: 'pro' | 'carb' | 'veg'
+  ingredientType: string | null
 }
 
 export type MealTotal = {
@@ -17,6 +19,7 @@ export type MealTotal = {
   totalPortions: number
   portionsBySize: Record<string, number>  // sizeName → qty
   ingredients: MealIngredientRow[]
+  vesselConfig?: RecipeVesselConfig | null
 }
 
 export type ShoppingItem = {
@@ -71,10 +74,10 @@ export type MatrixRow = {
 export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
   const { items, mealsMap, ingredientsMap, sizesMap } = data
 
-  // mealId → key → { qty, name, unit, isSubRecipe, ingredientId }
+  // mealId → key → { qty, name, unit, isSubRecipe, ingredientId, section, ingredientType }
   const mealAggregates = new Map<
     string,
-    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg' }>
+    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg'; ingredientType: string | null }>
   >()
 
   const mealPortions = new Map<string, number>()
@@ -115,7 +118,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         qtyPerPortion = recipeIng.qty
       }
 
-      const key = `main_${recipeIng.section ?? ''}_${recipeIng.ingredient_id}`
+      const key = `main_${recipeIng.section ?? ''}_${recipeIng.ingredient_id}_${recipeIng.unit}`
       const existing = ingMap.get(key)
       if (existing) {
         existing.qty += qtyPerPortion * item.qty
@@ -123,10 +126,11 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         ingMap.set(key, {
           qty: qtyPerPortion * item.qty,
           name: ingredient.name,
-          unit: ingredient.unit,
+          unit: recipeIng.unit,
           isSubRecipe: false,
           ingredientId: recipeIng.ingredient_id,
           section: recipeIng.section,
+          ingredientType: ingredient.type ?? null,
         })
       }
     }
@@ -139,7 +143,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         if (!ingredient) continue
 
         const qtyPerPortion = recipeIng.qty / subPortions
-        const key = `sub_${recipeIng.ingredient_id}`
+        const key = `sub_${recipeIng.ingredient_id}_${recipeIng.unit}`
         const existing = ingMap.get(key)
         if (existing) {
           existing.qty += qtyPerPortion * item.qty
@@ -147,9 +151,10 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
           ingMap.set(key, {
             qty: qtyPerPortion * item.qty,
             name: ingredient.name,
-            unit: ingredient.unit,
+            unit: recipeIng.unit,
             isSubRecipe: true,
             ingredientId: recipeIng.ingredient_id,
+            ingredientType: ingredient.type ?? null,
           })
         }
       }
@@ -172,6 +177,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         totalQty: Math.round(val.qty * 10) / 10,
         isSubRecipe: val.isSubRecipe,
         section: val.section,
+        ingredientType: val.ingredientType,
       }
       if (val.isSubRecipe) {
         subRows.push(row)
@@ -195,6 +201,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
       totalPortions: mealPortions.get(mealId) ?? 0,
       portionsBySize: mealPortionsBySize.get(mealId) ?? {},
       ingredients: [...mainRows, ...subRows],
+      vesselConfig: mealsMap.get(mealId)?.mainRecipe.vessel_config,
     })
   }
 
@@ -203,15 +210,17 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
 }
 
 export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
-  const aggregate = new Map<string, { name: string; unit: string; totalQty: number }>()
+  const aggregate = new Map<string, { ingredientId: string; name: string; unit: string; totalQty: number }>()
 
   for (const meal of mealTotals) {
     for (const ing of meal.ingredients) {
-      const existing = aggregate.get(ing.ingredientId)
+      const key = `${ing.ingredientId}_${ing.unit}`
+      const existing = aggregate.get(key)
       if (existing) {
         existing.totalQty += ing.totalQty
       } else {
-        aggregate.set(ing.ingredientId, {
+        aggregate.set(key, {
+          ingredientId: ing.ingredientId,
           name: ing.name,
           unit: ing.unit,
           totalQty: ing.totalQty,
@@ -221,9 +230,9 @@ export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
   }
 
   const result: ShoppingItem[] = []
-  for (const [ingredientId, val] of aggregate) {
+  for (const val of aggregate.values()) {
     result.push({
-      ingredientId,
+      ingredientId: val.ingredientId,
       name: val.name,
       unit: val.unit,
       totalQty: Math.round(val.totalQty * 10) / 10,
