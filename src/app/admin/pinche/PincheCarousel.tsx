@@ -238,6 +238,8 @@ export default function PincheCarousel({
     })
   }
 
+  const [page, setPage] = useState(0)
+
   if (meals.length === 0) {
     return <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay datos esta semana.</p>
   }
@@ -245,25 +247,54 @@ export default function PincheCarousel({
   const getState = (mealId: string, type: IngType): SectionState =>
     inputs[mealId]?.[type] ?? { cocido: '', sarten: '' }
 
+  const meal = meals[page]
+
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
-      {meals.map(meal => (
-        <div key={meal.mealId}>
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ color: colors.white, fontWeight: 700, fontSize: 17 }}>{meal.mealName}</div>
-            <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>{meal.totalPortions} porciones</div>
+    <div>
+      {/* Nav header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <button
+          onClick={() => setPage(p => Math.max(0, p - 1))}
+          disabled={page === 0}
+          style={{
+            width: 36, height: 36, borderRadius: 8, border: `1px solid ${colors.grayLight}`,
+            background: 'transparent', color: page === 0 ? colors.textMuted : colors.white,
+            fontSize: 18, cursor: page === 0 ? 'default' : 'pointer', lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >
+          ‹
+        </button>
+        <div style={{ flex: 1, textAlign: 'center' }}>
+          <div style={{ color: colors.white, fontWeight: 700, fontSize: 17 }}>{meal.mealName}</div>
+          <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
+            {meal.totalPortions} porciones · {page + 1} / {meals.length}
           </div>
-          {ING_ORDER.map(type => (
-            <IngSection
-              key={`${meal.mealId}-${type}`}
-              meal={meal}
-              type={type}
-              state={getState(meal.mealId, type)}
-              onChange={(field, value) => updateInput(meal.mealId, type, field, value)}
-              vessels={vessels}
-            />
-          ))}
         </div>
+        <button
+          onClick={() => setPage(p => Math.min(meals.length - 1, p + 1))}
+          disabled={page === meals.length - 1}
+          style={{
+            width: 36, height: 36, borderRadius: 8, border: `1px solid ${colors.grayLight}`,
+            background: 'transparent', color: page === meals.length - 1 ? colors.textMuted : colors.white,
+            fontSize: 18, cursor: page === meals.length - 1 ? 'default' : 'pointer', lineHeight: 1,
+            display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+          }}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Meal content */}
+      {ING_ORDER.map(type => (
+        <IngSection
+          key={`${meal.mealId}-${type}`}
+          meal={meal}
+          type={type}
+          state={getState(meal.mealId, type)}
+          onChange={(field, value) => updateInput(meal.mealId, type, field, value)}
+          vessels={vessels}
+        />
       ))}
     </div>
   )
