@@ -1,7 +1,14 @@
 import Link from 'next/link'
 import { colors } from '@/lib/theme'
+import { getMainSizes } from '@/lib/db/sizes'
+import { getMealsBasic } from '@/lib/db/meals'
 
-export default function Home() {
+const fmt = (centavos: number) =>
+  (centavos / 100).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+export default async function Home() {
+  const [sizes, meals] = await Promise.all([getMainSizes(), getMealsBasic()])
+
   return (
     <main style={{ 
       minHeight: '100vh',
@@ -163,7 +170,7 @@ export default function Home() {
                 Selecciona Platillos
               </h3>
               <p style={{ fontSize: 14, color: colors.textSecondary }}>
-                5 o 10 comidas del menú semanal
+                Elige las opciones que quieras de las comidas del menú semanal
               </p>
             </div>
             
@@ -192,11 +199,23 @@ export default function Home() {
               </p>
             </div>
           </div>
+
+          <div style={{ textAlign: 'center', marginTop: 48 }}>
+            <a href="#paquetes" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+              background: 'transparent', color: colors.white,
+              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+            }}>
+              Nuestros Paquetes ↓
+            </a>
+          </div>
         </div>
       </section>
 
       {/* Paquetes Preview */}
-      <section style={{
+      <section id="paquetes" style={{
         padding: '60px 24px',
         background: colors.black
       }}>
@@ -224,134 +243,53 @@ export default function Home() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
             gap: 24
           }}>
-            {/* Low Calorie */}
-            <div style={{
-              background: colors.grayDark,
-              borderRadius: 12,
-              padding: 32,
-              border: `2px solid ${colors.orange}`,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ 
-                fontSize: 28, 
-                marginBottom: 16, 
-                color: colors.orange,
-                textTransform: 'uppercase'
+            {sizes.map(size => (
+              <div key={size.id} style={{
+                background: colors.grayDark,
+                borderRadius: 12,
+                padding: 32,
+                border: `2px solid ${colors.orange}`,
+                textAlign: 'center'
               }}>
-                Low Calorie
-              </h3>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: 16, 
-                marginBottom: 24,
-                fontSize: 14
-              }}>
-                <span>160g Proteína</span>
-                <span>45g Carbs</span>
-                <span>80g Vegetal</span>
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>5 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$700</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <div style={{ marginBottom: 24 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>10 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$1,400</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <p style={{ fontSize: 13, color: colors.textMuted }}>
-                +$145 MX platillo adicional
-              </p>
-            </div>
+                <h3 style={{
+                  fontSize: 28,
+                  marginBottom: 16,
+                  color: colors.orange,
+                  textTransform: 'uppercase'
+                }}>
+                  {size.name}
+                </h3>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: 16,
+                  marginBottom: 24,
+                  fontSize: 14
+                }}>
+                  <span>{size.protein_qty}g Proteína</span>
+                  <span>{size.carb_qty}g Carbs</span>
+                  <span>{size.veg_qty}g Vegetal</span>
+                </div>
 
-            {/* Fit */}
-            <div style={{
-              background: colors.grayDark,
-              borderRadius: 12,
-              padding: 32,
-              border: `2px solid ${colors.orange}`,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ 
-                fontSize: 28, 
-                marginBottom: 16, 
-                color: colors.orange,
-                textTransform: 'uppercase'
-              }}>
-                Fit
-              </h3>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: 16, 
-                marginBottom: 24,
-                fontSize: 14
-              }}>
-                <span>180g Proteína</span>
-                <span>55g Carbs</span>
-                <span>70g Vegetal</span>
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, color: colors.textSecondary }}>Individual</span>
+                  <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>
+                    ${fmt(size.price)}
+                  </span>
+                  <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
+                </div>
+                <div style={{ marginBottom: 8 }}>
+                  <span style={{ fontSize: 14, color: colors.textSecondary }}>En paquete</span>
+                  <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>
+                    ${fmt(size.package_price)}
+                  </span>
+                  <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
+                </div>
               </div>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>5 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$750</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <div style={{ marginBottom: 24 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>10 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$1,550</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <p style={{ fontSize: 13, color: colors.textMuted }}>
-                +$155 MX platillo adicional
-              </p>
-            </div>
-
-            {/* Protein+ */}
-            <div style={{
-              background: colors.grayDark,
-              borderRadius: 12,
-              padding: 32,
-              border: `2px solid ${colors.orange}`,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ 
-                fontSize: 28, 
-                marginBottom: 16, 
-                color: colors.orange,
-                textTransform: 'uppercase'
-              }}>
-                Protein+
-              </h3>
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'center', 
-                gap: 16, 
-                marginBottom: 24,
-                fontSize: 14
-              }}>
-                <span>220g Proteína</span>
-                <span>70g Carbs</span>
-                <span>70g Vegetal</span>
-              </div>
-              <div style={{ marginBottom: 8 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>5 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$800</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <div style={{ marginBottom: 24 }}>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}>10 platillos</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>$1,600</span>
-                <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-              </div>
-              <p style={{ fontSize: 13, color: colors.textMuted }}>
-                +$165 MX platillo adicional
-              </p>
-            </div>
+            ))}
           </div>
           
-          <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', marginTop: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <Link
               href="/menu"
               style={{
@@ -368,12 +306,21 @@ export default function Home() {
             >
               Ver Menú Completo
             </Link>
+            <a href="#calendario" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+              background: 'transparent', color: colors.white,
+              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+            }}>
+              ¿Cuándo llega? ↓
+            </a>
           </div>
         </div>
       </section>
 
       {/* Calendario Semanal */}
-      <section style={{
+      <section id="calendario" style={{
         padding: '60px 24px',
         background: colors.grayDark,
         borderTop: `4px solid ${colors.orange}`
@@ -428,18 +375,30 @@ export default function Home() {
             </div>
           </div>
           
-          <p style={{ 
-            textAlign: 'center', 
+          <p style={{
+            textAlign: 'center',
             color: colors.textMuted,
             fontSize: 14
           }}>
             Viernes y Sábado: En producción 🍳
           </p>
+
+          <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <a href="#menu" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+              background: 'transparent', color: colors.white,
+              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+            }}>
+              Ver el Menú ↓
+            </a>
+          </div>
         </div>
       </section>
 
       {/* Platillos Destacados - Placeholder */}
-      <section style={{
+      <section id="menu" style={{
         padding: '60px 24px',
         background: colors.black
       }}>
@@ -467,50 +426,47 @@ export default function Home() {
             gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
             gap: 20
           }}>
-            {['Pollo Ajo Parmesano', 'Pasta Boloñesa', 'Pollo Miel y Limón', 'Pollo a la Mostaza'].map((meal, i) => (
-              <div 
-                key={i}
+            {meals.map(meal => (
+              <div
+                key={meal.id}
                 style={{
                   background: colors.grayDark,
                   borderRadius: 12,
                   overflow: 'hidden'
                 }}
               >
-                {/* Imagen placeholder */}
-                <div style={{
-                  height: 160,
-                  background: `linear-gradient(45deg, ${colors.grayLight}, ${colors.grayDark})`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: colors.textTertiary,
-                  fontSize: 14
-                }}>
-                  [Imagen del platillo]
-                </div>
-                <div style={{ padding: 16 }}>
-                  <h3 style={{ 
-                    fontSize: 18, 
-                    marginBottom: 8,
-                    color: colors.orange
+                {meal.img ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={meal.img}
+                    alt={meal.name}
+                    style={{ width: '100%', height: 160, objectFit: 'cover' }}
+                  />
+                ) : (
+                  <div style={{
+                    height: 160,
+                    background: `linear-gradient(45deg, ${colors.grayLight}, ${colors.grayDark})`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    color: colors.textTertiary, fontSize: 14
                   }}>
-                    {meal}
-                  </h3>
-                  <div style={{ 
-                    display: 'flex', 
-                    gap: 12, 
-                    fontSize: 12, 
-                    color: colors.textSecondary 
-                  }}>
-                    <span>~500 cal</span>
-                    <span>~50g prot</span>
+                    [Foto próximamente]
                   </div>
+                )}
+                <div style={{ padding: 16 }}>
+                  <h3 style={{ fontSize: 18, marginBottom: 8, color: colors.orange }}>
+                    {meal.name}
+                  </h3>
+                  {meal.description && (
+                    <p style={{ fontSize: 12, color: colors.textSecondary, margin: 0 }}>
+                      {meal.description}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
           </div>
           
-          <div style={{ textAlign: 'center', marginTop: 40 }}>
+          <div style={{ textAlign: 'center', marginTop: 40, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 16 }}>
             <Link
               href="/menu"
               style={{
@@ -528,12 +484,21 @@ export default function Home() {
             >
               Ver Todos los Platillos
             </Link>
+            <a href="#envios" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+              background: 'transparent', color: colors.white,
+              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+            }}>
+              Costos de Envío ↓
+            </a>
           </div>
         </div>
       </section>
 
       {/* Envíos - Placeholder para después */}
-      <section style={{
+      <section id="envios" style={{
         padding: '60px 24px',
         background: colors.grayDark,
         borderTop: `4px solid ${colors.orange}`
@@ -551,55 +516,62 @@ export default function Home() {
           
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
             gap: 24
           }}>
             <div style={{
-              background: colors.black,
-              borderRadius: 12,
-              padding: 32,
-              textAlign: 'center',
-              border: `2px solid ${colors.grayLight}`
+              background: colors.black, borderRadius: 12, padding: 32,
+              textAlign: 'center', border: `2px solid ${colors.grayLight}`
             }}>
-              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>
-                ENVÍO ESTÁNDAR
-              </p>
-              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>
-                $49
-              </p>
+              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>ENVÍO ESTÁNDAR</p>
+              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>$49</p>
               <p style={{ fontSize: 12, color: colors.textTertiary }}>MX</p>
             </div>
-            
+
             <div style={{
-              background: colors.black,
-              borderRadius: 12,
-              padding: 32,
-              textAlign: 'center',
-              border: `2px solid ${colors.orange}`
+              background: colors.black, borderRadius: 12, padding: 32,
+              textAlign: 'center', border: `2px solid ${colors.orange}`
             }}>
-              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>
-                ENVÍO PRIORITARIO
-              </p>
-              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>
-                $60
-              </p>
-              <p style={{ fontSize: 12, color: colors.textTertiary }}>MX</p>
+              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>ENVÍO PRIORITARIO</p>
+              <p style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange, lineHeight: 1.2 }}>A cotizar</p>
+              <p style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>Según zona y horario</p>
+            </div>
+
+            <div style={{
+              background: colors.black, borderRadius: 12, padding: 32,
+              textAlign: 'center', border: `2px solid ${colors.grayLight}`
+            }}>
+              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>RECOGER EN LOCAL</p>
+              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>Gratis</p>
+              <p style={{ fontSize: 12, color: colors.textTertiary }}>Puntos de entrega disponibles</p>
             </div>
           </div>
-          
-          <p style={{ 
-            textAlign: 'center', 
-            color: colors.textTertiary, 
+
+          <p style={{
+            textAlign: 'center',
+            color: colors.textTertiary,
             marginTop: 24,
             fontSize: 13
           }}>
-            Costo adicional para entregas fuera de horario. Envíos fuera de zona: a cotizar.
+            Entregas los domingos de 9am a 4pm.
           </p>
+
+          <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <a href="#membership" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+              background: 'transparent', color: colors.white,
+              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+            }}>
+              Membership ↓
+            </a>
+          </div>
         </div>
       </section>
 
       {/* Membership Preview - Placeholder para futuro */}
-      <section style={{
+      <section id="membership" style={{
         padding: '60px 24px',
         background: colors.black
       }}>
@@ -641,14 +613,24 @@ export default function Home() {
             </div>
           </div>
           
-          <p style={{ color: colors.textMuted, fontSize: 14 }}>
+          <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 32 }}>
             Próximamente disponible
           </p>
+
+          <a href="#cta" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
+            background: 'transparent', color: colors.white,
+            borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
+            letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
+          }}>
+            ¡Ordenar ahora! ↓
+          </a>
         </div>
       </section>
 
       {/* CTA Final */}
-      <section style={{
+      <section id="cta" style={{
         padding: '80px 24px',
         background: colors.orange,
         textAlign: 'center'
