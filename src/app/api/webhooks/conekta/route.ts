@@ -141,27 +141,23 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
       console.log(`📱 WhatsApp enviado a ${customer.phone}`)
     }
 
-    // Notificar al equipo interno
-    const orderWithItems = await getOrderWithItems(ourOrderId)
-    if (orderWithItems) {
-      await sendInternalOrderAlert({
-        orderNumber: order.order_number,
-        status: 'paid',
-        customerName: customer.full_name,
-        customerPhone: customer.phone ?? '',
-        customerAddress: customer.address ?? '',
-        items: orderWithItems.items.map(item => ({
-          mealName: item.meal_name || 'Platillo',
-          sizeName: item.size_name || '',
-          qty: item.qty,
-          unitPrice: item.unit_price / 100, // centavos → pesos
-        })),
-        shippingType: order.shipping_type,
-        shippingCost: order.shipping_cost / 100, // centavos → pesos
-        totalAmount,
-      })
-      console.log(`🔔 Alerta interna enviada — pedido #${order.order_number}`)
-    }
+    const orderWithItemsPaid = await getOrderWithItems(ourOrderId)
+    await sendInternalOrderAlert({
+      orderNumber: order.order_number,
+      status: 'paid',
+      customerName: customer.full_name,
+      customerPhone: customer.phone ?? '',
+      items: (orderWithItemsPaid?.items ?? []).map(item => ({
+        mealName: item.meal_name || 'Platillo',
+        sizeName: item.size_name || '',
+        qty: item.qty,
+        unitPrice: item.unit_price / 100,
+      })),
+      shippingType: order.shipping_type,
+      shippingCost: order.shipping_cost / 100,
+      totalAmount,
+    })
+    console.log(`🔔 Alerta interna enviada — pedido #${order.order_number}`)
 
   } catch (error) {
     console.error('Error en handleOrderPaid:', error)
@@ -220,27 +216,23 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
       console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
     }
 
-    // Notificar al equipo interno (pedido pendiente de pago)
-    const orderWithItems = await getOrderWithItems(ourOrderId)
-    if (orderWithItems) {
-      await sendInternalOrderAlert({
-        orderNumber: order.order_number,
-        status: 'pending_payment',
-        customerName: customer.full_name,
-        customerPhone: customer.phone ?? '',
-        customerAddress: customer.address ?? '',
-        items: orderWithItems.items.map(item => ({
-          mealName: item.meal_name || 'Platillo',
-          sizeName: item.size_name || '',
-          qty: item.qty,
-          unitPrice: item.unit_price / 100,
-        })),
-        shippingType: order.shipping_type,
-        shippingCost: order.shipping_cost / 100,
-        totalAmount,
-      })
-      console.log(`🔔 Alerta interna enviada — pedido pendiente #${order.order_number}`)
-    }
+    const orderWithItemsPending = await getOrderWithItems(ourOrderId)
+    await sendInternalOrderAlert({
+      orderNumber: order.order_number,
+      status: 'pending_payment',
+      customerName: customer.full_name,
+      customerPhone: customer.phone ?? '',
+      items: (orderWithItemsPending?.items ?? []).map(item => ({
+        mealName: item.meal_name || 'Platillo',
+        sizeName: item.size_name || '',
+        qty: item.qty,
+        unitPrice: item.unit_price / 100,
+      })),
+      shippingType: order.shipping_type,
+      shippingCost: order.shipping_cost / 100,
+      totalAmount,
+    })
+    console.log(`🔔 Alerta interna enviada — pedido pendiente #${order.order_number}`)
 
   } catch (error) {
     console.error('Error en handleOrderPending:', error)

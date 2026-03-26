@@ -5,7 +5,7 @@ import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
 import { upsertCustomer } from '@/lib/db/customers'
 import { createOrder } from '@/lib/db/orders'
-import { createConektaOrder } from '@/app/actions/payment'
+import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
@@ -36,7 +36,7 @@ export default function CheckoutClient({
   prefill,
 }: {
   pickupSpots: PickupSpot[]
-  prefill?: { name: string; email: string; phone: string; address: string | null } | null
+  prefill?: { name: string; email?: string; phone: string; address: string | null } | null
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
@@ -50,7 +50,7 @@ export default function CheckoutClient({
   
   // Datos del cliente (pre-llenados si hay sesión activa)
   const [customerName, setCustomerName] = useState(prefill?.name ?? '')
-  const [customerEmail, setCustomerEmail] = useState(prefill?.email ?? '')
+  const customerEmail = prefill?.email ?? ''
   const [customerPhone, setCustomerPhone] = useState(prefill?.phone ?? '')
   
   // Dirección guardada vs nueva
@@ -101,12 +101,6 @@ export default function CheckoutClient({
       return
     }
     
-    // Validar email
-    if (!customerEmail.trim() || !customerEmail.includes('@')) {
-      setError('Por favor ingresa un email válido')
-      return
-    }
-
     // Validar campos básicos
     if (!customerName.trim()) {
       setError('Por favor ingresa tu nombre completo')
@@ -164,49 +158,46 @@ export default function CheckoutClient({
         }))
       )
 
-      // 3. Crear orden en Conekta con email real del cliente
-      const conektaItems = [
+      // 3. Crear preferencia de pago en MercadoPago
+      const mpItems = [
         ...items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
           unit_price: item.unitPrice,
           quantity: item.qty
         }))
       ]
-      
-      // Agregar envío solo si tiene costo
+
       if (shippingCost > 0) {
-        conektaItems.push({
+        mpItems.push({
           name: 'Envío Estándar',
           unit_price: shippingCost,
           quantity: 1
         })
       } else if (shippingType === 'priority') {
-        // Nota: Envío prioritario se cotiza después
-        conektaItems.push({
-          name: 'Envío Prioritario (A cotizar: $100-200)',
+        mpItems.push({
+          name: 'Envío Prioritario (A cotizar)',
           unit_price: 0,
           quantity: 1
         })
       } else if (shippingType === 'pickup') {
         const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
-        conektaItems.push({
+        mpItems.push({
           name: `Recoger en: ${spot?.name || 'Pickup Spot'}`,
           unit_price: 0,
           quantity: 1
         })
       }
-      
-      const result = await createConektaOrder({
+
+      const result = await createPaymentPreference({
         orderId: order.id,
         customerName,
         customerEmail,
         customerPhone: whatsappPhone,
         totalAmount: order.total_amount,
-        items: conektaItems
+        items: mpItems
       })
 
       if (result.success && result.checkoutUrl) {
-        // Redirigir a Conekta Checkout
         window.location.href = result.checkoutUrl
       } else {
         setError(result.error || 'Error al procesar el pago')
@@ -294,7 +285,6 @@ export default function CheckoutClient({
 
         <CustomerForm
           name={customerName}
-          email={customerEmail}
           phone={customerPhone}
           calle={calle}
           numeroExterior={numeroExterior}
@@ -304,7 +294,6 @@ export default function CheckoutClient({
           ciudad={ciudad}
           estado={estado}
           onNameChange={setCustomerName}
-          onEmailChange={setCustomerEmail}
           onPhoneChange={setCustomerPhone}
           onCalleChange={setCalle}
           onNumeroExteriorChange={setNumeroExterior}
@@ -331,7 +320,7 @@ export default function CheckoutClient({
               handleCheckout()
             }
           }}
-          disabled={isProcessing || !addressValidated || !customerName.trim() || !customerEmail.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
+          disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
           isProcessing={isProcessing}
           addressValidated={addressValidated}
         />
@@ -550,7 +539,6 @@ function IndividualItemSummary({ item, showBorder }: {
 
 function CustomerForm({
   name,
-  email,
   phone,
   calle,
   numeroExterior,
@@ -560,7 +548,6 @@ function CustomerForm({
   ciudad,
   estado,
   onNameChange,
-  onEmailChange,
   onPhoneChange,
   onCalleChange,
   onNumeroExteriorChange,
@@ -579,7 +566,6 @@ function CustomerForm({
   error
 }: {
   name: string
-  email: string
   phone: string
   calle: string
   numeroExterior: string
@@ -589,7 +575,6 @@ function CustomerForm({
   ciudad: string
   estado: string
   onNameChange: (value: string) => void
-  onEmailChange: (value: string) => void
   onPhoneChange: (value: string) => void
   onCalleChange: (value: string) => void
   onNumeroExteriorChange: (value: string) => void
@@ -660,21 +645,6 @@ function CustomerForm({
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
             placeholder="Juan Pérez García"
-            disabled={disabled}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* Email */}
-        <div>
-          <label style={labelStyle}>
-            Email *
-          </label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => onEmailChange(e.target.value)}
-            placeholder="tu@email.com"
             disabled={disabled}
             style={inputStyle}
           />

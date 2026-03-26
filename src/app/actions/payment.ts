@@ -1,145 +1,79 @@
 'use server'
 
-const CONEKTA_API_URL = 'https://api.conekta.io'
-const CONEKTA_PRIVATE_KEY = process.env.CONEKTA_PRIVATE_KEY!
+import MercadoPagoConfig, { Preference } from 'mercadopago'
 
-export interface CreateConektaOrderData {
+const client = new MercadoPagoConfig({
+  accessToken: process.env.MP_ACCESS_TOKEN!,
+})
+
+export interface CreatePaymentData {
   orderId: string
   customerName: string
   customerEmail: string
   customerPhone: string
-  totalAmount: number // en centavos
+  totalAmount: number // en centavos (igual que antes)
   items: Array<{
     name: string
-    unit_price: number
+    unit_price: number // en centavos
     quantity: number
   }>
 }
 
-export interface ConektaOrderResponse {
+export interface PaymentResponse {
   success: boolean
   checkoutUrl?: string
-  orderId?: string
+  preferenceId?: string
   error?: string
 }
 
-/**
- * Crea una orden en Conekta y retorna el checkout URL
- */
-export async function createConektaOrder(
-  data: CreateConektaOrderData
-): Promise<ConektaOrderResponse> {
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL ?? 'https://www.musclemeals.com.mx'
+
+export async function createPaymentPreference(
+  data: CreatePaymentData
+): Promise<PaymentResponse> {
   try {
-    const response = await fetch(`${CONEKTA_API_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.conekta-v2.1.0+json',
-        'Authorization': `Bearer ${CONEKTA_PRIVATE_KEY}`
-      },
-      body: JSON.stringify({
-        currency: 'MXN',
-        customer_info: {
-          name: data.customerName,
-          phone: data.customerPhone,
-          email: data.customerEmail
-        },
-        line_items: data.items.map(item => ({
-          name: item.name,
-          unit_price: item.unit_price,
-          quantity: item.quantity
+    const preference = new Preference(client)
+
+    // MP usa pesos (float), nuestra DB guarda centavos
+    const toPesos = (centavos: number) => Math.round(centavos) / 100
+
+    const result = await preference.create({
+      body: {
+        external_reference: data.orderId,
+        items: data.items.map((item, i) => ({
+          id: String(i),
+          title: item.name,
+          unit_price: toPesos(item.unit_price),
+          quantity: item.quantity,
+          currency_id: 'MXN',
         })),
-        checkout: {
-          allowed_payment_methods: ['card', 'cash'],
-          expires_at: Math.floor(Date.now() / 1000) + 86400, // 24 hours
-          type: 'HostedPayment',
-          success_url: `https://www.musclemeals.com.mx/order-success?our_order_id=${data.orderId}`,
-          failure_url: 'https://www.musclemeals.com.mx/order-failed'
+        payer: {
+          name: data.customerName,
+          ...(data.customerEmail ? { email: data.customerEmail } : {}),
+          phone: { number: data.customerPhone },
         },
-        metadata: {
-          order_id: data.orderId
-        }
-      })
+        back_urls: {
+          success: `${BASE_URL}/order-success?our_order_id=${data.orderId}`,
+          failure: `${BASE_URL}/order-failed?our_order_id=${data.orderId}`,
+          pending: `${BASE_URL}/order-pending?our_order_id=${data.orderId}`,
+        },
+        auto_return: 'approved',
+        notification_url: `${BASE_URL}/api/webhooks/mercadopago`,
+        expires: true,
+        expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
+      },
     })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Conekta API error:', errorData)
-      throw new Error(errorData.details?.[0]?.message || 'Error al crear la orden en Conekta')
-    }
-
-    const order = await response.json()
 
     return {
       success: true,
-      checkoutUrl: order.checkout?.url,
-      orderId: order.id
+      checkoutUrl: result.init_point ?? undefined,
+      preferenceId: result.id ?? undefined,
     }
   } catch (error) {
-    console.error('Error creating Conekta order:', error)
+    console.error('Error creating MP preference:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Error al crear la orden de pago'
-    }
-  }
-}
-
-/**
- * Crea una orden con pago por tarjeta (tokenizada desde el frontend)
- */
-export async function createConektaCardOrder(
-  data: CreateConektaOrderData,
-  tokenId: string
-): Promise<ConektaOrderResponse> {
-  try {
-    const response = await fetch(`${CONEKTA_API_URL}/orders`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.conekta-v2.1.0+json',
-        'Authorization': `Bearer ${CONEKTA_PRIVATE_KEY}`
-      },
-      body: JSON.stringify({
-        currency: 'MXN',
-        customer_info: {
-          name: data.customerName,
-          phone: data.customerPhone,
-          email: data.customerEmail
-        },
-        line_items: data.items.map(item => ({
-          name: item.name,
-          unit_price: item.unit_price,
-          quantity: item.quantity
-        })),
-        charges: [{
-          payment_method: {
-            type: 'card',
-            token_id: tokenId
-          }
-        }],
-        metadata: {
-          order_id: data.orderId
-        }
-      })
-    })
-
-    if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Conekta API error:', errorData)
-      throw new Error(errorData.details?.[0]?.message || 'Error al procesar el pago')
-    }
-
-    const order = await response.json()
-
-    return {
-      success: true,
-      orderId: order.id
-    }
-  } catch (error) {
-    console.error('Error creating Conekta card order:', error)
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : 'Error al procesar el pago'
+      error: error instanceof Error ? error.message : 'Error al crear la orden de pago',
     }
   }
 }

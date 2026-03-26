@@ -135,13 +135,19 @@ export async function sendPaymentPending(
   orderId: string,
   amount: number
 ): Promise<boolean> {
-  const message = `Hola ${customerName}! Tu pedido (#${orderId.slice(0, 8).toUpperCase()}) por $${amount.toFixed(2)} está pendiente de pago. Te enviaremos las instrucciones de pago pronto.`
-  return sendWhatsAppText(phoneNumber, message)
+  return sendWhatsAppTemplate(
+    phoneNumber,
+    'pago_pendiente',
+    'es',
+    orderId.slice(0, 8).toUpperCase(),
+    [customerName, amount.toFixed(2)]
+  )
 }
+
+
 
 /**
  * Alerta interna al número del negocio cuando se confirma/crea un pedido.
- * No necesita template aprobado por Meta (es hacia nuestro propio número).
  *
  * Requiere env var: WHATSAPP_OWNER_PHONE
  * Formato: 5218112345678 (sin +, con código de país)
@@ -151,7 +157,6 @@ export async function sendInternalOrderAlert(data: {
   status: 'paid' | 'pending_payment'
   customerName: string
   customerPhone: string
-  customerAddress: string | null
   items: Array<{ mealName: string; sizeName: string; qty: number; unitPrice: number }> // unitPrice en pesos
   shippingType: 'standard' | 'priority' | 'pickup'
   shippingCost: number   // en pesos
@@ -163,45 +168,28 @@ export async function sendInternalOrderAlert(data: {
     return false
   }
 
-  const header = data.status === 'paid'
-    ? '🔔 *NUEVO PEDIDO PAGADO*'
-    : '⏳ *PEDIDO PENDIENTE DE PAGO (OXXO/Efectivo)*'
+  const statusLabel = data.status === 'paid' ? 'PAGADO' : 'PENDIENTE DE PAGO'
+
+  const itemLines = data.items.map(item =>
+    `  • ${item.mealName} (${item.sizeName}) ×${item.qty} — $${(item.unitPrice * item.qty).toFixed(0)}`
+  ).join(', ')
 
   const shippingLabels: Record<string, string> = {
     standard: 'Estándar',
     priority: 'Prioritario',
-    pickup: 'Pickup (recoger en local)',
+    pickup: 'Pickup',
   }
-
-  const itemLines = data.items.map(item =>
-    `  • ${item.mealName} (${item.sizeName}) ×${item.qty} — $${(item.unitPrice * item.qty).toFixed(0)}`
-  ).join('\n')
-
   const shippingLine = data.shippingCost > 0
     ? `${shippingLabels[data.shippingType]} — $${data.shippingCost.toFixed(0)} MXN`
     : `${shippingLabels[data.shippingType]} — Gratis`
 
-  const lines = [
-    header,
-    '',
-    `📋 *${data.orderNumber}*`,
-    '',
-    '👤 *CLIENTE*',
-    `  ${data.customerName}`,
-    `  📱 ${data.customerPhone}`,
-    data.customerAddress ? `  📍 ${data.customerAddress}` : null,
-    '',
-    '🍽️ *PEDIDO*',
-    itemLines,
-    '',
-    '🚚 *ENVÍO*',
-    `  ${shippingLine}`,
-    '',
-    `💰 *TOTAL: $${data.totalAmount.toFixed(0)} MXN*`,
-  ]
-
-  const message = lines.filter(l => l !== null).join('\n')
-  return sendWhatsAppText(ownerPhone, message)
+  return sendWhatsAppTemplate(
+    ownerPhone,
+    'alerta_pedido',
+    'es',
+    statusLabel,
+    [data.customerName, data.customerPhone, itemLines, shippingLine, data.totalAmount.toFixed(0)]
+  )
 }
 
 /**

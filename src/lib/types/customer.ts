@@ -17,6 +17,6 @@ export interface Customer {
 export interface CreateCustomerData {
   name: string
   phone: string // Nuestro lookup key
-  email: string // Key de Conekta
+  email?: string
   address?: string
 }
