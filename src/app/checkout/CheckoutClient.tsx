@@ -3,7 +3,8 @@
 import { useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
-import { upsertCustomer } from '@/lib/db/customers'
+import { createGuestCustomer } from '@/lib/db/customers'
+import { updateLoggedInCustomer } from '@/app/actions/customer'
 import { createOrder } from '@/lib/db/orders'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
@@ -36,7 +37,7 @@ export default function CheckoutClient({
   prefill,
 }: {
   pickupSpots: PickupSpot[]
-  prefill?: { name: string; email?: string; phone: string; address: string | null } | null
+  prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
@@ -129,15 +130,25 @@ export default function CheckoutClient({
           ? savedAddress
           : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
 
-      const customer = await upsertCustomer({
-        name: customerName,
-        phone: whatsappPhone,
-        email: customerEmail,
-        address: fullAddress ?? undefined
-      })
-
-      if (!customer) {
-        throw new Error('Error al guardar información del cliente')
+      let customer
+      if (prefill?.customerId) {
+        // Usuario logueado: actualizar su registro con los datos del checkout
+        const result = await updateLoggedInCustomer({
+          customerId: prefill.customerId,
+          name: customerName,
+          phone: customerPhone,
+          address: fullAddress,
+        })
+        if (!result.customer) throw new Error(result.error || 'Error al guardar información del cliente')
+        customer = result.customer
+      } else {
+        // Guest: siempre crear registro nuevo
+        customer = await createGuestCustomer({
+          name: customerName,
+          phone: customerPhone,
+          address: fullAddress ?? undefined,
+        })
+        if (!customer) throw new Error('Error al guardar información del cliente')
       }
 
       // 2. Crear orden en Supabase con status 'pending'

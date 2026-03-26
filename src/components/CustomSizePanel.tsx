@@ -165,7 +165,7 @@ export default function CustomSizePanel({ onSizeCreated, mealsIncluded }: Custom
           marginBottom: 14,
           borderLeft: `3px solid ${colors.orange}`,
         }}>
-          Ingresa los gramos que quieres recibir ya cocinados. Lo guardamos como crudo internamente.
+          Ingresa los gramos que quieres recibir. Esto será aproximado ya que se pesa en crudo.
         </div>
       )}
 

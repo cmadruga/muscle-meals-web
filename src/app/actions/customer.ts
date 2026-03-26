@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { buildFullAddress, validateCP, isValidPostalCode } from '@/lib/address-validation'
+import type { Customer } from '@/lib/types'
 
 type ProfileState = { error?: string; success?: boolean }
 
@@ -56,4 +57,34 @@ export async function updateCustomerProfile(
 
   revalidatePath('/cuenta')
   return { success: true }
+}
+
+/**
+ * Actualiza el customer del usuario logueado al hacer checkout.
+ */
+export async function updateLoggedInCustomer(data: {
+  customerId: string
+  name: string
+  phone: string
+  address: string | null
+}): Promise<{ customer: Customer | null; error?: string }> {
+  const supabase = await createClient()
+
+  const { data: updated, error } = await supabase
+    .from('customers')
+    .update({
+      full_name: data.name,
+      phone: data.phone,
+      address: data.address,
+    })
+    .eq('id', data.customerId)
+    .select()
+    .single()
+
+  if (error) {
+    console.error('Error updating logged-in customer at checkout:', error)
+    return { customer: null, error: error.message }
+  }
+
+  return { customer: updated as Customer }
 }
