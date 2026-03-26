@@ -238,6 +238,49 @@ export async function assignExtraToClient(data: {
   return {}
 }
 
+export type OrderSummary = {
+  id: string
+  order_number: string
+  total_amount: number
+  shipping_cost: number
+  shipping_type: 'standard' | 'priority' | 'pickup'
+  items: Array<{ meal_name: string; size_name: string; qty: number; unit_price: number }>
+}
+
+export async function getOrderSummary(orderId: string): Promise<OrderSummary | null> {
+  const supabase = await createClient()
+
+  const { data: order, error } = await supabase
+    .from('orders')
+    .select(`
+      id, order_number, total_amount, shipping_cost, shipping_type,
+      order_items (
+        qty, unit_price,
+        meals:meal_id (name),
+        sizes:size_id (name)
+      )
+    `)
+    .eq('id', orderId)
+    .single()
+
+  if (error) return null
+
+  return {
+    id: order.id,
+    order_number: order.order_number,
+    total_amount: order.total_amount,
+    shipping_cost: order.shipping_cost,
+    shipping_type: order.shipping_type,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    items: (order.order_items ?? []).map((item: any) => ({
+      meal_name: item.meals?.name ?? 'Platillo',
+      size_name: item.sizes?.name ?? '',
+      qty: item.qty,
+      unit_price: item.unit_price,
+    })),
+  }
+}
+
 export async function changeOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
   const supabase = await createClient()
 
