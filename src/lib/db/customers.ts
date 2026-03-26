@@ -4,54 +4,23 @@ import type { Customer, CreateCustomerData } from '../types/customer'
 export type CustomerBasic = { id: string; full_name: string; phone: string | null; address: string | null }
 
 /**
- * Crea o actualiza un cliente
- * Si ya existe (por email), retorna el existente
+ * Crea un customer para pedidos guest — siempre inserta uno nuevo.
  */
-export async function upsertCustomer(data: CreateCustomerData): Promise<Customer | null> {
+export async function createGuestCustomer(data: CreateCustomerData): Promise<Customer | null> {
   const supabase = createClient()
 
-  // Primero buscar si ya existe por teléfono
-  const { data: existing } = await supabase
-    .from('customers')
-    .select('*')
-    .eq('phone', data.phone)
-    .single()
-
-  if (existing) {
-    // Actualizar nombre, email y dirección si cambiaron
-    const { data: updated, error } = await supabase
-      .from('customers')
-      .update({
-        full_name: data.name,
-        email: data.email,
-        address: data.address
-      })
-      .eq('id', existing.id)
-      .select()
-      .single()
-
-    if (error) {
-      console.error('Error updating customer:', error)
-      return existing as Customer
-    }
-
-    return updated as Customer
-  }
-
-  // Si no existe, crear nuevo
   const { data: newCustomer, error } = await supabase
     .from('customers')
     .insert({
       full_name: data.name,
-      phone: data.phone,
-      email: data.email,
-      address: data.address
+      phone: data.phone || null,
+      address: data.address || null,
     })
     .select()
     .single()
 
   if (error) {
-    console.error('Error creating customer:', error)
+    console.error('Error creating guest customer:', error)
     return null
   }
 
