@@ -1,14 +1,10 @@
 import Link from 'next/link'
 import Image from 'next/image'
 import { colors } from '@/lib/theme'
-import { getMainSizes } from '@/lib/db/sizes'
 import { getMealsBasic } from '@/lib/db/meals'
 
-const fmt = (centavos: number) =>
-  (centavos / 100).toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 })
-
 export default async function Home() {
-  const [sizes, meals] = await Promise.all([getMainSizes(), getMealsBasic()])
+  const meals = await getMealsBasic()
 
   return (
     <main style={{ 
@@ -243,52 +239,23 @@ export default async function Home() {
           
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-            gap: 24
+            gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+            gap: 20
           }}>
-            {sizes.map(size => (
-              <div key={size.id} style={{
-                background: colors.grayDark,
-                borderRadius: 12,
-                padding: 32,
-                border: `2px solid ${colors.orange}`,
-                textAlign: 'center'
-              }}>
-                <h3 style={{
-                  fontSize: 28,
-                  marginBottom: 16,
-                  color: colors.orange,
-                  textTransform: 'uppercase'
-                }}>
-                  {size.name}
-                </h3>
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: 16,
-                  marginBottom: 24,
-                  fontSize: 14
-                }}>
-                  <span>{size.protein_qty}g Proteína</span>
-                  <span>{size.carb_qty}g Carbs</span>
-                  <span>{size.veg_qty}g Vegetal</span>
-                </div>
-
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, color: colors.textSecondary }}>Individual</span>
-                  <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>
-                    ${fmt(size.price)}
-                  </span>
-                  <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-                </div>
-                <div style={{ marginBottom: 8 }}>
-                  <span style={{ fontSize: 14, color: colors.textSecondary }}>En paquete</span>
-                  <span style={{ fontSize: 28, fontWeight: 'bold', marginLeft: 12 }}>
-                    ${fmt(size.package_price)}
-                  </span>
-                  <span style={{ fontSize: 14, color: colors.textSecondary }}> MX</span>
-                </div>
-              </div>
+            {[
+              { src: '/Low Calorie.png', alt: 'Paquete Low Calorie' },
+              { src: '/Fit.png', alt: 'Paquete Fit' },
+              { src: '/Protein.png', alt: 'Paquete Protein+' },
+              { src: '/Personalización.png', alt: 'Paquete Personalización' },
+            ].map(pkg => (
+              <Image
+                key={pkg.src}
+                src={pkg.src}
+                alt={pkg.alt}
+                width={400}
+                height={400}
+                style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+              />
             ))}
           </div>
           
@@ -339,52 +306,13 @@ export default async function Home() {
             Semana <span style={{ color: colors.orange }}>Muscle Meals</span>
           </h2>
           
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(2, 1fr)',
-            gap: 24,
-            marginBottom: 32
-          }}>
-            {/* Pedidos */}
-            <div style={{
-              background: colors.black,
-              borderRadius: 12,
-              padding: 24,
-              border: `2px solid ${colors.orange}`,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ color: colors.orange, marginBottom: 12, fontSize: 18 }}>
-                📝 TOMA DE PEDIDOS
-              </h3>
-              <p style={{ fontSize: 20, fontWeight: 'bold' }}>
-                Lunes a Jueves
-              </p>
-            </div>
-            
-            {/* Entregas */}
-            <div style={{
-              background: colors.black,
-              borderRadius: 12,
-              padding: 24,
-              border: `2px solid ${colors.orange}`,
-              textAlign: 'center'
-            }}>
-              <h3 style={{ color: colors.orange, marginBottom: 12, fontSize: 18 }}>
-                🚚 ENTREGAS
-              </h3>
-              <p style={{ fontSize: 20, fontWeight: 'bold' }}>
-                Domingos 9am - 4pm
-              </p>
-            </div>
-          </div>
-          
-          <p style={{
-            textAlign: 'center',
-            color: colors.textMuted,
-            fontSize: 14
-          }}>
-            Viernes y Sábado: En producción 🍳
-          </p>
+          <Image
+            src="/Intinerario Semanal.png"
+            alt="Itinerario Semanal Muscle Meals"
+            width={800}
+            height={600}
+            style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+          />
 
           <div style={{ textAlign: 'center', marginTop: 40 }}>
             <a href="#menu" style={{
@@ -517,58 +445,21 @@ export default async function Home() {
             Costo de <span style={{ color: colors.orange }}>Envío</span>
           </h2>
           
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: 24
-          }}>
-            <div style={{
-              background: colors.black, borderRadius: 12, padding: 32,
-              textAlign: 'center', border: `2px solid ${colors.grayLight}`
-            }}>
-              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>ENVÍO ESTÁNDAR</p>
-              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>$49</p>
-              <p style={{ fontSize: 12, color: colors.textTertiary }}>MX</p>
-            </div>
-
-            <div style={{
-              background: colors.black, borderRadius: 12, padding: 32,
-              textAlign: 'center', border: `2px solid ${colors.orange}`
-            }}>
-              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>ENVÍO PRIORITARIO</p>
-              <p style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange, lineHeight: 1.2 }}>A cotizar</p>
-              <p style={{ fontSize: 12, color: colors.textTertiary, marginTop: 4 }}>Según zona y horario</p>
-            </div>
-
-            <div style={{
-              background: colors.black, borderRadius: 12, padding: 32,
-              textAlign: 'center', border: `2px solid ${colors.grayLight}`
-            }}>
-              <p style={{ fontSize: 14, color: colors.textSecondary, marginBottom: 8 }}>RECOGER EN LOCAL</p>
-              <p style={{ fontSize: 40, fontWeight: 'bold', color: colors.orange }}>Gratis</p>
-              <p style={{ fontSize: 12, color: colors.textTertiary }}>Puntos de entrega disponibles</p>
-            </div>
-          </div>
-
-          <p style={{
-            textAlign: 'center',
-            color: colors.textTertiary,
-            marginTop: 24,
-            fontSize: 13
-          }}>
-            Entregas los domingos de 9am a 4pm.
-          </p>
-
-          <div style={{ textAlign: 'center', marginTop: 40 }}>
-            <a href="#membership" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              padding: '12px 28px', fontSize: 15, fontWeight: 'bold',
-              background: 'transparent', color: colors.white,
-              borderRadius: 8, textDecoration: 'none', textTransform: 'uppercase',
-              letterSpacing: 1, border: `2px solid ${colors.white}`, opacity: 0.7,
-            }}>
-              Membership ↓
-            </a>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 20 }}>
+            <Image
+              src="/Costo de Envio.png"
+              alt="Costo de Envío"
+              width={600}
+              height={600}
+              style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+            />
+            <Image
+              src="/Horario de Entregas.png"
+              alt="Horario de Entregas"
+              width={600}
+              height={600}
+              style={{ width: '100%', height: 'auto', borderRadius: 12 }}
+            />
           </div>
         </div>
       </section>
