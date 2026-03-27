@@ -349,12 +349,12 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                 }}
               >
                 {meal.img ? (
-                  <Image 
-                    src={meal.img} 
+                  <Image
+                    src={meal.img}
                     alt={meal.name}
                     width={280}
-                    height={120}
-                    style={{ width: '100%', height: 120, objectFit: 'cover', borderRadius: 8, marginBottom: 12 }}
+                    height={280}
+                    style={{ width: '100%', height: 'auto', objectFit: 'contain', borderRadius: 8, marginBottom: 12 }}
                   />
                 ) : (
                   <div style={{
