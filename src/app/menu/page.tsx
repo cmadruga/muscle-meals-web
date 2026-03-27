@@ -90,7 +90,7 @@ export default async function MenuPage() {
           }
         `}</style>
         <Link
-          href="/package/default"
+          href="/package"
           className="pkg-card"
           style={{
             width: '100%',
