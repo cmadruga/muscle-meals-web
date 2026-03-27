@@ -136,7 +136,8 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
         customer.phone,
         customer.full_name,
         order.order_number,
-        totalAmount
+        totalAmount,
+        0
       )
       console.log(`📱 WhatsApp enviado a ${customer.phone}`)
     }
@@ -205,18 +206,20 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
 
     const totalAmount = conektaOrder.amount / 100
 
-    // Enviar instrucciones de pago por WhatsApp (solo si el cliente tiene teléfono)
+    const orderWithItemsPending = await getOrderWithItems(ourOrderId)
+    const itemCountPending = (orderWithItemsPending?.items ?? []).reduce((sum, i) => sum + i.qty, 0)
+
     if (customer.phone) {
       await sendPaymentPending(
         customer.phone,
         customer.full_name,
         order.order_number,
-        totalAmount
+        totalAmount,
+        itemCountPending
       )
       console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
     }
 
-    const orderWithItemsPending = await getOrderWithItems(ourOrderId)
     await sendInternalOrderAlert({
       orderNumber: order.order_number,
       status: 'pending_payment',

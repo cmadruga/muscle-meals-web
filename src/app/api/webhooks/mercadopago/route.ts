@@ -79,11 +79,12 @@ export async function POST(request: NextRequest) {
 
       const totalAmount = payment.transaction_amount // ya en pesos
 
-      if (customer.phone) {
-        await sendPaymentConfirmation(customer.phone, customer.full_name, order.order_number, totalAmount)
-      }
-
       const orderWithItems = await getOrderWithItems(ourOrderId)
+      const itemCount = (orderWithItems?.items ?? []).reduce((sum, i) => sum + i.qty, 0)
+
+      if (customer.phone) {
+        await sendPaymentConfirmation(customer.phone, customer.full_name, order.order_number, totalAmount, itemCount)
+      }
       await sendInternalOrderAlert({
         orderNumber: order.order_number,
         status: 'paid',
@@ -110,18 +111,20 @@ export async function POST(request: NextRequest) {
 
       const customer = order.customer_id ? await getCustomerById(order.customer_id) : null
 
+      const orderWithItemsPendingMp = await getOrderWithItems(ourOrderId)
+      const itemCountPendingMp = (orderWithItemsPendingMp?.items ?? []).reduce((sum, i) => sum + i.qty, 0)
+
       if (customer?.phone) {
-        await sendPaymentPending(customer.phone, customer.full_name, order.order_number, payment.transaction_amount)
+        await sendPaymentPending(customer.phone, customer.full_name, order.order_number, payment.transaction_amount, itemCountPendingMp)
       }
 
       if (customer) {
-        const orderWithItems = await getOrderWithItems(ourOrderId)
         await sendInternalOrderAlert({
           orderNumber: order.order_number,
           status: 'pending_payment',
           customerName: customer.full_name,
           customerPhone: customer.phone ?? '',
-          items: (orderWithItems?.items ?? []).map(item => ({
+          items: (orderWithItemsPendingMp?.items ?? []).map(item => ({
             mealName: item.meal_name || 'Platillo',
             sizeName: item.size_name || '',
             qty: item.qty,
