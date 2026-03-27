@@ -80,13 +80,19 @@ export default async function MenuPage() {
           Arma tu paquete semanal y ahorra · Desde ${(lowestPackagePrice / 100).toFixed(0)} MXN por comida
         </p>
         
+        <style>{`
+          .pkg-card { display: flex; align-items: center; justify-content: space-between; gap: 24; }
+          .pkg-card-btn { display: inline-block; }
+          @media (max-width: 640px) {
+            .pkg-card { flex-direction: column; align-items: stretch; padding: 20px !important; }
+            .pkg-inner { flex-direction: column; align-items: center; text-align: center; }
+            .pkg-card-btn { display: block; text-align: center; margin-top: 16px; }
+          }
+        `}</style>
         <Link
           href="/package/default"
           className="pkg-card"
           style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            gap: 24,
             width: '100%',
             background: colors.grayDark,
             border: `2px solid ${colors.orange}`,
@@ -97,7 +103,7 @@ export default async function MenuPage() {
             boxSizing: 'border-box',
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
+          <div className="pkg-inner" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div className="pkg-img">
               <Image
                 src="/paquete.png"
@@ -203,16 +209,16 @@ export default async function MenuPage() {
               }}
             >
               {meal.img ? (
-                <Image 
-                  src={meal.img} 
+                <Image
+                  src={meal.img}
                   alt={meal.name}
                   width={280}
-                  height={180}
-                  style={{ width: '100%', height: 180, objectFit: 'cover' }}
+                  height={276}
+                  style={{ width: '100%', height: 'auto', objectFit: 'contain' }}
                 />
               ) : (
                 <div style={{
-                  height: 180,
+                  height: 276,
                   background: `linear-gradient(135deg, ${colors.grayLight}, ${colors.grayDark})`,
                   display: 'flex',
                   alignItems: 'center',

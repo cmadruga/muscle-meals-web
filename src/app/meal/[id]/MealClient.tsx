@@ -105,12 +105,12 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
       {/* Meal Info */}
       <div style={{ marginBottom: 32 }}>
         {meal.img ? (
-          <Image 
-            src={meal.img} 
+          <Image
+            src={meal.img}
             alt={meal.name}
             width={800}
-            height={300}
-            style={{ width: '100%', maxHeight: 300, objectFit: 'cover', borderRadius: 12, marginBottom: 20 }}
+            height={800}
+            style={{ width: '100%', height: 'auto', objectFit: 'contain', borderRadius: 12, marginBottom: 20 }}
             priority
           />
         ) : (

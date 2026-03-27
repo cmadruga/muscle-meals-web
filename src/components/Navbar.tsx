@@ -98,7 +98,7 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <Image
-              src="/logo.png"
+              src="/MuscleMeals_Blanco.png"
               alt="Muscle Meals"
               width={140}
               height={40}
@@ -238,45 +238,47 @@ export default function Navbar() {
             )
           )}
 
-          {/* Cart */}
-          <Link
-            href="/cart"
-            style={{
-              position: 'relative',
-              padding: '8px 16px',
-              fontSize: 14,
-              border: `2px solid ${colors.orange}`,
-              borderRadius: 8,
-              background: 'transparent',
-              textDecoration: 'none',
-              color: colors.white,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 8,
-              fontWeight: 'bold'
-            }}
-          >
-            🛒<span className="nav-cart-text">Carrito</span>
-            {mounted && itemCount > 0 && (
-              <span style={{
-                position: 'absolute',
-                top: -10,
-                right: -10,
-                background: colors.orange,
-                color: colors.black,
-                borderRadius: '50%',
-                width: 24,
-                height: 24,
+          {/* Cart — oculto en la página principal */}
+          {pathname !== '/' && (
+            <Link
+              href="/cart"
+              style={{
+                position: 'relative',
+                padding: '8px 16px',
+                fontSize: 14,
+                border: `2px solid ${colors.orange}`,
+                borderRadius: 8,
+                background: 'transparent',
+                textDecoration: 'none',
+                color: colors.white,
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 12,
+                gap: 8,
                 fontWeight: 'bold'
-              }}>
-                {itemCount}
-              </span>
-            )}
-          </Link>
+              }}
+            >
+              🛒<span className="nav-cart-text">Carrito</span>
+              {mounted && itemCount > 0 && (
+                <span style={{
+                  position: 'absolute',
+                  top: -10,
+                  right: -10,
+                  background: colors.orange,
+                  color: colors.black,
+                  borderRadius: '50%',
+                  width: 24,
+                  height: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: 12,
+                  fontWeight: 'bold'
+                }}>
+                  {itemCount}
+                </span>
+              )}
+            </Link>
+          )}
         </div>
       </nav>
 

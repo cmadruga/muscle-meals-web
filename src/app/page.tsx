@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { colors } from '@/lib/theme'
 import { getMainSizes } from '@/lib/db/sizes'
 import { getMealsBasic } from '@/lib/db/meals'
@@ -22,31 +23,33 @@ export default async function Home() {
         textAlign: 'center',
         borderBottom: `4px solid ${colors.orange}`
       }}>
+        <style>{`
+          .hero-logo-full { display: block; }
+          .hero-logo-short { display: none; }
+          @media (max-width: 640px) {
+            .hero-logo-full { display: none; }
+            .hero-logo-short { display: block; }
+          }
+        `}</style>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          {/* Logo placeholder - aquí iría tu imagen del logo */}
-          <div style={{
-            width: 120,
-            height: 120,
-            margin: '0 auto 24px',
-            background: colors.orange,
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: 48
-          }}>
-            💪
-          </div>
-          
-          <h1 style={{ 
-            fontSize: 56, 
-            fontWeight: 'bold',
-            marginBottom: 8,
-            lineHeight: 1.1,
-            letterSpacing: 2
-          }}>
-            <span style={{ color: colors.orange }}>MUSCLE</span> MEALS
-          </h1>
+          <Image
+            src="/MuscleMeals_Blanco_Horizontal.png"
+            alt="Muscle Meals"
+            width={700}
+            height={140}
+            className="hero-logo-full"
+            style={{ margin: '0 auto 24px', objectFit: 'contain' }}
+            priority
+          />
+          <Image
+            src="/MuscleMeals_Blanco.png"
+            alt="Muscle Meals"
+            width={280}
+            height={280}
+            className="hero-logo-short"
+            style={{ margin: '0 auto 24px', objectFit: 'contain' }}
+            priority
+          />
           
           <p style={{ 
             fontSize: 20,
@@ -571,7 +574,7 @@ export default async function Home() {
       </section>
 
       {/* Membership Preview - Placeholder para futuro */}
-      <section id="membership" style={{
+      {/* <section id="membership" style={{
         padding: '60px 24px',
         background: colors.black
       }}>
@@ -627,7 +630,7 @@ export default async function Home() {
             ¡Ordenar ahora! ↓
           </a>
         </div>
-      </section>
+      </section> */}
 
       {/* CTA Final */}
       <section id="cta" style={{
