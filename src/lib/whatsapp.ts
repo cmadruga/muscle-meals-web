@@ -112,16 +112,18 @@ export async function sendPaymentConfirmation(
   phoneNumber: string,
   customerName: string,
   orderId: string,
-  amount: number
+  amount: number,
+  itemCount: number
 ): Promise<boolean> {
   return sendWhatsAppTemplate(
     phoneNumber,
-    'pago_confirmado', // Nombre del template aprobado en Meta
+    'pago_confirmado',
     'es_MX',
-		orderId.slice(0, 8).toUpperCase(),
+    orderId.slice(0, 8).toUpperCase(),
     [
       customerName,
-      amount.toFixed(2),
+      amount.toFixed(0),
+      String(itemCount),
     ]
   )
 }
@@ -133,14 +135,15 @@ export async function sendPaymentPending(
   phoneNumber: string,
   customerName: string,
   orderId: string,
-  amount: number
+  amount: number,
+  itemCount: number
 ): Promise<boolean> {
   return sendWhatsAppTemplate(
     phoneNumber,
     'pago_pendiente',
     'es',
     orderId.slice(0, 8).toUpperCase(),
-    [customerName, amount.toFixed(2)]
+    [customerName, amount.toFixed(0), String(itemCount)]
   )
 }
 
@@ -170,9 +173,7 @@ export async function sendInternalOrderAlert(data: {
 
   const statusLabel = data.status === 'paid' ? 'PAGADO' : 'PENDIENTE DE PAGO'
 
-  const itemLines = data.items.map(item =>
-    `  • ${item.mealName} (${item.sizeName}) ×${item.qty} — $${(item.unitPrice * item.qty).toFixed(0)}`
-  ).join(', ')
+  const totalItems = data.items.reduce((sum, item) => sum + item.qty, 0)
 
   const shippingLabels: Record<string, string> = {
     standard: 'Estándar',
@@ -188,7 +189,7 @@ export async function sendInternalOrderAlert(data: {
     'alerta_pedido',
     'es',
     statusLabel,
-    [data.customerName, data.customerPhone, itemLines, shippingLine, data.totalAmount.toFixed(0)]
+    [data.customerName, data.customerPhone, String(totalItems), shippingLine, data.totalAmount.toFixed(0)]
   )
 }
 
