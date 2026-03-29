@@ -3,9 +3,7 @@
 import { useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
-import { createGuestCustomer } from '@/lib/db/customers'
-import { updateLoggedInCustomer } from '@/app/actions/customer'
-import { createOrder } from '@/lib/db/orders'
+import { processCheckout } from '@/app/actions/checkout'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
@@ -130,44 +128,25 @@ export default function CheckoutClient({
           ? savedAddress
           : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
 
-      let customer
-      if (prefill?.customerId) {
-        // Usuario logueado: actualizar su registro con los datos del checkout
-        const result = await updateLoggedInCustomer({
-          customerId: prefill.customerId,
-          name: customerName,
-          phone: customerPhone,
-          address: fullAddress,
-        })
-        if (!result.customer) throw new Error(result.error || 'Error al guardar información del cliente')
-        customer = result.customer
-      } else {
-        // Guest: siempre crear registro nuevo
-        customer = await createGuestCustomer({
-          name: customerName,
-          phone: customerPhone,
-          address: fullAddress ?? undefined,
-        })
-        if (!customer) throw new Error('Error al guardar información del cliente')
-      }
-
-      // 2. Crear orden en Supabase con status 'pending'
-      const order = await createOrder(
-        {
-          customer_id: customer.id,
-          total_amount: total,
-          status: 'pending',
-          shipping_type: shippingType,
-          pickup_spot_id: shippingType === 'pickup' ? selectedPickupSpot : null,
-          shipping_cost: shippingCost
-        },
-        items.map(item => ({
-          meal_id: item.mealId,
-          size_id: item.sizeId,
+      // 2. Crear customer + orden en el servidor
+      const checkoutResult = await processCheckout({
+        customerId: prefill?.customerId,
+        customerName,
+        customerPhone: whatsappPhone,
+        customerAddress: fullAddress,
+        totalAmount: total,
+        shippingType,
+        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
+        shippingCost,
+        items: items.map(item => ({
+          mealId: item.mealId,
+          sizeId: item.sizeId,
           qty: item.qty,
-          unit_price: item.unitPrice
-        }))
-      )
+          unitPrice: item.unitPrice,
+        })),
+      })
+
+      if (checkoutResult.error) throw new Error(checkoutResult.error)
 
       // 3. Crear preferencia de pago en MercadoPago
       const mpItems = [
@@ -200,11 +179,11 @@ export default function CheckoutClient({
       }
 
       const result = await createPaymentPreference({
-        orderId: order.id,
+        orderId: checkoutResult.orderId,
         customerName,
         customerEmail,
         customerPhone: whatsappPhone,
-        totalAmount: order.total_amount,
+        totalAmount: total,
         items: mpItems
       })
 
