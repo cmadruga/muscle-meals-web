@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getOrdersForWeek } from '@/lib/db/orders'
 import { getWeeklyProductionData } from '@/lib/db/production'
 import { buildMatrix } from '@/lib/utils/production'
@@ -49,13 +50,14 @@ export default async function PanelOrdersPage({
   const weekStr = toLocalDateStr(weekStart)
 
   const supabase = await createClient()
+  const admin = createAdminClient()
 
   const [orders, productionData, meals, sizes, customersRes, pickupSpots] = await Promise.all([
-    getOrdersForWeek(supabase, weekStart),
+    getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(supabase, weekStart),
     getActiveMeals(),
     getAllSizesWithCustomer(),
-    supabase.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
+    admin.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
     getActivePickupSpots(),
   ])
 

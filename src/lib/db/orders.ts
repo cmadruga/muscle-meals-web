@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase/client'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Order, OrderItem, OrderWithItems, OrderWithCustomer, CreateOrderPayload, CreateOrderItemData } from '@/lib/types'
 
@@ -21,7 +21,7 @@ export async function createOrder(
   items: CreateOrderItemData[]
 ): Promise<Order> {
   // 1. Crear la orden
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await createAdminClient()
     .from('orders')
     .insert({
       customer_id: payload.customer_id || null,
@@ -48,13 +48,13 @@ export async function createOrder(
     unit_price: item.unit_price
   }))
 
-  const { error: itemsError } = await supabase
+  const { error: itemsError } = await createAdminClient()
     .from('order_items')
     .insert(orderItems)
 
   if (itemsError) {
     // Rollback: eliminar la orden si fallan los items
-    await supabase.from('orders').delete().eq('id', order.id)
+    await createAdminClient().from('orders').delete().eq('id', order.id)
     console.error('Error creating order items:', itemsError)
     throw new Error('Error al crear los items de la orden')
   }
@@ -66,7 +66,7 @@ export async function createOrder(
  * Obtiene una orden por ID con sus items
  */
 export async function getOrderWithItems(id: string): Promise<OrderWithItems | null> {
-  const { data: order, error: orderError } = await supabase
+  const { data: order, error: orderError } = await createAdminClient()
     .from('orders')
     .select('*')
     .eq('id', id)
@@ -78,7 +78,7 @@ export async function getOrderWithItems(id: string): Promise<OrderWithItems | nu
     throw new Error('Error al cargar la orden')
   }
 
-  const { data: items, error: itemsError } = await supabase
+  const { data: items, error: itemsError } = await createAdminClient()
     .from('order_items')
     .select(`
       *,
@@ -106,7 +106,7 @@ export async function getOrderWithItems(id: string): Promise<OrderWithItems | nu
  * Obtiene una orden por ID (sin items)
  */
 export async function getOrderById(id: string): Promise<Order | null> {
-  const { data, error } = await supabase
+  const { data, error } = await createAdminClient()
     .from('orders')
     .select('*')
     .eq('id', id)
@@ -128,7 +128,7 @@ export async function updateOrderStatus(
   orderId: string, 
   status: 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled' | 'extra'
 ): Promise<void> {
-  const { error } = await supabase
+  const { error } = await createAdminClient()
     .from('orders')
     .update({ 
       status,
@@ -146,7 +146,7 @@ export async function updateOrderStatus(
  * Actualiza el conekta_order_id de una orden
  */
 export async function updateConektaOrderId(orderId: string, conektaOrderId: string): Promise<void> {
-  const { error } = await supabase
+  const { error } = await createAdminClient()
     .from('orders')
     .update({ 
       conekta_order_id: conektaOrderId,
@@ -164,7 +164,7 @@ export async function updateConektaOrderId(orderId: string, conektaOrderId: stri
  * Busca una orden por conekta_order_id
  */
 export async function getOrderByConektaId(conektaOrderId: string): Promise<Order | null> {
-  const { data, error } = await supabase
+  const { data, error } = await createAdminClient()
     .from('orders')
     .select('*')
     .eq('conekta_order_id', conektaOrderId)

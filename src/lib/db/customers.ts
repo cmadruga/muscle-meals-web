@@ -1,4 +1,4 @@
-import { createClient } from '../supabase/client'
+import { createAdminClient } from '../supabase/admin'
 import type { Customer, CreateCustomerData } from '../types/customer'
 
 export type CustomerBasic = { id: string; full_name: string; phone: string | null; address: string | null }
@@ -7,7 +7,7 @@ export type CustomerBasic = { id: string; full_name: string; phone: string | nul
  * Crea un customer para pedidos guest — siempre inserta uno nuevo.
  */
 export async function createGuestCustomer(data: CreateCustomerData): Promise<Customer | null> {
-  const supabase = createClient()
+  const supabase = createAdminClient()
 
   const { data: newCustomer, error } = await supabase
     .from('customers')
@@ -31,7 +31,7 @@ export async function createGuestCustomer(data: CreateCustomerData): Promise<Cus
  * Obtener cliente por ID
  */
 export async function getCustomerById(id: string): Promise<Customer | null> {
-  const supabase = createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('customers')
@@ -51,7 +51,7 @@ export async function getCustomerById(id: string): Promise<Customer | null> {
  * Obtener cliente por email
  */
 export async function getCustomerByEmail(email: string): Promise<Customer | null> {
-  const supabase = createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('customers')
@@ -70,7 +70,7 @@ export async function getCustomerByEmail(email: string): Promise<Customer | null
  * Obtener cliente por user_id (Google OAuth)
  */
 export async function getCustomerByUserId(userId: string): Promise<Customer | null> {
-  const supabase = createClient()
+  const supabase = createAdminClient()
 
   const { data, error } = await supabase
     .from('customers')
