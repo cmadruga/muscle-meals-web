@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export type CheckoutItem = {
   mealId: string
@@ -26,7 +26,7 @@ export type ProcessCheckoutInput = {
 export async function processCheckout(
   data: ProcessCheckoutInput
 ): Promise<{ orderId: string; orderNumber: string; error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   let customerId = data.customerId ?? null
 

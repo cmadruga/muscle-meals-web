@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import { colors } from '@/lib/theme'
 import PerfilForm from './perfil/PerfilForm'
@@ -9,7 +10,7 @@ export default async function CuentaPage() {
 
   if (!user) redirect('/cuenta/login')
 
-  const { data: customer } = await supabase
+  const { data: customer } = await createAdminClient()
     .from('customers')
     .select('*')
     .eq('user_id', user.id)

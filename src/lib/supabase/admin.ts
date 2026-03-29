@@ -1,13 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
 
 /**
- * Cliente Supabase con service role — bypasea RLS.
- * Solo usar en Server Actions / Route Handlers (nunca en el browser).
+ * Cliente Supabase con service_role key.
+ * Bypasa RLS — usar solo en el servidor (Server Actions, Route Handlers, lib/db).
+ * NUNCA importar desde componentes cliente.
  */
 export function createAdminClient() {
   return createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }

@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { colors } from '@/lib/theme'
@@ -10,14 +11,16 @@ export default async function MisOrdenesPage() {
 
   if (!user) redirect('/cuenta/login')
 
-  const { data: customer } = await supabase
+  const admin = createAdminClient()
+
+  const { data: customer } = await admin
     .from('customers')
     .select('id')
     .eq('user_id', user.id)
     .maybeSingle()
 
   const { data: orders } = customer
-    ? await supabase
+    ? await admin
         .from('orders')
         .select('*')
         .eq('customer_id', customer.id)
