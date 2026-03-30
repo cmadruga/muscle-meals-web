@@ -1,7 +1,6 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { IngredientType, RecipeType, Unit, UnitConversion } from '@/lib/types'
 import type { RecipeVesselConfig } from '@/lib/types/recipe'
@@ -12,7 +11,7 @@ export async function updateMeal(
   id: string,
   data: { name?: string; description?: string | null; img?: string | null }
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('meals').update(data).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
@@ -24,7 +23,7 @@ export async function updateMealFull(
   id: string,
   data: { mainRecipeId: string; subRecipeIds: string[]; description: string | null; img?: string | null }
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: recipe, error: recipeError } = await supabase
     .from('recipes').select('name').eq('id', data.mainRecipeId).single()
@@ -55,7 +54,7 @@ export async function toggleMealActive(
   id: string,
   active: boolean
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('meals').update({ active }).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
@@ -91,7 +90,7 @@ export async function createMeal(
   mainRecipeId: string,
   subRecipeIds: string[]
 ): Promise<{ id?: string; error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Nombre = nombre de la receta principal
   const { data: recipe, error: recipeError } = await supabase
@@ -122,7 +121,7 @@ export async function createMeal(
 }
 
 export async function deleteMeal(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Borrar sub-recetas primero (por si no hay cascade)
   await supabase.from('meal_sub_recipes').delete().eq('meal_id', id)
@@ -154,7 +153,7 @@ export interface RecipeFormData {
 export async function createRecipe(
   data: RecipeFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('recipes').insert({
     name: data.name,
     type: data.type,
@@ -170,7 +169,7 @@ export async function updateRecipe(
   id: string,
   data: RecipeFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('recipes').update({
     name: data.name,
     type: data.type,
@@ -183,7 +182,7 @@ export async function updateRecipe(
 }
 
 export async function deleteRecipe(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('recipes').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
@@ -194,7 +193,7 @@ export async function updateRecipeVesselConfig(
   recipeId: string,
   config: RecipeVesselConfig
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('recipes')
     .update({ vessel_config: config })
@@ -225,7 +224,7 @@ export interface IngredientFormData {
 export async function createIngredient(
   data: IngredientFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('ingredients').insert(data)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
@@ -235,7 +234,7 @@ export async function createIngredient(
 export async function createIngredientInline(
   data: IngredientFormData
 ): Promise<{ ingredient?: import('@/lib/types').Ingredient; error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data: created, error } = await supabase
     .from('ingredients')
     .insert(data)
@@ -250,7 +249,7 @@ export async function updateIngredient(
   id: string,
   data: IngredientFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('ingredients').update(data).eq('id', id)
   if (error) return { error: error.message }
   revalidatePath('/admin/database')
@@ -260,7 +259,7 @@ export async function updateIngredient(
 export async function deleteIngredient(
   id: string
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Guard: check if used in any recipe
   const { data: recipes, error: checkError } = await supabase
