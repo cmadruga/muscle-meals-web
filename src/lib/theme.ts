@@ -4,9 +4,9 @@
 
 export const colors = {
   orange: '#FE9739',
-  black: '#1A1A1A',
+  black: '#151515',
   white: '#FFFFFF',
-  grayDark: '#2A2A2A',
+  grayDark: '#1A1A1A',
   grayLight: '#3A3A3A',
   // Colores secundarios para textos y elementos UI
   textMuted: '#888',

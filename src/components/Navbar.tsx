@@ -98,15 +98,15 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <Link href="/" style={{ display: 'flex', alignItems: 'center', textDecoration: 'none' }}>
             <Image
-              src="/MuscleMeals_Blanco.png"
+              src="/media/Muscle Meals_Logo_Home.png"
               alt="Muscle Meals"
-              width={140}
+              width={160}
               height={40}
               className="nav-logo-full"
               style={{ height: 40, width: 'auto', objectFit: 'contain' }}
             />
             <Image
-              src="/logo-sm.png"
+              src="/media/Muscle Meals_Logo_Home_SML.png"
               alt="Muscle Meals"
               width={40}
               height={40}
@@ -222,18 +222,22 @@ export default function Navbar() {
               /* ── Botón Iniciar sesión ── */
               <button
                 onClick={() => setShowLogin(true)}
-                className="nav-login-btn"
+                className="nav-login-btn franchise-stroke"
                 style={{
                   background: colors.orange,
                   border: 'none',
                   borderRadius: 8,
-                  color: colors.black,
-                  fontWeight: 700,
+                  color: colors.white,
+                  fontFamily: 'Franchise, sans-serif',
+                  fontSize: 18,
+                  lineHeight: 1,
                   cursor: 'pointer',
                   whiteSpace: 'nowrap',
+                  textTransform: 'uppercase',
+                  letterSpacing: 0,
                 }}
               >
-                Iniciar sesión
+                Iniciar sesion
               </button>
             )
           )}

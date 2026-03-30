@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Franchise';
+  src: url('/fonts/Franchise-Free-Bold.ttf') format('truetype');
+  font-weight: bold;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   box-sizing: border-box;
   margin: 0;
@@ -11,7 +19,7 @@ html {
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
-  background: #1A1A1A;
+  background: #151515;
   color: #FFFFFF;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -40,6 +48,19 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: #FE9739;
+}
+
+/* Franchise button text — stroke negro hacia afuera */
+.franchise-stroke {
+  text-shadow:
+    -3px -3px 0 #000,
+     3px -3px 0 #000,
+    -3px  3px 0 #000,
+     3px  3px 0 #000,
+     0   -3px 0 #000,
+     0    3px 0 #000,
+    -3px  0   0 #000,
+     3px  0   0 #000;
 }
 
 /* Scrollbar personalizado */
