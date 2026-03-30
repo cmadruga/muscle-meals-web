@@ -106,7 +106,7 @@ export default async function MenuPage() {
           <div className="pkg-inner" style={{ display: 'flex', alignItems: 'center', gap: 20 }}>
             <div className="pkg-img">
               <Image
-                src="/paquete.png"
+                src="/media/paquete.png"
                 alt="Paquete Muscle Meals"
                 width={220}
                 height={140}
