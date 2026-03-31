@@ -2,6 +2,7 @@ import CheckoutClient from './CheckoutClient'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { normalizePhone } from '@/lib/address-validation'
 
 export default async function CheckoutPage() {
   const [pickupSpots, supabase] = await Promise.all([
@@ -21,10 +22,7 @@ export default async function CheckoutPage() {
       .single()
 
     if (customer) {
-      const rawPhone = customer.phone ?? ''
-      const phone = rawPhone.startsWith('52') && rawPhone.length >= 12
-        ? rawPhone.slice(2)
-        : rawPhone
+      const phone = normalizePhone(customer.phone ?? '')
 
       prefill = {
         customerId: customer.id,

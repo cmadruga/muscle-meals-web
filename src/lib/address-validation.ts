@@ -154,6 +154,17 @@ export function validatePhone(phone: string): boolean {
 }
 
 /**
+ * Normaliza un teléfono mexicano a 10 dígitos limpio.
+ * Maneja: +521XXXXXXXXXX, 521XXXXXXXXXX, 52XXXXXXXXXX, XXXXXXXXXX
+ */
+export function normalizePhone(phone: string): string {
+  const digits = phone.replace(/\D/g, '')
+  if (digits.length === 13 && digits.startsWith('521')) return digits.slice(3)
+  if (digits.length === 12 && digits.startsWith('52')) return digits.slice(2)
+  return digits
+}
+
+/**
  * Formatea número de teléfono mexicano a formato internacional para WhatsApp
  * 8112345678 -> +5218112345678
  */

@@ -3,7 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
-import { buildFullAddress, validateCP, isValidPostalCode } from '@/lib/address-validation'
+import { buildFullAddress, validateCP, isValidPostalCode, normalizePhone } from '@/lib/address-validation'
 import type { Customer } from '@/lib/types'
 
 type ProfileState = { error?: string; success?: boolean }
@@ -18,7 +18,7 @@ export async function updateCustomerProfile(
   if (!user) return { error: 'No autenticado' }
 
   const full_name = (formData.get('full_name') as string)?.trim()
-  const phone = (formData.get('phone') as string)?.trim() || null
+  const phone = normalizePhone((formData.get('phone') as string)?.trim() ?? '') || null
 
   // Campos de dirección
   const calle = (formData.get('calle') as string)?.trim()
