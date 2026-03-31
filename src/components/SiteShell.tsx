@@ -14,7 +14,7 @@ export default function SiteShell({ children }: { children: React.ReactNode }) {
     <>
       {!isAdmin && <Navbar />}
       <div style={{ paddingTop: isAdmin ? 0 : 60 }}>
-        {children}
+        {isAdmin ? children : <div className="public-content">{children}</div>}
       </div>
     </>
   )

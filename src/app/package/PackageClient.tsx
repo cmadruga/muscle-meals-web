@@ -45,7 +45,8 @@ const pkg: PackageConfig = {
 export default function PackageClient({ meals, sizes, customerSizes = [] }: PackageClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
-  const [selectedSizeId, setSelectedSizeId] = useState(sizes[0]?.id || '')
+  const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
+  const [selectedSizeId, setSelectedSizeId] = useState(fitSize?.id || sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
   const [showModal, setShowModal] = useState(false)
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set())
@@ -201,7 +202,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
         onGoToCart={handleGoToCart}
         onContinueShopping={handleContinueShopping}
         title="¡Agregado al carrito!"
-        message={`Tu paquete ${pkg.name} (${totalSelected} platillos) ha sido agregado al carrito`}
+        message={`Tu paquete ${selectedSize?.name ?? pkg.name} de ${totalSelected} platillos ha sido agregado al carrito`}
         suggestedMeals={suggestedMeals}
         selectedSize={selectedSize}
         onMealClick={handleMealClick}
@@ -450,8 +451,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                     style={{
                       flex: 1,
                       padding: '8px 12px',
-                      fontSize: 12,
-                      fontWeight: 'bold',
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 14,
+                      letterSpacing: 0,
+                      lineHeight: 1,
                       cursor: 'pointer',
                       background: 'transparent',
                       color: colors.orange,
@@ -464,7 +467,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                     }}
                   >
                     <span>{isExpanded ? '▲' : '▼'}</span>
-                    <span style={{ fontSize: 11 }}>{isExpanded ? 'Ocultar' : 'Ingredientes'}</span>
+                    <span>{isExpanded ? 'Ocultar' : 'Ingredientes'}</span>
                   </button>
                 </div>
 
@@ -484,7 +487,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                           if (!ingredient) return null
                           return (
                             <li key={idx} style={{ marginBottom: 2 }}>
-                              {ingredient.name}
+                              {ingredient.public_name ?? ingredient.name}
                             </li>
                           )
                         })}
@@ -547,27 +550,29 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
             </div>
           )}
           <button
-            className="pkg-footer-btn"
+            className={`pkg-footer-btn franchise-stroke`}
             onClick={handleAddToCart}
             disabled={!canSubmit}
             style={{
               flex: totalSelected > 0 ? 'none' : 1,
               padding: '14px 24px',
-              fontSize: 16,
-              fontWeight: 'bold',
               cursor: canSubmit ? 'pointer' : 'not-allowed',
               opacity: canSubmit ? 1 : 0.5,
               background: canSubmit ? colors.orange : colors.grayLight,
-              color: canSubmit ? colors.black : colors.textMuted,
+              color: canSubmit ? colors.white : colors.textMuted,
               border: 'none',
               borderRadius: 8,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 20,
+              letterSpacing: 0,
+              lineHeight: 1,
               textTransform: 'uppercase',
               whiteSpace: 'nowrap',
             }}
           >
             {totalSelected < pkg.minMeals
               ? `Agrega ${pkg.minMeals - totalSelected} más`
-              : '🛒 Agregar al carrito'
+              : 'Agregar al carrito'
             }
           </button>
         </div>

@@ -39,7 +39,7 @@ export default function CartPage() {
         textTransform: 'uppercase',
         letterSpacing: 2
       }}>
-        🛒 <span style={{ color: colors.orange }}>Tu</span> Carrito
+        <span style={{ color: colors.orange }}>Tu</span> Carrito
       </h1>
 
       {/* Delivery date banner */}
@@ -94,7 +94,10 @@ function EmptyCartView() {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      <div style={{ fontSize: 64, marginBottom: 24 }}>🛒</div>
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#FE9739" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 24 }}>
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
       <h1 style={{ 
         fontSize: 32,
         marginBottom: 12,
@@ -107,16 +110,19 @@ function EmptyCartView() {
       </p>
       <Link
         href="/menu"
+        className="franchise-stroke"
         style={{
           display: 'inline-block',
           padding: '16px 32px',
           background: colors.orange,
-          color: colors.black,
+          color: colors.white,
           borderRadius: 8,
           textDecoration: 'none',
-          fontWeight: 'bold',
-          fontSize: 16,
-          textTransform: 'uppercase'
+          fontFamily: 'Franchise, sans-serif',
+          fontSize: 22,
+          letterSpacing: 0,
+          lineHeight: 1,
+          textTransform: 'uppercase',
         }}
       >
         Ver menú →
@@ -379,40 +385,27 @@ function DeliveryBanner() {
   )
 }
 
-function CartActions({ onClear, onCheckout }: {
-  onClear: () => void
+function CartActions({ onCheckout }: {
   onCheckout: () => void
 }) {
   return (
     <div style={{ display: 'flex', gap: 16 }}>
       <button
-        onClick={onClear}
-        style={{
-          flex: 1,
-          padding: '16px 24px',
-          fontSize: 16,
-          border: `2px solid ${colors.grayLight}`,
-          borderRadius: 8,
-          background: 'transparent',
-          color: colors.white,
-          cursor: 'pointer'
-        }}
-      >
-        Vaciar carrito
-      </button>
-      <button
         onClick={onCheckout}
+        className="franchise-stroke"
         style={{
           flex: 2,
           padding: '16px 24px',
-          fontSize: 18,
-          fontWeight: 'bold',
           cursor: 'pointer',
           background: colors.orange,
-          color: colors.black,
+          color: colors.white,
           border: 'none',
           borderRadius: 8,
-          textTransform: 'uppercase'
+          fontFamily: 'Franchise, sans-serif',
+          fontSize: 22,
+          letterSpacing: 0,
+          lineHeight: 1,
+          textTransform: 'uppercase',
         }}
       >
         Continuar al pago →

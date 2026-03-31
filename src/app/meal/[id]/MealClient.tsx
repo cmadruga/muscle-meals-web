@@ -27,9 +27,10 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
 
+  const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
   const defaultSizeId = (initialSizeId && [...sizes, ...customerSizes].find(s => s.id === initialSizeId))
     ? initialSizeId
-    : sizes[0]?.id || ''
+    : fitSize?.id || sizes[0]?.id || ''
   const [selectedSizeId, setSelectedSizeId] = useState(defaultSizeId)
   const [qty, setQty] = useState(1)
   const [showModal, setShowModal] = useState(false)
@@ -242,8 +243,10 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
           width: '100%',
           padding: '14px 20px',
           marginBottom: 16,
-          fontSize: 16,
-          fontWeight: 'bold',
+          fontFamily: 'Franchise, sans-serif',
+          fontSize: 18,
+          letterSpacing: 0,
+          lineHeight: 1,
           cursor: 'pointer',
           background: 'transparent',
           color: colors.orange,
@@ -277,7 +280,7 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
                 
                 return (
                   <li key={idx} style={{ marginBottom: 4 }}>
-                    {ingredient.name}
+                    {ingredient.public_name ?? ingredient.name}
                   </li>
                 )
               })}
@@ -381,21 +384,24 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
         <button
           onClick={handleAddToCart}
           disabled={!selectedSize}
+          className="franchise-stroke"
           style={{
             width: '100%',
             padding: '16px 24px',
-            fontSize: 18,
-            fontWeight: 'bold',
             cursor: !selectedSize ? 'not-allowed' : 'pointer',
             opacity: !selectedSize ? 0.5 : 1,
             background: colors.orange,
-            color: colors.black,
+            color: colors.white,
             border: 'none',
             borderRadius: 8,
+            fontFamily: 'Franchise, sans-serif',
+            fontSize: 22,
+            letterSpacing: 0,
+            lineHeight: 1,
             textTransform: 'uppercase'
           }}
         >
-          🛒 Agregar al carrito
+          Agregar al carrito
         </button>
         </div>
       </div>

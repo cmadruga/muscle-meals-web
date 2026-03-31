@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   )
 
   return (
-    <div style={{ minHeight: '100vh', background: colors.black }}>
+    <div style={{ minHeight: '100vh', background: colors.black, fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif" }}>
       <style>{`
         .adm-sidebar {
           width: 220px;
