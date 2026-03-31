@@ -114,8 +114,11 @@ export async function POST(request: NextRequest) {
       const orderWithItemsPendingMp = await getOrderWithItems(ourOrderId)
       const itemCountPendingMp = (orderWithItemsPendingMp?.items ?? []).reduce((sum, i) => sum + i.qty, 0)
 
+      console.log(`⏳ Customer:`, { id: customer?.id, phone: customer?.phone, name: customer?.full_name })
       if (customer?.phone) {
         await sendPaymentPending(customer.phone, customer.full_name, order.order_number, payment.transaction_amount, itemCountPendingMp)
+      } else {
+        console.warn('⚠️ sendPaymentPending saltado — customer sin teléfono')
       }
 
       if (customer) {

@@ -88,7 +88,7 @@ async function sendWhatsAppTemplate(
 
     if (!response.ok) {
       const error = await response.json()
-      console.error('❌ Error WhatsApp Template API:', error)
+      console.error('❌ Error WhatsApp Template API:', JSON.stringify(error, null, 2))
       return false
     }
 
@@ -147,10 +147,12 @@ export async function sendPaymentPending(
   friday.setDate(now.getDate() + daysToFriday)
   const cutoffDate = friday.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
 
+  console.log('📤 sendPaymentPending →', { phoneNumber, orderNumber, customerName, itemCount, amount, cutoffDate })
+
   return sendWhatsAppTemplate(
     phoneNumber,
     'pago_pendiente',
-    'es_MX',
+    'es',
     orderNumber,
     [customerName, String(itemCount), amount.toFixed(0), cutoffDate]
   )
