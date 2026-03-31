@@ -242,8 +242,8 @@ export default function Navbar() {
             )
           )}
 
-          {/* Cart — oculto en la página principal */}
-          {pathname !== '/' && (
+          {/* Cart */}
+          {(
             <Link
               href="/cart"
               style={{
