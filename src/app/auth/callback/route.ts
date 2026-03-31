@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url)
@@ -17,21 +18,23 @@ export async function GET(request: NextRequest) {
         user.user_metadata?.name ||
         email.split('@')[0]
 
+      const admin = createAdminClient()
+
       // Si ya existe un customer con este email → vincular user_id
       // Si no existe → crear registro básico
-      const { data: existing } = await supabase
+      const { data: existing } = await admin
         .from('customers')
         .select('id')
         .eq('email', email)
         .maybeSingle()
 
       if (existing) {
-        await supabase
+        await admin
           .from('customers')
           .update({ user_id: user.id })
           .eq('id', existing.id)
       } else {
-        await supabase.from('customers').insert({
+        await admin.from('customers').insert({
           full_name: name,
           email,
           user_id: user.id,
