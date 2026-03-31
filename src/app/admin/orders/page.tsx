@@ -54,7 +54,7 @@ export default async function PanelOrdersPage({
 
   const [orders, productionData, meals, sizes, customersRes, pickupSpots] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
-    getWeeklyProductionData(supabase, weekStart),
+    getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
     getAllSizesWithCustomer(),
     admin.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
@@ -66,8 +66,8 @@ export default async function PanelOrdersPage({
   const matrixData = buildMatrix(productionData)
 
   const STATUS_ES: Record<string, string> = {
-    paid: 'Pagado', pending: 'Pendiente', preparing: 'Preparando',
-    delivered: 'Entregado', cancelled: 'Cancelado', extra: 'Extra', admin: 'Admin',
+    creado: 'Creado', paid: 'Pagado', pending: 'Pendiente',
+    cancelled: 'Cancelado', extra: 'Extra', admin: 'Admin',
   }
   const byStatus: Record<string, { orders: number; meals: number }> = {}
   for (const order of orders) {

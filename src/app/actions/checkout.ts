@@ -65,7 +65,7 @@ export async function processCheckout(
     .insert({
       customer_id: customerId,
       total_amount: data.totalAmount,
-      status: 'pending',
+      status: 'creado',
       shipping_type: data.shippingType,
       pickup_spot_id: data.pickupSpotId || null,
       shipping_cost: data.shippingCost,

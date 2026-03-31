@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
-import { updateOrderStatus, updateConektaOrderId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
+import { updateOrderStatus, updatePaymentGatewayId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
 import { getCustomerById } from '@/lib/db/customers'
 import type { ConektaOrder, ConektaCharge } from '@/lib/types/conekta'
 import { sendPaymentConfirmation, sendPaymentPending, sendOrderExpired, sendInternalOrderAlert } from '@/lib/whatsapp'
@@ -105,8 +105,8 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
     await updateOrderStatus(ourOrderId, 'paid')
     
     // Guardar el ID de Conekta para referencia
-    await updateConektaOrderId(ourOrderId, conektaOrder.id)
-    
+    await updatePaymentGatewayId(ourOrderId, conektaOrder.id)
+
     // Obtener la orden completa con customer_id
     const order = await getOrderById(ourOrderId)
     
@@ -194,7 +194,7 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
 
     console.log(`⏳ Orden pendiente: ${ourOrderId}`)
     await updateOrderStatus(ourOrderId, 'pending')
-    await updateConektaOrderId(ourOrderId, conektaOrder.id)
+    await updatePaymentGatewayId(ourOrderId, conektaOrder.id)
     
     const order = await getOrderById(ourOrderId)
     

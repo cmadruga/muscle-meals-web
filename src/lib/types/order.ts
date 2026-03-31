@@ -1,7 +1,7 @@
 /**
  * Estados posibles de una orden
  */
-export type OrderStatus = 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled' | 'extra' | 'admin'
+export type OrderStatus = 'creado' | 'pending' | 'paid' | 'cancelled' | 'extra' | 'admin'
 
 /**
  * OrderItem - Item individual de una orden (cada meal)
@@ -46,7 +46,7 @@ export interface CreateOrderPayload {
 export interface Order {
   id: string
   order_number: string // Número de orden amigable (ej: MM-0001)
-  conekta_order_id: string | null // ID de Conekta para reconciliación
+  payment_gateway_id: string | null // ID del gateway de pago (MP/Conekta) para reconciliación
   customer_id: string | null
   total_amount: number
   status: OrderStatus

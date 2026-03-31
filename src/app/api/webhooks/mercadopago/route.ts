@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
-import { updateOrderStatus, updateConektaOrderId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
+import { updateOrderStatus, updatePaymentGatewayId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
 import { getCustomerById } from '@/lib/db/customers'
 import { sendPaymentConfirmation, sendPaymentPending, sendInternalOrderAlert } from '@/lib/whatsapp'
 
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 
     if (payment.status === 'approved') {
       await updateOrderStatus(ourOrderId, 'paid')
-      await updateConektaOrderId(ourOrderId, dataId) // guarda el MP payment_id en el campo conekta_order_id
+      await updatePaymentGatewayId(ourOrderId, dataId)
 
       const order = await getOrderById(ourOrderId)
       if (!order) return NextResponse.json({ received: true })

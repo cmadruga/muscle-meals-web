@@ -91,20 +91,18 @@ export default async function MisOrdenesPage() {
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
-  pending: 'Pendiente',
+  creado: 'En proceso',
+  pending: 'Pendiente de pago',
   paid: 'Pagado',
-  preparing: 'Preparando',
-  delivered: 'Entregado',
   cancelled: 'Cancelado',
   extra: 'Extra',
   admin: 'Admin',
 }
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
+  creado: '#94a3b8',
   pending: '#f59e0b',
   paid: '#10b981',
-  preparing: '#3b82f6',
-  delivered: '#6b7280',
   cancelled: '#ef4444',
   extra: '#a855f7',
   admin: '#06b6d4',

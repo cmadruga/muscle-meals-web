@@ -125,8 +125,8 @@ export async function getOrderById(id: string): Promise<Order | null> {
  * Actualiza el status de una orden
  */
 export async function updateOrderStatus(
-  orderId: string, 
-  status: 'pending' | 'paid' | 'preparing' | 'delivered' | 'cancelled' | 'extra'
+  orderId: string,
+  status: 'creado' | 'pending' | 'paid' | 'cancelled' | 'extra'
 ): Promise<void> {
   const { error } = await createAdminClient()
     .from('orders')
@@ -143,36 +143,36 @@ export async function updateOrderStatus(
 }
 
 /**
- * Actualiza el conekta_order_id de una orden
+ * Actualiza el payment_gateway_id de una orden (MP payment_id o Conekta order_id)
  */
-export async function updateConektaOrderId(orderId: string, conektaOrderId: string): Promise<void> {
+export async function updatePaymentGatewayId(orderId: string, gatewayId: string): Promise<void> {
   const { error } = await createAdminClient()
     .from('orders')
-    .update({ 
-      conekta_order_id: conektaOrderId,
+    .update({
+      payment_gateway_id: gatewayId,
       updated_at: new Date().toISOString()
     })
     .eq('id', orderId)
 
   if (error) {
-    console.error('Error updating conekta_order_id:', error)
-    throw new Error('Error al actualizar el ID de Conekta')
+    console.error('Error updating payment_gateway_id:', error)
+    throw new Error('Error al actualizar el ID del gateway de pago')
   }
 }
 
 /**
- * Busca una orden por conekta_order_id
+ * Busca una orden por payment_gateway_id
  */
-export async function getOrderByConektaId(conektaOrderId: string): Promise<Order | null> {
+export async function getOrderByGatewayId(gatewayId: string): Promise<Order | null> {
   const { data, error } = await createAdminClient()
     .from('orders')
     .select('*')
-    .eq('conekta_order_id', conektaOrderId)
+    .eq('payment_gateway_id', gatewayId)
     .single()
 
   if (error) {
     if (error.code === 'PGRST116') return null
-    console.error('Error fetching order by Conekta ID:', error)
+    console.error('Error fetching order by gateway ID:', error)
     throw new Error('Error al buscar la orden')
   }
 
