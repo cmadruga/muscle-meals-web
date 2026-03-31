@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import type { OrderStatus } from '@/lib/types'
 
@@ -31,7 +31,7 @@ export async function createAdminOrder(
 ): Promise<{ error?: string }> {
   if (data.items.length === 0) return { error: 'Agrega al menos un ítem' }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Determinar customer_id
   let customerId: string | null = data.customerId ?? null
@@ -103,7 +103,7 @@ export async function createAdminOrder(
 }
 
 export async function saveOrderNote(orderId: string, note: string): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('orders')
     .update({ note })
@@ -135,7 +135,7 @@ export async function assignExtraToClient(data: {
   if (data.items.length === 0) return { error: 'Selecciona al menos un ítem' }
   if (!data.customerId && !data.customerName?.trim()) return { error: 'Selecciona o ingresa un cliente' }
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Verificar que las cantidades no excedan el stock disponible
   const { data: extraItems, error: fetchError } = await supabase
@@ -248,7 +248,7 @@ export type OrderSummary = {
 }
 
 export async function getOrderSummary(orderId: string): Promise<OrderSummary | null> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { data: order, error } = await supabase
     .from('orders')
@@ -282,7 +282,7 @@ export async function getOrderSummary(orderId: string): Promise<OrderSummary | n
 }
 
 export async function changeOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const { error } = await supabase
     .from('orders')
