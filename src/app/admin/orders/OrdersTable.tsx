@@ -9,20 +9,18 @@ import AssignExtraModal from './AssignExtraModal'
 import type { CustomerBasic } from '@/lib/db/customers'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
+  creado: 'Creado',
   pending: 'Pendiente',
   paid: 'Pagado',
-  preparing: 'Preparando',
-  delivered: 'Entregado',
   cancelled: 'Cancelado',
   extra: 'Extra',
   admin: 'Admin',
 }
 
 const STATUS_COLORS: Record<OrderStatus, string> = {
+  creado: '#94a3b8',
   pending: '#f59e0b',
   paid: '#10b981',
-  preparing: '#3b82f6',
-  delivered: '#6b7280',
   cancelled: '#ef4444',
   extra: '#a855f7',
   admin: '#06b6d4',

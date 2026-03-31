@@ -223,7 +223,7 @@ export async function assignExtraToClient(data: {
     }
   }
 
-  // Si el extra quedó sin ítems, marcarlo como delivered
+  // Si el extra quedó sin ítems, marcarlo como cancelled (agotado)
   const { data: remainingItems } = await supabase
     .from('order_items')
     .select('id')
@@ -231,7 +231,7 @@ export async function assignExtraToClient(data: {
     .limit(1)
 
   if (!remainingItems || remainingItems.length === 0) {
-    await supabase.from('orders').update({ status: 'delivered' }).eq('id', data.extraOrderId)
+    await supabase.from('orders').update({ status: 'cancelled' }).eq('id', data.extraOrderId)
   }
 
   revalidatePath('/admin/orders')
