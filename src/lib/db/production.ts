@@ -5,6 +5,7 @@ export type ProductionItem = {
   orderId: string
   orderNumber: string
   customerName: string | null
+  orderStatus: string
   mealId: string
   mealName: string
   sizeId: string
@@ -39,6 +40,7 @@ export async function getWeeklyProductionData(
     .select(`
       id,
       order_number,
+      status,
       customers:customer_id (full_name),
       order_items (
         meal_id,
@@ -70,8 +72,9 @@ export async function getWeeklyProductionData(
       if (!item.meals || !item.sizes) continue
       items.push({
         orderId: order.id,
-        orderNumber: (order as unknown as { order_number: string }).order_number,
+        orderNumber: (order as unknown as { order_number: string; status: string }).order_number,
         customerName: customer?.full_name ?? null,
+        orderStatus: (order as unknown as { order_number: string; status: string }).status,
         mealId: item.meals.id,
         mealName: item.meals.name,
         sizeId: item.sizes.id,

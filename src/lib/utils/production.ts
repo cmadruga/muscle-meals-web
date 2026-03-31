@@ -267,7 +267,7 @@ export function buildMatrix(
     if (!orderMap.has(item.orderId)) {
       orderMap.set(item.orderId, {
         orderNumber: item.orderNumber,
-        customerName: item.customerName ?? 'Desconocido',
+        customerName: item.customerName ?? (item.orderStatus === 'extra' ? 'Extra' : 'Desconocido'),
         cells: new Map(),
         totalPortions: 0,
       })
