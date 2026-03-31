@@ -60,11 +60,12 @@ function OrderSuccessContent() {
         )}
 
         <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
-          <Link href="/" style={{
+          <Link href="/" className="franchise-stroke" style={{
             display: 'block', padding: '14px 24px',
-            background: colors.orange, color: colors.black,
+            background: colors.orange, color: colors.white,
             textDecoration: 'none', borderRadius: 8,
-            fontWeight: 'bold', fontSize: 16, textTransform: 'uppercase',
+            fontFamily: 'Franchise, sans-serif', fontSize: 22,
+            letterSpacing: 0, lineHeight: 1, textTransform: 'uppercase',
           }}>
             Volver al inicio
           </Link>

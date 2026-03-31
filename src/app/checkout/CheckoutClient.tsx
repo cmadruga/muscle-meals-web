@@ -221,7 +221,7 @@ export default function CheckoutClient({
             textTransform: 'uppercase',
             letterSpacing: 2
           }}>
-            💳 <span style={{ color: colors.orange }}>Checkout</span>
+            <span style={{ color: colors.orange }}>Checkout</span>
           </h1>
           <h2 style={{
             fontSize: 20,
@@ -343,7 +343,7 @@ function EmptyCheckoutView() {
       alignItems: 'center',
       justifyContent: 'center'
     }}>
-      <div style={{ fontSize: 64, marginBottom: 24 }}>🛒</div>
+      <div style={{ fontSize: 64, marginBottom: 24, color: colors.orange }}>[ ]</div>
       <h2 style={{ fontSize: 28, marginBottom: 12 }}>
         El carrito está <span style={{ color: colors.orange }}>vacío</span>
       </h2>
@@ -603,10 +603,12 @@ function CustomerForm({
 
   return (
     <div style={{ marginBottom: 32 }}>
-      <h2 style={{ 
-        fontSize: 20, 
+      <h2 style={{
+        fontFamily: 'Franchise, sans-serif',
+        fontSize: 26,
+        letterSpacing: 0,
         marginBottom: 20,
-        color: colors.textSecondary,
+        color: colors.white,
         fontWeight: 'normal'
       }}>
         Información de contacto y envío
@@ -896,10 +898,12 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
-      <h2 style={{ 
-        fontSize: 20, 
+      <h2 style={{
+        fontFamily: 'Franchise, sans-serif',
+        fontSize: 26,
+        letterSpacing: 0,
         marginBottom: 20,
-        color: colors.textSecondary,
+        color: colors.white,
         fontWeight: 'normal'
       }}>
         Tipo de envío
@@ -946,14 +950,15 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
             </div>
             <div style={{ flex: 1 }}>
               <div style={{
-                fontSize: 18,
-                fontWeight: 'bold',
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 20,
+                letterSpacing: 0,
                 color: colors.white,
                 marginBottom: 4
               }}>
                 Envío Estándar - $49 MXN
               </div>
-              <div style={{ fontSize: 14, color: colors.textMuted }}>
+              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
                 Entrega en horario regular (Domingo 9AM - 4PM)
               </div>
 
@@ -973,11 +978,11 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
                       <div style={{ fontSize: 22 }}>📅</div>
                       <div style={{
-                        fontSize: 14,
-                        fontWeight: 'bold',
+                        fontFamily: 'Franchise, sans-serif',
+                        fontSize: 16,
+                        letterSpacing: 0,
                         color: colors.orange,
                         textTransform: 'uppercase',
-                        letterSpacing: 0.5
                       }}>
                         Horario Específico Dependiendo de Tu Zona
                       </div>
@@ -985,18 +990,22 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                     
                     <p style={{
                       margin: '0 0 12px 0',
-                      fontSize: 14,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 16,
+                      letterSpacing: 0,
                       color: colors.white,
-                      lineHeight: 1.6
+                      lineHeight: 1.4
                     }}>
                       Nos estaremos <strong style={{ color: colors.orange }}>comunicando el día Sábado</strong> para darte una hora estimada de entrega para el Domingo.
                     </p>
-                    
+
                     <div style={{
                       marginTop: 12,
                       paddingTop: 12,
                       borderTop: `1px solid ${colors.grayLight}`,
-                      fontSize: 13,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 15,
+                      letterSpacing: 0,
                       color: colors.textMuted,
                       textAlign: 'center'
                     }}>
@@ -1046,14 +1055,15 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
             </div>
             <div style={{ flex: 1 }}>
               <div style={{
-                fontSize: 18,
-                fontWeight: 'bold',
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 20,
+                letterSpacing: 0,
                 color: colors.white,
                 marginBottom: 4
               }}>
                 Recoger en Pickup Spot - Gratis
               </div>
-              <div style={{ fontSize: 14, color: colors.textMuted }}>
+              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
                 Sin costo de envío, recoge tu pedido en el horario del local
               </div>
 
@@ -1065,15 +1075,16 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                   borderTop: `2px solid ${colors.orange}`,
                 }}>
                   <h3 style={{
-                    fontSize: 14,
+                    fontFamily: 'Franchise, sans-serif',
+                    fontSize: 18,
+                    letterSpacing: 0,
                     color: colors.orange,
                     marginTop: 0,
                     marginBottom: 12,
+                    fontWeight: 'normal',
                     textTransform: 'uppercase',
-                    letterSpacing: 1,
-                    fontWeight: 'bold'
                   }}>
-                    📍 Selecciona tu Pickup Spot
+                    Selecciona tu Pickup Spot
                   </h3>
                   
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -1119,18 +1130,19 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                           </div>
                           <div style={{ flex: 1 }}>
                             <div style={{
-                              fontSize: 15,
-                              fontWeight: 'bold',
+                              fontFamily: 'Franchise, sans-serif',
+                              fontSize: 18,
+                              letterSpacing: 0,
                               color: colors.white,
                               marginBottom: 4
                             }}>
                               {spot.name}
                             </div>
-                            <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 3 }}>
-                              📍 {spot.address}
+                            <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.textMuted, marginBottom: 3 }}>
+                              {spot.address}
                             </div>
-                            <div style={{ fontSize: 12, color: colors.orange }}>
-                              🕐 {spot.schedule}
+                            <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.orange }}>
+                              {spot.schedule}
                             </div>
                           </div>
                         </div>
@@ -1145,7 +1157,9 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                       background: '#ef444420',
                       border: '1px solid #ef4444',
                       borderRadius: 8,
-                      fontSize: 12,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 14,
+                      letterSpacing: 0,
                       color: '#ef4444',
                       textAlign: 'center'
                     }}>
@@ -1195,17 +1209,18 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
             </div>
             <div style={{ flex: 1 }}>
               <div style={{
-                fontSize: 18,
-                fontWeight: 'bold',
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 20,
+                letterSpacing: 0,
                 color: colors.white,
                 marginBottom: 4
               }}>
                 Envío Prioritario - Pago por Separado
               </div>
-              <div style={{ fontSize: 14, color: colors.textMuted }}>
+              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
                 Entrega en horario y zona específica
               </div>
-              <div style={{ fontSize: 12, color: colors.orange, marginTop: 4 }}>
+              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.orange, marginTop: 4 }}>
                 Rango estimado: $100-200 dependiendo zona y horario
               </div>
               
@@ -1225,11 +1240,11 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                     <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
                       <div style={{ fontSize: 22 }}>📞</div>
                       <div style={{
-                        fontSize: 14,
-                        fontWeight: 'bold',
+                        fontFamily: 'Franchise, sans-serif',
+                        fontSize: 16,
+                        letterSpacing: 0,
                         color: colors.orange,
                         textTransform: 'uppercase',
-                        letterSpacing: 0.5
                       }}>
                         Importante
                       </div>
@@ -1237,30 +1252,36 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                     
                     <p style={{
                       margin: '0 0 12px 0',
-                      fontSize: 14,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 16,
+                      letterSpacing: 0,
                       color: colors.white,
-                      lineHeight: 1.6
+                      lineHeight: 1.4
                     }}>
                       Después de completar tu orden, <strong style={{ color: colors.orange }}>nos contactaremos contigo</strong> para:
                     </p>
-                    
+
                     <ul style={{
                       margin: '0 0 12px 0',
                       paddingLeft: 20,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 15,
+                      letterSpacing: 0,
                       color: colors.textSecondary,
-                      fontSize: 13,
-                      lineHeight: 1.7
+                      lineHeight: 1.6
                     }}>
                       <li>Acordar horario y zona de entrega específica</li>
                       <li>Confirmar el costo de envío según tu ubicación</li>
                       <li>Coordinar el <strong style={{ color: colors.white }}>pago por separado</strong> del envío</li>
                     </ul>
-                    
+
                     <div style={{
                       marginTop: 12,
                       paddingTop: 12,
                       borderTop: `1px solid ${colors.grayLight}`,
-                      fontSize: 13,
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 15,
+                      letterSpacing: 0,
                       color: colors.textMuted,
                       textAlign: 'center'
                     }}>
@@ -1318,16 +1339,19 @@ function CutoffConfirmModal({ deliveryDate, onConfirm, onCancel }: {
         <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
           <button
             onClick={onConfirm}
+            className="franchise-stroke"
             style={{
               width: '100%',
               padding: '14px 24px',
-              fontSize: 16,
-              fontWeight: 'bold',
               background: colors.orange,
-              color: colors.black,
+              color: colors.white,
               border: 'none',
               borderRadius: 8,
               cursor: 'pointer',
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 20,
+              letterSpacing: 0,
+              lineHeight: 1,
               textTransform: 'uppercase',
             }}
           >
@@ -1363,7 +1387,7 @@ function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
   const getButtonText = () => {
     if (isProcessing) return 'Procesando...'
     if (!addressValidated) return '⚠️ Completa y valida la dirección primero'
-    return '💳 Proceder al pago'
+    return 'Proceder al pago'
   }
 
   return (
@@ -1373,14 +1397,16 @@ function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
       style={{
         width: '100%',
         padding: '18px 24px',
-        fontSize: 18,
-        fontWeight: 'bold',
         cursor: disabled ? 'not-allowed' : 'pointer',
         opacity: disabled ? 0.4 : 1,
         background: disabled ? colors.grayLight : colors.orange,
-        color: disabled ? colors.textMuted : colors.black,
+        color: disabled ? colors.textMuted : colors.white,
         border: disabled ? `2px solid ${colors.grayLight}` : 'none',
         borderRadius: 8,
+        fontFamily: 'Franchise, sans-serif',
+        fontSize: 22,
+        letterSpacing: 0,
+        lineHeight: 1,
         textTransform: 'uppercase',
         transition: 'all 0.2s'
       }}

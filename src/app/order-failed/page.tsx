@@ -89,16 +89,19 @@ export default function OrderFailedPage() {
         }}>
           <Link
             href="/cart"
+            className="franchise-stroke"
             style={{
               display: 'block',
               padding: '14px 24px',
               background: colors.orange,
-              color: colors.black,
+              color: colors.white,
               textDecoration: 'none',
               borderRadius: 8,
-              fontWeight: 'bold',
-              fontSize: 16,
-              textTransform: 'uppercase'
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase',
             }}
           >
             Intentar de nuevo

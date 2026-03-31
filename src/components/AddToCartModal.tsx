@@ -78,17 +78,20 @@ export default function AddToCartModal({
         }}>
           <button
             onClick={onGoToCart}
+            className="franchise-stroke"
             style={{
               width: '100%',
               padding: '16px 32px',
-              fontSize: 18,
-              fontWeight: 'bold',
               background: colors.orange,
-              color: colors.black,
+              color: colors.white,
               border: 'none',
               borderRadius: 8,
               cursor: 'pointer',
-              textTransform: 'uppercase'
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase',
             }}
           >
             Ir al carrito
@@ -99,14 +102,16 @@ export default function AddToCartModal({
             style={{
               width: '100%',
               padding: '16px 32px',
-              fontSize: 16,
-              fontWeight: 'bold',
               background: 'transparent',
               color: colors.orange,
               border: `2px solid ${colors.orange}`,
               borderRadius: 8,
               cursor: 'pointer',
-              textTransform: 'uppercase'
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 20,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase',
             }}
           >
             Continuar comprando
@@ -186,10 +191,11 @@ export default function AddToCartModal({
                     </div>
                   )}
                   <div style={{
-                    fontSize: 12,
-                    fontWeight: 600,
+                    fontFamily: 'Franchise, sans-serif',
+                    fontSize: 14,
+                    letterSpacing: 0,
                     color: colors.white,
-                    lineHeight: 1.3,
+                    lineHeight: 1.2,
                     overflow: 'hidden',
                     display: '-webkit-box',
                     WebkitLineClamp: 3,

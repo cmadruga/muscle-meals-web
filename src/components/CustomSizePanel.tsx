@@ -277,17 +277,20 @@ export default function CustomSizePanel({ onSizeCreated, mealsIncluded }: Custom
       <button
         onClick={handleSubmit}
         disabled={isCreating}
+        className="franchise-stroke"
         style={{
           width: '100%',
           padding: '12px 16px',
-          fontSize: 15,
-          fontWeight: 'bold',
           cursor: isCreating ? 'not-allowed' : 'pointer',
           opacity: isCreating ? 0.6 : 1,
           background: colors.orange,
-          color: colors.black,
+          color: colors.white,
           border: 'none',
           borderRadius: 8,
+          fontFamily: 'Franchise, sans-serif',
+          fontSize: 20,
+          letterSpacing: 0,
+          lineHeight: 1,
           textTransform: 'uppercase',
         }}
       >

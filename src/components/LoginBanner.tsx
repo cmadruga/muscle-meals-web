@@ -46,14 +46,17 @@ export default function LoginBanner() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
           <button
             onClick={() => setShowModal(true)}
+            className="franchise-stroke"
             style={{
               background: colors.orange,
-              color: colors.black,
+              color: colors.white,
               border: 'none',
               borderRadius: 6,
               padding: '8px 18px',
-              fontSize: 13,
-              fontWeight: 700,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 16,
+              letterSpacing: 0,
+              lineHeight: 1,
               cursor: 'pointer',
               whiteSpace: 'nowrap',
             }}
