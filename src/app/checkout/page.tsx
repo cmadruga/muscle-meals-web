@@ -1,6 +1,7 @@
 import CheckoutClient from './CheckoutClient'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export default async function CheckoutPage() {
   const [pickupSpots, supabase] = await Promise.all([
@@ -13,7 +14,7 @@ export default async function CheckoutPage() {
   let prefill: { customerId: string; name: string; email: string; phone: string; address: string | null } | null = null
 
   if (user) {
-    const { data: customer } = await supabase
+    const { data: customer } = await createAdminClient()
       .from('customers')
       .select('id, full_name, email, phone, address')
       .eq('user_id', user.id)
