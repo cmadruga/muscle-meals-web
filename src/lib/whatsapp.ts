@@ -129,21 +129,30 @@ export async function sendPaymentConfirmation(
 }
 
 /**
- * Orden pendiente de pago (OXXO/efectivo)
+ * Orden pendiente de pago
+ * Header {{1}}: número de orden (MM-001)
+ * Body {{1}}: nombre, {{2}}: platillos, {{3}}: monto, {{4}}: fecha corte ("5 de Abril")
  */
 export async function sendPaymentPending(
   phoneNumber: string,
   customerName: string,
-  orderId: string,
+  orderNumber: string,
   amount: number,
   itemCount: number
 ): Promise<boolean> {
+  // Próximo viernes (fecha de corte)
+  const now = new Date()
+  const daysToFriday = (5 - now.getDay() + 7) % 7 || 7
+  const friday = new Date(now)
+  friday.setDate(now.getDate() + daysToFriday)
+  const cutoffDate = friday.toLocaleDateString('es-MX', { day: 'numeric', month: 'long' })
+
   return sendWhatsAppTemplate(
     phoneNumber,
     'pago_pendiente',
-    'es',
-    orderId.slice(0, 8).toUpperCase(),
-    [customerName, amount.toFixed(0), String(itemCount)]
+    'es_MX',
+    orderNumber,
+    [customerName, String(itemCount), amount.toFixed(0), cutoffDate]
   )
 }
 
