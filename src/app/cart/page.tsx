@@ -69,8 +69,7 @@ export default function CartPage() {
 
       <CartSummary total={getTotal()} />
       
-      <CartActions 
-        onClear={clearCart}
+      <CartActions
         onCheckout={handleCheckout}
       />
       </div>
