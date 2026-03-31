@@ -1,6 +1,7 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { revalidatePath } from 'next/cache'
 import { buildFullAddress, validateCP, isValidPostalCode } from '@/lib/address-validation'
 import type { Customer } from '@/lib/types'
@@ -45,7 +46,7 @@ export async function updateCustomerProfile(
     ? buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado })
     : null
 
-  const { error } = await supabase
+  const { error } = await createAdminClient()
     .from('customers')
     .update({ full_name, phone, address })
     .eq('user_id', user.id)
@@ -68,9 +69,7 @@ export async function updateLoggedInCustomer(data: {
   phone: string
   address: string | null
 }): Promise<{ customer: Customer | null; error?: string }> {
-  const supabase = await createClient()
-
-  const { data: updated, error } = await supabase
+  const { data: updated, error } = await createAdminClient()
     .from('customers')
     .update({
       full_name: data.name,
