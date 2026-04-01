@@ -306,6 +306,17 @@ export default function CheckoutClient({
           error={error}
         />
 
+        {error && (
+          <div style={{
+            color: 'white',
+            background: colors.error,
+            padding: 16,
+            borderRadius: 8,
+          }}>
+            {error}
+          </div>
+        )}
+
         <PaymentButton
           onClick={() => {
             if (isInCutoffWindow()) {
@@ -618,17 +629,6 @@ function CustomerForm({
         Información de contacto y envío
       </h2>
       
-      {error && (
-        <div style={{
-          color: 'white',
-          background: colors.error,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16
-        }}>
-          {error}
-        </div>
-      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Nombre */}
@@ -1411,6 +1411,7 @@ function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
     <button
       onClick={onClick}
       disabled={disabled}
+      className={disabled ? undefined : 'franchise-stroke'}
       style={{
         width: '100%',
         padding: '18px 24px',
