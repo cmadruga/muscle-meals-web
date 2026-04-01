@@ -664,9 +664,7 @@ function CustomerForm({
             disabled={disabled}
             style={{
               ...inputStyle,
-              borderColor: /^\+?521?\d{10}$/.test(phone.replace(/\s/g, '')) && phone.replace(/\D/g, '').length > 10
-                ? colors.error
-                : inputStyle.borderColor
+              ...(phone.replace(/\D/g, '').length > 10 ? { border: `2px solid ${colors.error}` } : {})
             }}
           />
           {phone.replace(/\D/g, '').length > 10 ? (
