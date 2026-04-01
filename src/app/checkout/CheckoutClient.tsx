@@ -85,8 +85,10 @@ export default function CheckoutClient({
       : isAddressComplete && isPostalCodeValid
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
   
-  // Calcular total con envío
-  const subtotal = getTotal()
+  // Calcular total con descuento y envío
+  const subtotalOriginal = getTotal()
+  const discount = Math.round(subtotalOriginal * 0.20)
+  const subtotal = subtotalOriginal - discount
   const shippingCost = SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
   
@@ -258,9 +260,11 @@ export default function CheckoutClient({
             </div>
           </div>
 
-          <OrderSummary 
+          <OrderSummary
             packageGroups={packageGroups}
             individualItems={individualItems}
+            subtotalOriginal={subtotalOriginal}
+            discount={discount}
             subtotal={subtotal}
             shippingCost={shippingCost}
             shippingType={shippingType}
@@ -367,30 +371,36 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total }: {
+function OrderSummary({ packageGroups, individualItems, subtotalOriginal, discount, subtotal, shippingCost, shippingType, total }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
+  subtotalOriginal: number
+  discount: number
   subtotal: number
   shippingCost: number
   shippingType: 'standard' | 'priority' | 'pickup'
   total: number
 }) {
+  const rowStyle: React.CSSProperties = {
+    display: 'flex',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+    fontSize: 16,
+    color: colors.textSecondary,
+  }
   return (
     <>
-      <div style={{ 
-        border: `2px solid ${colors.grayLight}`, 
-        borderRadius: 12, 
+      <div style={{
+        border: `2px solid ${colors.grayLight}`,
+        borderRadius: 12,
         overflow: 'hidden',
         background: colors.grayDark
       }}>
-        {/* Paquetes */}
         {packageGroups.map((pkg) => (
           <PackageSummaryCard key={pkg.packageInstanceId} package={pkg} />
         ))}
-        
-        {/* Items individuales */}
         {individualItems.map((item, idx) => (
-          <IndividualItemSummary 
+          <IndividualItemSummary
             key={`${item.mealId}-${item.sizeId}`}
             item={item}
             showBorder={idx < individualItems.length - 1 || packageGroups.length > 0}
@@ -406,58 +416,42 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         border: `2px solid ${colors.grayLight}`,
         borderRadius: 12,
       }}>
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          marginBottom: 12,
-          fontSize: 16,
-          color: colors.textSecondary
-        }}>
+        {/* Subtotal original */}
+        <div style={rowStyle}>
           <span>Subtotal:</span>
+          <span>${(subtotalOriginal / 100).toFixed(0)} MXN</span>
+        </div>
+
+        {/* Descuento */}
+        <div style={{ ...rowStyle, color: '#10b981', fontWeight: 600 }}>
+          <span>Descuento 20%:</span>
+          <span>− ${(discount / 100).toFixed(0)} MXN</span>
+        </div>
+
+        {/* Subtotal con descuento */}
+        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, color: colors.white, fontWeight: 600 }}>
+          <span>Subtotal con descuento:</span>
           <span>${(subtotal / 100).toFixed(0)} MXN</span>
         </div>
-        
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          paddingBottom: 12,
-          borderBottom: `1px solid ${colors.grayLight}`,
-          fontSize: 16,
-          color: colors.textSecondary
-        }}>
+
+        {/* Envío */}
+        <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12 }}>
           <span>
-            Envío {
-              shippingType === 'standard' ? 'Estándar' : 
-              shippingType === 'priority' ? 'Prioritario' : 
-              'Pickup'
-            }:
+            Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
             {shippingType === 'pickup' && (
-              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>
-                (Sin costo)
-              </span>
+              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Sin costo)</span>
             )}
           </span>
           <span style={{ textAlign: 'right' }}>
-            {shippingCost > 0 
-              ? `$${(shippingCost / 100).toFixed(0)} MXN` 
-              : shippingType === 'priority' 
-                ? 'Pendiente' 
-                : 'Gratis'
-            }
+            {shippingCost > 0 ? `$${(shippingCost / 100).toFixed(0)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
             {shippingType === 'priority' && (
-              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>
-                (Estimado: $100-200)
-              </span>
+              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Estimado: $100-200)</span>
             )}
           </span>
         </div>
 
-        <div style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginTop: 12
-        }}>
+        {/* Total */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
             ${(total / 100).toFixed(0)} MXN
