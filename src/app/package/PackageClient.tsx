@@ -268,7 +268,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
             }}
           >
             <div style={{ fontSize: 22 }}>＋</div>
-            <div style={{ fontSize: 13, marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>Mi talla</div>
+            <div style={{ fontSize: 13, marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>tamaño personalizado</div>
           </button>
         </div>
 
