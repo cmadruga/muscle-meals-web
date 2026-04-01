@@ -10,7 +10,6 @@ import { toCocido } from '@/lib/utils/conversions'
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
-import SizeSelect from '@/components/SizeSelect'
 
 interface PackageConfig {
   minMeals: number
@@ -209,30 +208,74 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
       />
 
       {/* Size Selector */}
-      <div style={{ 
-        marginTop: 24, 
-        marginBottom: 24, 
-        padding: 20, 
-        background: colors.grayDark, 
+      <div style={{
+        marginTop: 24,
+        marginBottom: 24,
+        padding: 20,
+        background: colors.grayDark,
         borderRadius: 12,
         border: `2px solid ${colors.grayLight}`
       }}>
         <label style={{ display: 'block', fontWeight: 'bold', marginBottom: 12, color: colors.orange }}>
           1. Selecciona tamaño
         </label>
-        <div style={{ maxWidth: 400 }}>
-          <SizeSelect
-            mainSizes={sizes.filter(s => s.is_main)}
-            customerSizes={customerSizes}
-            sessionSizes={sessionSizes}
-            selectedId={selectedSizeId}
-            onChange={setSelectedSizeId}
-            formatOption={size => `${size.name} — $${(size.package_price / 100).toFixed(0)} MXN/platillo`}
-          />
+
+        {/* Botones de tamaño */}
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {sizes.filter(s => s.is_main).map(size => {
+            const isSelected = selectedSizeId === size.id
+            return (
+              <button
+                key={size.id}
+                onClick={() => setSelectedSizeId(size.id)}
+                style={{
+                  flex: '1 1 0',
+                  minWidth: 80,
+                  padding: '14px 8px',
+                  borderRadius: 10,
+                  border: `2px solid ${isSelected ? colors.orange : colors.grayLight}`,
+                  background: isSelected ? 'rgba(254,151,57,0.15)' : colors.black,
+                  color: isSelected ? colors.orange : colors.white,
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  lineHeight: 1.3,
+                  fontFamily: 'Franchise, sans-serif',
+                }}
+              >
+                <div style={{ fontSize: 22, textTransform: 'uppercase', letterSpacing: 1 }}>{size.name}</div>
+                <div style={{ fontSize: 13, color: isSelected ? colors.orange : colors.textMuted, marginTop: 3, fontFamily: 'sans-serif', fontWeight: 600 }}>
+                  ${(size.package_price / 100).toFixed(0)}/platillo
+                </div>
+              </button>
+            )
+          })}
+
+          {/* Botón Custom */}
+          <button
+            onClick={() => setSelectedSizeId('__custom__')}
+            style={{
+              flex: '1 1 0',
+              minWidth: 80,
+              padding: '14px 8px',
+              borderRadius: 10,
+              border: `2px solid ${selectedSizeId === '__custom__' ? colors.orange : colors.grayLight}`,
+              background: selectedSizeId === '__custom__' ? 'rgba(254,151,57,0.15)' : colors.black,
+              color: selectedSizeId === '__custom__' ? colors.orange : colors.textMuted,
+              cursor: 'pointer',
+              textAlign: 'center',
+              lineHeight: 1.3,
+              fontFamily: 'Franchise, sans-serif',
+            }}
+          >
+            <div style={{ fontSize: 22 }}>＋</div>
+            <div style={{ fontSize: 13, marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>Mi talla</div>
+          </button>
         </div>
 
         {selectedSizeId === '__custom__' && (
-          <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
+          <div style={{ marginTop: 16 }}>
+            <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
+          </div>
         )}
 
         {/* Descripción del size seleccionado */}

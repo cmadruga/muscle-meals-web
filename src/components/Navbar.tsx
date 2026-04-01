@@ -50,7 +50,7 @@ export default function Navbar() {
     if (pathname === '/cart') return { show: true, label: '← Menú', href: '/menu' }
     if (pathname === '/cuenta') return { show: true, label: '← Menú', href: '/menu' }
     if (pathname === '/cuenta/ordenes') return { show: true, label: '← Mi cuenta', href: '/cuenta' }
-    if (pathname?.startsWith('/package/') || pathname?.startsWith('/meal/')) {
+    if (pathname === '/package' || pathname?.startsWith('/package/') || pathname?.startsWith('/meal/')) {
       return { show: true, label: '← Menú', href: '/menu' }
     }
     return { show: false, label: '', href: '' }
