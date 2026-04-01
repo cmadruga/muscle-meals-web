@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -10,14 +11,26 @@ import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
 import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
 
+type PendingDelete =
+  | { type: 'item'; mealId: string; sizeId: string; name: string }
+  | { type: 'package'; instanceId: string; name: string }
+
 export default function CartPage() {
   const router = useRouter()
   const { removeItem, removePackage, updateQty, clearCart, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
 
   const handleCheckout = () => {
     if (isEmpty) return
     router.push('/checkout')
+  }
+
+  const confirmDelete = () => {
+    if (!pendingDelete) return
+    if (pendingDelete.type === 'item') removeItem(pendingDelete.mealId, pendingDelete.sizeId)
+    else removePackage(pendingDelete.instanceId)
+    setPendingDelete(null)
   }
 
   if (isEmpty) {
@@ -39,6 +52,66 @@ export default function CartPage() {
         .cart-item-price { grid-column: 2; grid-row: 2; min-width: unset; }
       }
     `}</style>
+
+    {/* Modal de confirmación de borrado */}
+    {pendingDelete && (
+      <div
+        onClick={() => setPendingDelete(null)}
+        style={{
+          position: 'fixed', inset: 0, zIndex: 1000,
+          background: 'rgba(0,0,0,0.7)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          padding: 24,
+        }}
+      >
+        <div
+          onClick={e => e.stopPropagation()}
+          style={{
+            background: colors.grayDark,
+            border: `2px solid ${colors.grayLight}`,
+            borderRadius: 16,
+            padding: 28,
+            maxWidth: 360,
+            width: '100%',
+            textAlign: 'center',
+          }}
+        >
+          <p style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 8, color: colors.white }}>
+            ¿Eliminar del carrito?
+          </p>
+          <p style={{ fontSize: 14, color: colors.textMuted, marginBottom: 24 }}>
+            {pendingDelete.name}
+          </p>
+          <div style={{ display: 'flex', gap: 12 }}>
+            <button
+              onClick={() => setPendingDelete(null)}
+              style={{
+                flex: 1, padding: '12px 0',
+                background: 'transparent',
+                border: `1px solid ${colors.grayLight}`,
+                borderRadius: 8, color: colors.white,
+                cursor: 'pointer', fontSize: 15,
+              }}
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={confirmDelete}
+              style={{
+                flex: 1, padding: '12px 0',
+                background: colors.error,
+                border: 'none',
+                borderRadius: 8, color: colors.white,
+                cursor: 'pointer', fontSize: 15, fontWeight: 'bold',
+              }}
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+
     <main style={{
       padding: '40px 24px 100px',
       minHeight: '100vh',
@@ -65,7 +138,7 @@ export default function CartPage() {
           <PackageCard
             key={pkg.packageInstanceId}
             package={pkg}
-            onRemove={() => removePackage(pkg.packageInstanceId)}
+            onRemove={() => setPendingDelete({ type: 'package', instanceId: pkg.packageInstanceId, name: `${pkg.packageName} · ${pkg.sizeName}` })}
           />
         ))}
 
@@ -75,7 +148,7 @@ export default function CartPage() {
             key={`${item.mealId}-${item.sizeId}`}
             item={item}
             onUpdateQty={(qty) => updateQty(item.mealId, item.sizeId, qty)}
-            onRemove={() => removeItem(item.mealId, item.sizeId)}
+            onRemove={() => setPendingDelete({ type: 'item', mealId: item.mealId, sizeId: item.sizeId, name: `${item.mealName} · ${item.sizeName}` })}
           />
         ))}
       </div>
