@@ -176,11 +176,14 @@ export async function sendInternalOrderAlert(data: {
   shippingCost: number   // en pesos
   totalAmount: number    // en pesos
 }): Promise<boolean> {
-  const ownerPhone = process.env.WHATSAPP_OWNER_PHONE
-  if (!ownerPhone) {
+  const ownerPhoneEnv = process.env.WHATSAPP_OWNER_PHONE
+  if (!ownerPhoneEnv) {
     console.warn('⚠️ WHATSAPP_OWNER_PHONE no configurado — saltando alerta interna')
     return false
   }
+
+  // Soporta múltiples números separados por coma: "5218112345678,5218187654321"
+  const ownerPhones = ownerPhoneEnv.split(',').map(p => p.trim()).filter(Boolean)
 
   const statusLabel = data.status === 'paid' ? 'PAGADO' : 'PENDIENTE DE PAGO'
 
@@ -195,13 +198,19 @@ export async function sendInternalOrderAlert(data: {
     ? `${shippingLabels[data.shippingType]} — $${data.shippingCost.toFixed(0)} MXN`
     : `${shippingLabels[data.shippingType]} — Gratis`
 
-  return sendWhatsAppTemplate(
-    ownerPhone,
-    'alerta_pedido',
-    'es',
-    statusLabel,
-    [data.customerName, data.customerPhone, String(totalItems), shippingLine, data.totalAmount.toFixed(0)]
+  const results = await Promise.all(
+    ownerPhones.map(phone =>
+      sendWhatsAppTemplate(
+        phone,
+        'alerta_pedido',
+        'es',
+        statusLabel,
+        [data.customerName, data.customerPhone, String(totalItems), shippingLine, data.totalAmount.toFixed(0)]
+      )
+    )
   )
+
+  return results.some(Boolean)
 }
 
 /**
