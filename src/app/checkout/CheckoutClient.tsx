@@ -95,6 +95,10 @@ export default function CheckoutClient({
 
   const handleCheckout = async () => {
     // Validar teléfono
+    if (customerPhone.replace(/\D/g, '').length > 10) {
+      setError('Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)')
+      return
+    }
     if (!validatePhone(customerPhone)) {
       setError('Teléfono inválido (debe ser 10 dígitos)')
       return
@@ -302,6 +306,17 @@ export default function CheckoutClient({
           error={error}
         />
 
+        {error && (
+          <div style={{
+            color: 'white',
+            background: colors.error,
+            padding: 16,
+            borderRadius: 8,
+          }}>
+            {error}
+          </div>
+        )}
+
         <PaymentButton
           onClick={() => {
             if (isInCutoffWindow()) {
@@ -310,7 +325,7 @@ export default function CheckoutClient({
               handleCheckout()
             }
           }}
-          disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || !isPickupSpotValid}
+          disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
           isProcessing={isProcessing}
           addressValidated={addressValidated}
         />
@@ -614,17 +629,6 @@ function CustomerForm({
         Información de contacto y envío
       </h2>
       
-      {error && (
-        <div style={{
-          color: 'white',
-          background: colors.error,
-          padding: 16,
-          borderRadius: 8,
-          marginBottom: 16
-        }}>
-          {error}
-        </div>
-      )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {/* Nombre */}
@@ -651,16 +655,27 @@ function CustomerForm({
             type="tel"
             value={phone}
             onChange={(e) => {
-              const value = e.target.value.replace(/\D/g, '')
-              if (value.length <= 10) onPhoneChange(value)
+              const raw = e.target.value
+              // Permitir que el usuario escriba libremente — validamos abajo
+              const digits = raw.replace(/\D/g, '')
+              if (digits.length <= 13) onPhoneChange(raw)
             }}
             placeholder="8112345678"
             disabled={disabled}
-            style={inputStyle}
+            style={{
+              ...inputStyle,
+              ...(phone.replace(/\D/g, '').length > 10 ? { border: `2px solid ${colors.error}` } : {})
+            }}
           />
-          <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
-            Recibirás confirmación de pago por WhatsApp
-          </p>
+          {phone.replace(/\D/g, '').length > 10 ? (
+            <p style={{ fontSize: 12, color: colors.error, marginTop: 4, marginBottom: 0 }}>
+              Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)
+            </p>
+          ) : (
+            <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
+              Recibirás confirmación de pago por WhatsApp
+            </p>
+          )}
         </div>
 
         {showAddress && (<>
@@ -1394,6 +1409,7 @@ function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
     <button
       onClick={onClick}
       disabled={disabled}
+      className={disabled ? undefined : 'franchise-stroke'}
       style={{
         width: '100%',
         padding: '18px 24px',

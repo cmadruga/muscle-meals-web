@@ -26,6 +26,19 @@ export default function CartPage() {
 
   return (
     <>
+    <style>{`
+      .cart-item { display: grid; grid-template-columns: 1fr auto auto auto; align-items: center; gap: 16px; }
+      .cart-item-price { text-align: right; min-width: 100px; }
+      .cart-item-name { grid-column: 1; }
+      .cart-item-delete { grid-column: 4; }
+      @media (max-width: 560px) {
+        .cart-item { grid-template-columns: 1fr auto; grid-template-rows: auto auto; }
+        .cart-item-name { grid-column: 1; grid-row: 1; }
+        .cart-item-delete { grid-column: 2; grid-row: 1; align-self: start; }
+        .cart-item-qty { grid-column: 1; grid-row: 2; }
+        .cart-item-price { grid-column: 2; grid-row: 2; min-width: unset; }
+      }
+    `}</style>
     <main style={{
       padding: '40px 24px 100px',
       minHeight: '100vh',
@@ -208,19 +221,16 @@ function IndividualItemCard({ item, onUpdateQty, onRemove }: {
 }) {
   return (
     <div
+      className="cart-item"
       style={{
         padding: 16,
         marginBottom: 12,
         border: `2px solid ${colors.grayLight}`,
         borderRadius: 12,
         background: colors.grayDark,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 16
       }}
     >
-      <div style={{ flex: 1 }}>
+      <div className="cart-item-name">
         <h3 style={{ margin: '0 0 4px 0', fontSize: 16, color: colors.orange }}>
           {item.mealName}
         </h3>
@@ -229,7 +239,7 @@ function IndividualItemCard({ item, onUpdateQty, onRemove }: {
         </p>
       </div>
 
-      <div style={{ textAlign: 'right', minWidth: 100 }}>
+      <div className="cart-item-price">
         <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
           ${(item.unitPrice / 100).toFixed(0)} MXN c/u
         </p>
@@ -238,12 +248,12 @@ function IndividualItemCard({ item, onUpdateQty, onRemove }: {
         </p>
       </div>
 
-      <QuantityControls 
-        value={item.qty}
-        onChange={onUpdateQty}
-      />
-      
+      <div className="cart-item-qty">
+        <QuantityControls value={item.qty} onChange={onUpdateQty} />
+      </div>
+
       <button
+        className="cart-item-delete"
         onClick={onRemove}
         style={{
           padding: '8px 12px',
@@ -252,7 +262,7 @@ function IndividualItemCard({ item, onUpdateQty, onRemove }: {
           background: 'transparent',
           color: colors.error,
           cursor: 'pointer',
-          fontSize: 14
+          fontSize: 14,
         }}
       >
         ✕
