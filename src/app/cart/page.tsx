@@ -396,6 +396,8 @@ function QuantityControls({ value, onChange }: {
 }
 
 function CartSummary({ total }: { total: number }) {
+  const discount = Math.round(total * 0.20)
+  const discounted = total - discount
   return (
     <div style={{
       padding: 20,
@@ -404,10 +406,18 @@ function CartSummary({ total }: { total: number }) {
       borderRadius: 12,
       marginBottom: 24
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 15, color: colors.textSecondary }}>
+        <span>Subtotal:</span>
+        <span>${(total / 100).toFixed(0)} MXN</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 15, color: '#10b981', fontWeight: 600 }}>
+        <span>Descuento 20%:</span>
+        <span>− ${(discount / 100).toFixed(0)} MXN</span>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${colors.grayLight}`, paddingTop: 12 }}>
         <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
         <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-          ${(total / 100).toFixed(0)} MXN
+          ${(discounted / 100).toFixed(0)} MXN
         </span>
       </div>
     </div>
