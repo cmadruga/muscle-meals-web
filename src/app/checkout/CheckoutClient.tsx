@@ -154,11 +154,11 @@ export default function CheckoutClient({
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
-      // 3. Crear preferencia de pago en MercadoPago
+      // 3. Crear preferencia de pago en MercadoPago (precios con descuento 20%)
       const mpItems = [
         ...items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
-          unit_price: item.unitPrice,
+          unit_price: Math.round(item.unitPrice * 0.80),
           quantity: item.qty
         }))
       ]
@@ -189,7 +189,7 @@ export default function CheckoutClient({
         customerName,
         customerEmail,
         customerPhone: whatsappPhone,
-        totalAmount: total,
+        // totalAmount: total,
         items: mpItems
       })
 
@@ -562,7 +562,7 @@ function CustomerForm({
   addressOption,
   onAddressOptionChange,
   disabled,
-  error
+  // error
 }: {
   name: string
   phone: string

@@ -11,7 +11,7 @@ export interface CreatePaymentData {
   customerName: string
   customerEmail: string
   customerPhone: string
-  totalAmount: number // en centavos (igual que antes)
+  // totalAmount: number // en centavos (igual que antes)
   items: Array<{
     name: string
     unit_price: number // en centavos
