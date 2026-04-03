@@ -139,66 +139,60 @@ function IngSection({
 
       {/* Table */}
       <div style={{ border: `1px solid ${colors.grayLight}`, borderTop: 'none', borderRadius: '0 0 8px 8px', overflow: 'hidden' }}>
-        {!canCompute ? (
-          <p style={{ padding: '18px 14px', color: colors.textMuted, fontSize: 13, textAlign: 'center', margin: 0 }}>
-            Ingresa peso en seco y cocido para calcular
-          </p>
-        ) : (
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
-            <thead>
-              <tr>
-                <th style={{ ...thStyle, textAlign: 'left' }}>Versión</th>
-                <th style={{ ...thStyle, textAlign: 'right', width: 1 }}>Cant.</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Crudo/plato</th>
-                <th style={{ ...thStyle, textAlign: 'right' }}>Total crudo</th>
-                <th style={{ ...thStyle, textAlign: 'right', color }}>Cocido/plato</th>
-              </tr>
-            </thead>
-            <tbody>
-              {meal.sizes.map((row, i) => {
-                const qtyPerPlato = getQty(row, type)
-                const totalRowCrudo = row.qty * qtyPerPlato
-                const cocidoPerPlato = qtyPerPlato * factor
-                return (
-                  <tr key={row.sizeId} style={{ background: i % 2 === 0 ? 'transparent' : '#1a1a1a', borderBottom: '1px solid #222' }}>
-                    <td style={{ padding: '8px 10px', color: row.isMain ? colors.white : colors.orange, fontWeight: 600 }}>
-                      {row.sizeName}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 800, width: 1, whiteSpace: 'nowrap' }}>
-                      {row.qty}
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                      {Math.round(qtyPerPlato)} gr
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.textSecondary, whiteSpace: 'nowrap' }}>
-                      {Math.round(totalRowCrudo)} gr
-                    </td>
-                    <td style={{ padding: '8px 10px', textAlign: 'right', color, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                      {fmt1(cocidoPerPlato)} gr
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-            <tfoot>
-              <tr style={{ background: '#1a1a1a', borderTop: `1px solid ${colors.grayLight}` }}>
-                <td style={{ padding: '8px 10px', color: colors.textMuted, fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
-                  Total
-                </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 800 }}>
-                  {totalPortions}
-                </td>
-                <td />
-                <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(totalCrudo)} gr
-                </td>
-                <td style={{ padding: '8px 10px', textAlign: 'right', color, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(cocido)} gr
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        )}
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+          <thead>
+            <tr>
+              <th style={{ ...thStyle, textAlign: 'left' }}>Versión</th>
+              <th style={{ ...thStyle, textAlign: 'right', width: 1 }}>Cant.</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>Crudo/plato</th>
+              <th style={{ ...thStyle, textAlign: 'right' }}>Total crudo</th>
+              <th style={{ ...thStyle, textAlign: 'right', color }}>Cocido/plato</th>
+            </tr>
+          </thead>
+          <tbody>
+            {meal.sizes.map((row, i) => {
+              const qtyPerPlato = getQty(row, type)
+              const totalRowCrudo = row.qty * qtyPerPlato
+              const cocidoPerPlato = canCompute ? qtyPerPlato * factor : null
+              return (
+                <tr key={row.sizeId} style={{ background: i % 2 === 0 ? 'transparent' : '#1a1a1a', borderBottom: '1px solid #222' }}>
+                  <td style={{ padding: '8px 10px', color: row.isMain ? colors.white : colors.orange, fontWeight: 600 }}>
+                    {row.sizeName}
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 800, width: 1, whiteSpace: 'nowrap' }}>
+                    {row.qty}
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    {Math.round(qtyPerPlato)} gr
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.textSecondary, whiteSpace: 'nowrap' }}>
+                    {Math.round(totalRowCrudo)} gr
+                  </td>
+                  <td style={{ padding: '8px 10px', textAlign: 'right', color: canCompute ? color : colors.textMuted, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                    {cocidoPerPlato !== null ? `${fmt1(cocidoPerPlato)} gr` : '—'}
+                  </td>
+                </tr>
+              )
+            })}
+          </tbody>
+          <tfoot>
+            <tr style={{ background: '#1a1a1a', borderTop: `1px solid ${colors.grayLight}` }}>
+              <td style={{ padding: '8px 10px', color: colors.textMuted, fontWeight: 700, fontSize: 11, textTransform: 'uppercase' }}>
+                Total
+              </td>
+              <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 800 }}>
+                {totalPortions}
+              </td>
+              <td />
+              <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                {Math.round(totalCrudo)} gr
+              </td>
+              <td style={{ padding: '8px 10px', textAlign: 'right', color: canCompute ? color : colors.textMuted, fontWeight: 700, whiteSpace: 'nowrap' }}>
+                {canCompute ? `${Math.round(cocido)} gr` : '—'}
+              </td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
   )
