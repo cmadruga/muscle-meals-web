@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export type MaterialFormData = {
   name: string
@@ -22,7 +22,7 @@ function revalidateAll() {
 export async function createMaterial(
   data: MaterialFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('materials').insert(data)
   if (error) return { error: error.message }
   revalidateAll()
@@ -33,7 +33,7 @@ export async function updateMaterial(
   id: string,
   data: MaterialFormData
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('materials').update(data).eq('id', id)
   if (error) return { error: error.message }
   revalidateAll()
@@ -41,7 +41,7 @@ export async function updateMaterial(
 }
 
 export async function deleteMaterial(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('materials').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidateAll()
@@ -52,7 +52,7 @@ export async function updateMaterialStock(
   id: string,
   cant_actual: number
 ): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase
     .from('materials')
     .update({ cant_actual: Math.max(0, cant_actual) })

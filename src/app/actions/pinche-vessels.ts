@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export type VesselFormData = {
   name: string
@@ -14,7 +14,7 @@ function revalidateAll() {
 }
 
 export async function createVessel(data: VesselFormData): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('pinche_vessels').insert(data)
   if (error) return { error: error.message }
   revalidateAll()
@@ -22,7 +22,7 @@ export async function createVessel(data: VesselFormData): Promise<{ error?: stri
 }
 
 export async function updateVessel(id: string, data: VesselFormData): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('pinche_vessels').update(data).eq('id', id)
   if (error) return { error: error.message }
   revalidateAll()
@@ -30,7 +30,7 @@ export async function updateVessel(id: string, data: VesselFormData): Promise<{ 
 }
 
 export async function deleteVessel(id: string): Promise<{ error?: string }> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { error } = await supabase.from('pinche_vessels').delete().eq('id', id)
   if (error) return { error: error.message }
   revalidateAll()

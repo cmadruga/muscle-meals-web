@@ -1,6 +1,6 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getCustomerByUserId } from '@/lib/db/customers'
 import type { Size } from '@/lib/types'
 import { calculateCustomSizePrice } from '@/lib/utils/pricing'
@@ -21,7 +21,7 @@ export async function createCustomSize(
 
   const { price, packagePrice } = calculateCustomSizePrice(data.protein_qty, data.carb_qty, data.veg_qty)
 
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   // Check if user is authenticated
   const { data: { user } } = await supabase.auth.getUser()
