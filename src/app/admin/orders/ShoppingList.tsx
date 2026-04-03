@@ -22,6 +22,9 @@ const thStyle: React.CSSProperties = {
 
 export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]; weekKey: string }) {
   const storageKey = `shopping_checked_${weekKey}`
+  const [proveedorFilter, setProveedorFilter] = useState<string>('all')
+
+  const proveedores = Array.from(new Set(items.map(i => i.proveedor).filter(Boolean) as string[])).sort()
 
   // Lazy initializer — reads localStorage once on mount, no useEffect needed
   const [checked, setChecked] = useState<Set<string>>(() => {
@@ -51,8 +54,9 @@ export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]
     try { localStorage.removeItem(storageKey) } catch {}
   }
 
-  const uncheckedItems = items.filter(i => !checked.has(i.ingredientId))
-  const checkedItems   = items.filter(i =>  checked.has(i.ingredientId))
+  const filteredItems = proveedorFilter === 'all' ? items : items.filter(i => i.proveedor === proveedorFilter)
+  const uncheckedItems = filteredItems.filter(i => !checked.has(i.ingredientId))
+  const checkedItems   = filteredItems.filter(i =>  checked.has(i.ingredientId))
   const remaining = uncheckedItems.length
 
   const handleCopy = () => {
@@ -60,10 +64,18 @@ export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]
     navigator.clipboard.writeText(text).catch(console.error)
   }
 
+  const btnStyle = (active: boolean): React.CSSProperties => ({
+    padding: '5px 12px', borderRadius: 8, cursor: 'pointer', fontSize: 12,
+    border: `1px solid ${active ? colors.orange : colors.grayLight}`,
+    background: active ? colors.orange + '22' : 'transparent',
+    color: active ? colors.orange : colors.textMuted,
+    fontWeight: active ? 600 : 400,
+  })
+
   return (
     <div>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: proveedores.length > 0 ? 12 : 20 }}>
         <h2 style={{ color: colors.white, fontSize: 20, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', margin: 0 }}>
           Lista de Compras
         </h2>
@@ -91,6 +103,16 @@ export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]
         </div>
       </div>
 
+      {/* Filtro por proveedor */}
+      {proveedores.length > 0 && (
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+          <button onClick={() => setProveedorFilter('all')} style={btnStyle(proveedorFilter === 'all')}>Todos</button>
+          {proveedores.map(p => (
+            <button key={p} onClick={() => setProveedorFilter(p)} style={btnStyle(proveedorFilter === p)}>{p}</button>
+          ))}
+        </div>
+      )}
+
       {items.length === 0 ? (
         <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay datos esta semana.</p>
       ) : (
@@ -105,7 +127,7 @@ export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]
           <tbody>
             {/* Unchecked — subrayados como "pendientes" */}
             {uncheckedItems.map(item => (
-              <tr key={item.ingredientId} style={{ borderBottom: `1px solid #2a2a2a` }}>
+              <tr key={`${item.ingredientId}_${item.unit}`} style={{ borderBottom: `1px solid #2a2a2a` }}>
                 <td style={{ padding: '10px 12px' }}>
                   <input type="checkbox" checked={false} onChange={() => toggle(item.ingredientId)}
                     style={{ cursor: 'pointer', width: 16, height: 16, accentColor: colors.orange }} />
@@ -122,7 +144,7 @@ export default function ShoppingList({ items, weekKey }: { items: ShoppingItem[]
 
             {/* Checked — tachados al fondo */}
             {checkedItems.map(item => (
-              <tr key={item.ingredientId} style={{ borderBottom: `1px solid #222`, opacity: 0.35 }}>
+              <tr key={`${item.ingredientId}_${item.unit}`} style={{ borderBottom: `1px solid #222`, opacity: 0.35 }}>
                 <td style={{ padding: '10px 12px' }}>
                   <input type="checkbox" checked={true} onChange={() => toggle(item.ingredientId)}
                     style={{ cursor: 'pointer', width: 16, height: 16, accentColor: colors.orange }} />

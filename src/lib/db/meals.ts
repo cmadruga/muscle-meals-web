@@ -1,4 +1,4 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Meal, MealBasic, MealWithRecipes, Recipe, Ingredient } from '@/lib/types'
 
 export type { MealWithRecipes }
@@ -7,7 +7,7 @@ export type { MealWithRecipes }
  * Obtiene todos los meals activos
  */
 export async function getActiveMeals(): Promise<Meal[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   const { data, error } = await supabase
     .from('meals')
@@ -27,7 +27,7 @@ export async function getActiveMeals(): Promise<Meal[]> {
  * Obtiene meals básicos para UI
  */
 export async function getMealsBasic(): Promise<MealBasic[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   const { data, error } = await supabase
     .from('meals')
@@ -48,7 +48,7 @@ export async function getMealsBasic(): Promise<MealBasic[]> {
  * Útil para páginas de paquetes donde se necesitan macros
  */
 export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   // 1. Obtener todos los meals activos
   const { data: meals, error: mealsError } = await supabase
@@ -154,7 +154,7 @@ export async function getActiveMealsWithRecipes(): Promise<MealWithRecipes[]> {
  * Obtiene todos los meals (activos e inactivos) para panel admin
  */
 export async function getAllMeals(): Promise<Meal[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
 
   const [{ data, error }, { data: subRows }] = await Promise.all([
     supabase.from('meals').select('*').order('name', { ascending: true }),
@@ -179,7 +179,7 @@ export async function getAllMeals(): Promise<Meal[]> {
  * Obtiene un meal por ID con sus recetas e ingredientes completos
  */
 export async function getMealById(id: string): Promise<MealWithRecipes | null> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   
   // 1. Obtener meal
   const { data: meal, error: mealError } = await supabase

@@ -1,8 +1,8 @@
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { PincheVessel } from '@/lib/types'
 
 export async function getAllPincheVessels(): Promise<PincheVessel[]> {
-  const supabase = await createClient()
+  const supabase = createAdminClient()
   const { data, error } = await supabase
     .from('pinche_vessels')
     .select('*')

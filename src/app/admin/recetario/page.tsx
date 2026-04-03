@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWeeklyProductionData } from '@/lib/db/production'
 import { computeMealTotals } from '@/lib/utils/production'
 import RecipeTotals from '../orders/RecipeTotals'
@@ -34,7 +34,7 @@ export default async function RecetarioPage() {
     ? getMondayOfWeek(parseLocalDate(semana))
     : getMondayOfWeek(new Date())
 
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
   const productionData = await getWeeklyProductionData(supabase, weekStart)
   const mealTotals = computeMealTotals(productionData)
   const totalPortions = mealTotals.reduce((s, m) => s + m.totalPortions, 0)

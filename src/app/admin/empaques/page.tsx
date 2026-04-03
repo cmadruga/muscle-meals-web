@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWeeklyProductionData } from '@/lib/db/production'
 import { computeEmpaquesData } from '@/lib/utils/production'
 import EmpaqueCarousel from '@/app/admin/prep/EmpaqueCarousel'
@@ -34,7 +34,7 @@ export default async function EmpaquesPage() {
     ? getMondayOfWeek(parseLocalDate(semana))
     : getMondayOfWeek(new Date())
 
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
   const productionData = await getWeeklyProductionData(supabase, weekStart)
   const empaquesMeals = computeEmpaquesData(productionData)
   const totalPlatos = productionData.items.reduce((s, i) => s + i.qty, 0)

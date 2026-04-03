@@ -11,6 +11,7 @@ export type MealIngredientRow = {
   isSubRecipe: boolean
   section?: 'pro' | 'carb' | 'veg'
   ingredientType: string | null
+  proveedor: string | null
 }
 
 export type MealTotal = {
@@ -27,6 +28,7 @@ export type ShoppingItem = {
   name: string
   unit: string
   totalQty: number
+  proveedor: string | null
 }
 
 export type PincheSizeRow = {
@@ -74,10 +76,10 @@ export type MatrixRow = {
 export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
   const { items, mealsMap, ingredientsMap, sizesMap } = data
 
-  // mealId → key → { qty, name, unit, isSubRecipe, ingredientId, section, ingredientType }
+  // mealId → key → { qty, name, unit, isSubRecipe, ingredientId, section, ingredientType, proveedor }
   const mealAggregates = new Map<
     string,
-    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg'; ingredientType: string | null }>
+    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg'; ingredientType: string | null; proveedor: string | null }>
   >()
 
   const mealPortions = new Map<string, number>()
@@ -131,6 +133,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
           ingredientId: recipeIng.ingredient_id,
           section: recipeIng.section,
           ingredientType: ingredient.type ?? null,
+          proveedor: ingredient.proveedor ?? null,
         })
       }
     }
@@ -155,6 +158,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
             isSubRecipe: true,
             ingredientId: recipeIng.ingredient_id,
             ingredientType: ingredient.type ?? null,
+            proveedor: ingredient.proveedor ?? null,
           })
         }
       }
@@ -178,6 +182,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         isSubRecipe: val.isSubRecipe,
         section: val.section,
         ingredientType: val.ingredientType,
+        proveedor: val.proveedor,
       }
       if (val.isSubRecipe) {
         subRows.push(row)
@@ -210,7 +215,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
 }
 
 export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
-  const aggregate = new Map<string, { ingredientId: string; name: string; unit: string; totalQty: number }>()
+  const aggregate = new Map<string, { ingredientId: string; name: string; unit: string; totalQty: number; proveedor: string | null }>()
 
   for (const meal of mealTotals) {
     for (const ing of meal.ingredients) {
@@ -224,6 +229,7 @@ export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
           name: ing.name,
           unit: ing.unit,
           totalQty: ing.totalQty,
+          proveedor: ing.proveedor,
         })
       }
     }
@@ -236,6 +242,7 @@ export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
       name: val.name,
       unit: val.unit,
       totalQty: Math.round(val.totalQty * 10) / 10,
+      proveedor: val.proveedor,
     })
   }
 
