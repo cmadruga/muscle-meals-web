@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import React, { useState } from 'react'
 import type { MealTotal, MealIngredientRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
 
@@ -141,9 +141,9 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
               const hasCups = (ing: MealIngredientRow) => grPerCup && grPerCup > 0 && ing.ingredientType === section
 
               return (
-                <>
+                <React.Fragment key={section}>
                   {nBatches > 1 && (
-                    <tr key={`sep_${section}`}>
+                    <tr>
                       <td colSpan={2} style={{
                         padding: '6px 16px',
                         fontSize: 11,
@@ -191,7 +191,7 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
                       </td>
                     </tr>
                   ))}
-                </>
+                </React.Fragment>
               )
             })}
 

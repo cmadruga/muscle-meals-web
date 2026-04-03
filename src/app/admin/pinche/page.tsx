@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWeeklyProductionData } from '@/lib/db/production'
 import { computePincheData } from '@/lib/utils/production'
 import { getAllPincheVessels } from '@/lib/db/pinche-vessels'
@@ -31,7 +31,7 @@ export default async function PinchePage() {
 
   const weekKey = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`
 
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
   const [productionData, vessels] = await Promise.all([
     getWeeklyProductionData(supabase, weekStart),
     getAllPincheVessels(),

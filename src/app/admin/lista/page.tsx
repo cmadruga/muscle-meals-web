@@ -1,5 +1,5 @@
 import { cookies } from 'next/headers'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { getWeeklyProductionData } from '@/lib/db/production'
 import { computeMealTotals, computeShoppingList } from '@/lib/utils/production'
 import ShoppingList from '../orders/ShoppingList'
@@ -34,7 +34,7 @@ export default async function ListaPage() {
     ? getMondayOfWeek(parseLocalDate(semana))
     : getMondayOfWeek(new Date())
 
-  const supabase = await createClient()
+  const supabase = await createAdminClient()
   const productionData = await getWeeklyProductionData(supabase, weekStart)
   const mealTotals = computeMealTotals(productionData)
   const shoppingList = computeShoppingList(mealTotals)
