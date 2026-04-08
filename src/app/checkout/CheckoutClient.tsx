@@ -149,6 +149,7 @@ export default function CheckoutClient({
           sizeId: item.sizeId,
           qty: item.qty,
           unitPrice: item.unitPrice,
+          packageInstanceId: item.packageInstanceId,
         })),
       })
 
@@ -473,28 +474,35 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         justifyContent: 'space-between',
         alignItems: 'center'
       }}>
-        <div>
-          <strong style={{ color: colors.orange }}>{pkg.packageName}</strong>
-          <span style={{ marginLeft: 8, color: colors.textMuted }}>· {pkg.sizeName}</span>
-        </div>
+        <strong style={{ color: colors.orange }}>{pkg.packageName} · x{pkg.totalMeals}</strong>
         <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
       </div>
-      
+
       {/* Package items */}
       {pkg.items.map((item) => (
         <div
           key={`${item.mealId}-${item.sizeId}`}
           style={{
-            padding: '12px 16px 12px 32px',
+            padding: '10px 16px 10px 24px',
             borderBottom: `1px solid ${colors.grayDark}`,
             display: 'flex',
             justifyContent: 'space-between',
-            fontSize: 14,
-            color: colors.textMuted
+            alignItems: 'center',
+            gap: 12,
           }}
         >
-          <span>{item.mealName}</span>
-          <span>x{item.qty}</span>
+          <div>
+            <span style={{ fontSize: 14, color: colors.white }}>{item.mealName}</span>
+            <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+          </div>
+          <div style={{ textAlign: 'right', flexShrink: 0 }}>
+            <span style={{ fontSize: 12, color: colors.textMuted }}>
+              ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+            </span>
+            <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+              ${(item.unitPrice * item.qty / 100).toFixed(0)}
+            </span>
+          </div>
         </div>
       ))}
     </div>
