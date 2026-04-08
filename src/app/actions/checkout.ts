@@ -7,6 +7,7 @@ export type CheckoutItem = {
   sizeId: string
   qty: number
   unitPrice: number
+  packageInstanceId?: string
 }
 
 export type ProcessCheckoutInput = {
@@ -79,15 +80,15 @@ export async function processCheckout(
   }
 
   // Crear items
-  const { error: itemsError } = await supabase.from('order_items').insert(
-    data.items.map(item => ({
-      order_id: order.id,
-      meal_id: item.mealId,
-      size_id: item.sizeId,
-      qty: item.qty,
-      unit_price: item.unitPrice,
-    }))
-  )
+  const orderItemsPayload = data.items.map(item => ({
+    order_id: order.id,
+    meal_id: item.mealId,
+    size_id: item.sizeId,
+    qty: item.qty,
+    unit_price: item.unitPrice,
+    package_instance_id: item.packageInstanceId ?? null,
+  }))
+  const { error: itemsError } = await supabase.from('order_items').insert(orderItemsPayload)
 
   if (itemsError) {
     await supabase.from('orders').delete().eq('id', order.id)

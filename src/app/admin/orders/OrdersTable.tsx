@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef } from 'react'
-import type { OrderWithCustomer, OrderStatus } from '@/lib/types'
+import type { OrderWithCustomer, OrderStatus, OrderItem } from '@/lib/types'
 import type { MatrixRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
 import { saveOrderNote } from '@/app/actions/orders'
@@ -34,6 +34,51 @@ const SHIPPING_LABELS: Record<string, string> = {
   standard: 'Estándar',
   priority: 'Prioridad',
   pickup: 'Pickup',
+}
+
+function OrderItemsCell({ items }: { items: OrderItem[] }) {
+  // Separate packages from individual items
+  const packages = new Map<string, OrderItem[]>()
+  const individual: OrderItem[] = []
+
+  for (const item of items) {
+    if (item.package_instance_id) {
+      const grp = packages.get(item.package_instance_id) ?? []
+      grp.push(item)
+      packages.set(item.package_instance_id, grp)
+    } else {
+      individual.push(item)
+    }
+  }
+
+  return (
+    <div>
+      {/* Paquetes agrupados */}
+      {[...packages.values()].map((pkgItems, pkgIdx) => {
+        const totalMeals = pkgItems.reduce((s, i) => s + i.qty, 0)
+        return (
+          <div key={pkgIdx} style={{ marginBottom: pkgIdx < packages.size - 1 || individual.length > 0 ? 6 : 0 }}>
+            <div style={{ fontSize: 11, color: colors.orange, fontWeight: 700, marginBottom: 2 }}>
+              Paquete · x{totalMeals}
+            </div>
+            {pkgItems.map((item, i) => (
+              <div key={i} style={{ whiteSpace: 'nowrap', paddingLeft: 8, fontSize: 12 }}>
+                {item.qty}× {item.meal_name}
+                {item.size_name ? ` (${item.size_name})` : ''}
+              </div>
+            ))}
+          </div>
+        )
+      })}
+      {/* Items individuales */}
+      {individual.map((item, i) => (
+        <div key={i} style={{ whiteSpace: 'nowrap' }}>
+          <span style={{ color: colors.orange, fontWeight: 700 }}>{item.qty}×</span> {item.meal_name}
+          {item.size_name ? ` (${item.size_name})` : ''}
+        </div>
+      ))}
+    </div>
+  )
 }
 
 function MatrixView({
@@ -362,12 +407,7 @@ export default function OrdersTable({
                       )}
                     </td>
                     <td style={{ ...tdStyle, color: colors.textSecondary, minWidth: 200 }}>
-                      {order.items.map((item, i) => (
-                        <div key={i} style={{ whiteSpace: 'nowrap' }}>
-                          {item.qty}× {item.meal_name}
-                          {item.size_name ? ` (${item.size_name})` : ''}
-                        </div>
-                      ))}
+                      <OrderItemsCell items={order.items} />
                     </td>
                     <td style={{ ...tdStyle, color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
                       {formatAmount(order.total_amount)}

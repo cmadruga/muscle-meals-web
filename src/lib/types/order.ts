@@ -13,6 +13,7 @@ export interface OrderItem {
   size_id: string
   qty: number
   unit_price: number // precio unitario al momento de la orden (centavos)
+  package_instance_id?: string | null
   created_at: string
   meal_name?: string // nombre del meal (opcional, solo cuando se hace JOIN)
   size_name?: string // nombre del tamaño (opcional, solo cuando se hace JOIN)
