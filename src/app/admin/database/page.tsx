@@ -10,7 +10,9 @@ import IngredientesTab from './IngredientesTab'
 import RecetasTab from './RecetasTab'
 import MaterialesTab from './MaterialesTab'
 import PincheTab from './PincheTab'
+import TamanosTab from './TamanosTab'
 import Link from 'next/link'
+import { getAllSizesAdmin } from '@/app/actions/database'
 
 const TABS = [
   { id: 'materiales', label: 'Materiales' },
@@ -18,6 +20,7 @@ const TABS = [
   { id: 'ingredientes', label: 'Ingredientes' },
   { id: 'recetas', label: 'Recetas' },
   { id: 'meals', label: 'Platillos' },
+  { id: 'tamanos', label: 'Tamaños' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
@@ -33,13 +36,14 @@ export default async function DatabasePage({
       ? (params.tab as Tab)
       : 'meals'
 
-  const [meals, ingredients, recipes, materials, vessels, mainSizes] = await Promise.all([
+  const [meals, ingredients, recipes, materials, vessels, mainSizes, adminSizes] = await Promise.all([
     activeTab === 'meals' ? getAllMeals() : Promise.resolve(null),
-    activeTab === 'ingredientes' || activeTab === 'recetas' || activeTab === 'meals' ? getAllIngredients() : Promise.resolve(null),
+    activeTab === 'ingredientes' || activeTab === 'recetas' || activeTab === 'meals' || activeTab === 'tamanos' ? getAllIngredients() : Promise.resolve(null),
     activeTab === 'recetas' || activeTab === 'meals' ? getAllRecipes() : Promise.resolve(null),
     activeTab === 'materiales' ? getAllMaterials() : Promise.resolve(null),
     activeTab === 'pinche' || activeTab === 'recetas' ? getAllPincheVessels() : Promise.resolve(null),
     activeTab === 'meals' ? getMainSizes() : Promise.resolve(null),
+    activeTab === 'tamanos' ? getAllSizesAdmin() : Promise.resolve(null),
   ])
 
   return (
@@ -78,6 +82,7 @@ export default async function DatabasePage({
       {activeTab === 'recetas' && recipes && ingredients && <RecetasTab recipes={recipes} ingredients={ingredients} vessels={vessels ?? []} />}
       {activeTab === 'materiales' && materials && <MaterialesTab materials={materials} />}
       {activeTab === 'pinche' && vessels && <PincheTab vessels={vessels} />}
+      {activeTab === 'tamanos' && adminSizes && ingredients && <TamanosTab sizes={adminSizes} ingredients={ingredients} />}
     </div>
   )
 }
