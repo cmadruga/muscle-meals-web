@@ -240,7 +240,7 @@ function PackageCard({ package: pkg, onRemove }: {
         alignItems: 'center'
       }}>
         <span style={{ fontWeight: 'bold', color: colors.orange }}>
-          {pkg.packageName} · x{pkg.totalMeals} · {pkg.sizeName}
+          {pkg.packageName} · x{pkg.totalMeals}
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <span style={{ fontWeight: 'bold', color: colors.white }}>
@@ -269,17 +269,26 @@ function PackageCard({ package: pkg, onRemove }: {
           <div
             key={`${item.mealId}-${item.sizeId}`}
             style={{
-              padding: 16,
+              padding: '12px 16px',
               borderBottom: idx < pkg.items.length - 1 ? `1px solid ${colors.grayLight}` : 'none',
               display: 'flex',
               justifyContent: 'space-between',
-              alignItems: 'center'
+              alignItems: 'center',
+              gap: 12,
             }}
           >
-            <span style={{ fontSize: 16, color: colors.white }}>{item.mealName}</span>
-            <span style={{ fontSize: 14, color: colors.textMuted }}>
-              x{item.qty}
-            </span>
+            <div>
+              <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <span style={{ fontSize: 13, color: colors.textMuted }}>
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+              </span>
+            </div>
           </div>
         ))}
       </div>

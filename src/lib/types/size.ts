@@ -8,8 +8,8 @@ export interface Size {
   is_main: boolean // true para principales, false para custom
   customer_id: string | null // null para main, customer_id para custom
   // Cantidades base por tipo de ingrediente
-  protein_qty: number // gramos de ingredientes tipo 'pro'
-  carb_qty: number // gramos de ingredientes tipo 'carb'
+  protein_qty: Record<string, number> // { "default": 120, "uuid-pollo": 120, ... }
+  carb_qty: Record<string, number>    // { "default": 55, "uuid-papa": 300, ... }
   veg_qty: number // gramos de ingredientes tipo 'veg'
   // Precios (centavos MXN)
   price: number // precio unitario de meal

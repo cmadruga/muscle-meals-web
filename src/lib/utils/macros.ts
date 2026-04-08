@@ -1,5 +1,9 @@
 import type { Recipe, Size, Ingredient, Macros, Unit } from '@/lib/types'
 
+export function resolveQty(qtyJson: Record<string, number>, ingredientId: string): number {
+  return qtyJson[ingredientId] ?? qtyJson['default'] ?? 0
+}
+
 function toGrams(qty: number, unit: Unit, ingredient: Ingredient): number {
   if (unit === 'g') return qty
   const conv = ingredient.unit_conversions?.find(c => c.unit === unit)
@@ -29,8 +33,8 @@ export function calculateMealMacros(
 
     // Determinar cantidad según tipo de ingrediente
     let qty = recipeIng.qty
-    if (ingredient.type === 'pro') qty = size.protein_qty
-    else if (ingredient.type === 'carb') qty = size.carb_qty
+    if (ingredient.type === 'pro') qty = resolveQty(size.protein_qty, recipeIng.ingredient_id)
+    else if (ingredient.type === 'carb') qty = resolveQty(size.carb_qty, recipeIng.ingredient_id)
     else if (ingredient.type === 'veg') qty = size.veg_qty
     // Si type es null, usa la cantidad original de la receta
 

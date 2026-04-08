@@ -204,6 +204,45 @@ export async function updateRecipeVesselConfig(
   return {}
 }
 
+// ─── Sizes admin ──────────────────────────────────────────────────────────────
+
+export type SizeAdmin = {
+  id: string
+  name: string
+  protein_qty: Record<string, number>
+  carb_qty: Record<string, number>
+  veg_qty: number
+  is_main: boolean
+  customer_id: string | null
+}
+
+export async function getAllSizesAdmin(): Promise<SizeAdmin[]> {
+  const supabase = createAdminClient()
+  const { data, error } = await supabase
+    .from('sizes')
+    .select('id, name, protein_qty, carb_qty, veg_qty, is_main, customer_id')
+    .order('is_main', { ascending: false })
+    .order('name', { ascending: true })
+  if (error) return []
+  return data as SizeAdmin[]
+}
+
+export async function updateSizePortions(
+  sizeId: string,
+  proteinQty: Record<string, number>,
+  carbQty: Record<string, number>,
+  vegQty: number,
+): Promise<{ error?: string }> {
+  const supabase = createAdminClient()
+  const { error } = await supabase
+    .from('sizes')
+    .update({ protein_qty: proteinQty, carb_qty: carbQty, veg_qty: vegQty })
+    .eq('id', sizeId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/database')
+  return {}
+}
+
 // ─── Ingredientes ─────────────────────────────────────────────────────────────
 
 export interface IngredientFormData {
