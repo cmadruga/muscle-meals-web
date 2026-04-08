@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import type { Size, MealBasic, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
-import { toCocido } from '@/lib/utils/conversions'
+// import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
@@ -35,7 +35,7 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
   const [showModal, setShowModal] = useState(false)
   const [showRecipe, setShowRecipe] = useState(false)
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
-  const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
+  // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
   const allSizes = [...sizes, ...customerSizes, ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
@@ -197,7 +197,12 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
 
         {selectedSizeId === '__custom__' && (
           <div style={{ marginTop: 16 }}>
-            <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
+            <CustomSizePanel
+              proIngredients={meal.ingredients.filter(i => i.type === 'pro')}
+              carbIngredients={meal.ingredients.filter(i => i.type === 'carb')}
+              customerSizes={customerSizes}
+              onSizeCreated={handleCustomSizeCreated}
+            />
           </div>
         )}
       </div>
@@ -231,51 +236,46 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             <span style={{ fontSize: 13, fontWeight: 'bold', color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 1 }}>
               Porciones
             </span>
-            {/* Toggle pill */}
-            <div style={{ display: 'flex', background: colors.black, borderRadius: 20, padding: 3, gap: 2, border: `1px solid ${colors.grayLight}` }}>
-              <button
-                onClick={() => setPortionMode('crudo')}
-                style={{
-                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
-                  background: portionMode === 'crudo' ? colors.orange : 'transparent',
-                  color: portionMode === 'crudo' ? colors.black : colors.textMuted,
-                }}
-              >Crudo</button>
-              <button
-                onClick={() => setPortionMode('cocido')}
-                style={{
-                  padding: '3px 10px', borderRadius: 16, fontSize: 11, fontWeight: 'bold', border: 'none', cursor: 'pointer',
-                  background: portionMode === 'cocido' ? colors.orange : 'transparent',
-                  color: portionMode === 'cocido' ? colors.black : colors.textMuted,
-                }}
-              >Cocido</button>
-            </div>
+            {/* Toggle pill — oculto por ahora, solo crudo */}
+            {/* <div style={{ display: 'flex', background: colors.black, borderRadius: 20, padding: 3, gap: 2, border: `1px solid ${colors.grayLight}` }}>
+              <button onClick={() => setPortionMode('crudo')} >Crudo</button>
+              <button onClick={() => setPortionMode('cocido')} >Cocido</button>
+            </div> */}
           </div>
 
           <div style={{ display: 'flex', gap: 10 }}>
-            {[
-              { label: 'Proteína', raw: selectedSize.protein_qty, type: 'protein' as const },
-              { label: 'Carbos',   raw: selectedSize.carb_qty,    type: 'carbs' as const },
-              { label: 'Verduras', raw: selectedSize.veg_qty,     type: 'veg' as const },
-            ].map(({ label, raw, type }) => {
-              const grams = portionMode === 'crudo' ? raw : toCocido(raw, type)
-              return (
-                <div key={type} style={{
-                  flex: 1,
-                  background: colors.black,
-                  borderRadius: 8,
-                  padding: '8px 4px',
-                  textAlign: 'center',
-                  border: `1px solid ${colors.grayLight}`,
+            {(() => {
+              const proIng  = meal.ingredients.find(i => i.type === 'pro')
+              const carbIng = meal.ingredients.find(i => i.type === 'carb')
+              const vegIng  = meal.ingredients.find(i => i.type === 'veg')
+              const rows: { label: string; sub?: string; raw: number }[] = [
+                {
+                  label: 'Proteína',
+                  sub: proIng?.public_name ?? proIng?.name,
+                  raw: proIng ? (selectedSize.protein_qty[proIng.id] ?? 0) : 0,
+                },
+                {
+                  label: 'Carbos',
+                  sub: carbIng?.public_name ?? carbIng?.name,
+                  raw: carbIng ? (selectedSize.carb_qty[carbIng.id] ?? 0) : 0,
+                },
+                {
+                  label: 'Verduras',
+                  sub: vegIng?.public_name ?? vegIng?.name,
+                  raw: vegIng ? selectedSize.veg_qty : 0,
+                },
+              ]
+              return rows.map(({ label, sub, raw }) => (
+                <div key={label} style={{
+                  flex: 1, background: colors.black, borderRadius: 8,
+                  padding: '8px 4px', textAlign: 'center', border: `1px solid ${colors.grayLight}`,
                 }}>
-                  <div style={{ fontSize: 14, fontWeight: 'bold', color: colors.white, marginBottom: 4 }}>{label}</div>
-                  <div style={{ fontSize: 16, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>{grams}g</div>
-                  <div style={{ fontSize: 10, color: colors.textTertiary, marginTop: 3 }}>
-                    {portionMode === 'crudo' ? `≈${toCocido(raw, type)}g coc.` : `${raw}g crudo`}
-                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 'bold', color: colors.white, marginBottom: 2, lineHeight: 1.2 }}>{label}</div>
+                  {sub && <div style={{ fontSize: 10, color: colors.textMuted, marginBottom: 4, lineHeight: 1.2 }}>({sub})</div>}
+                  <div style={{ fontSize: 16, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>{raw}g</div>
                 </div>
-              )
-            })}
+              ))
+            })()}
           </div>
         </div>
       )}

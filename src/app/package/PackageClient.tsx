@@ -6,7 +6,8 @@ import { useRouter } from 'next/navigation'
 import type { Size, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros } from '@/lib/utils/macros'
-import { toCocido } from '@/lib/utils/conversions'
+// import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
+import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { colors } from '@/lib/theme'
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
@@ -26,13 +27,37 @@ interface PackageClientProps {
 interface SelectionItem {
   mealId: string
   mealName: string
+  sizeId: string
+  sizeName: string
+  unitPrice: number  // package_price calculado para este meal+size
   qty: number
+}
+
+// Calcula el package_price correcto para un platillo con un custom size
+function calcMealCustomPrice(meal: MealWithRecipes, customSize: Size, fitSize: Size): number {
+  let proIngId: string | null = null
+  let carbIngId: string | null = null
+  for (const ing of meal.ingredients) {
+    if (ing.type === 'pro' && !proIngId) proIngId = ing.id
+    if (ing.type === 'carb' && !carbIngId) carbIngId = ing.id
+  }
+
+  const proQty  = proIngId  ? (customSize.protein_qty[proIngId]  ?? 0) : 0
+  const carbQty = carbIngId ? (customSize.carb_qty[carbIngId]    ?? 0) : 0
+
+  const fitPro  = proIngId  ? (fitSize.protein_qty[proIngId]  ?? 0) : 0
+  const fitCarb = carbIngId ? (fitSize.carb_qty[carbIngId]    ?? 0) : 0
+
+  const normPro  = fitPro  > 0 ? proQty  * PROTEIN_BASE.FIT / fitPro  : proQty
+  const normCarb = fitCarb > 0 ? carbQty * CARB_BASE.FIT    / fitCarb : carbQty
+
+  return calculateCustomSizePrice(normPro, normCarb, customSize.veg_qty).packagePrice
 }
 
 const pkg: PackageConfig = {
   minMeals: 5,
   name: 'Arma tu paquete',
-  description: 'Agrega mínimo 5 platillos. Precio especial activo al agregar 5 o más del mismo tamaño.'
+  description: 'Agrega mínimo 5 platillos. Precio especial activo al agregar 5 o más. Puedes combinar tamaños.'
 }
 
 /**
@@ -50,7 +75,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
   const [showModal, setShowModal] = useState(false)
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set())
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
-  const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
+  // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
   // Convertir meals a formato MealBasic para sugerencias
   const suggestedMeals = meals.map(m => ({
@@ -74,47 +99,49 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
     [selection]
   )
 
-  // Precio total del paquete (dinámico: price × totalSelected)
-  const totalPrice = selectedSize ? selectedSize.package_price * totalSelected : 0
+  // Precio total: suma unitPrice calculado por platillo
+  const totalPrice = useMemo(
+    () => selection.reduce((sum, item) => sum + item.unitPrice * item.qty, 0),
+    [selection]
+  )
 
-  const canSubmit = totalSelected >= pkg.minMeals && !!selectedSize
+  const canSubmit = totalSelected >= pkg.minMeals && selection.length > 0
 
-  // Agregar meal (sin límite superior)
+  // Agregar meal con el size activo
   const handleAdd = (meal: MealWithRecipes) => {
     if (!selectedSize) return
-
+    const unitPrice = selectedSize.is_main
+      ? selectedSize.package_price
+      : calcMealCustomPrice(meal, selectedSize, fitSize ?? selectedSize)
     setSelection(prev => {
-      const existing = prev.find(item => item.mealId === meal.id)
-
+      const existing = prev.find(i => i.mealId === meal.id && i.sizeId === selectedSize.id)
       if (existing) {
-        return prev.map(item =>
-          item.mealId === meal.id
-            ? { ...item, qty: item.qty + 1 }
-            : item
-        )
+        return prev.map(i => i.mealId === meal.id && i.sizeId === selectedSize.id ? { ...i, qty: i.qty + 1 } : i)
       }
-
-      return [...prev, { mealId: meal.id, mealName: meal.name, qty: 1 }]
+      return [...prev, { mealId: meal.id, mealName: meal.name, sizeId: selectedSize.id, sizeName: selectedSize.name, unitPrice, qty: 1 }]
     })
   }
 
-  // Remover meal
+  // Remover del size activo
   const handleRemove = (mealId: string) => {
-    setSelection(prev => {
-      const updated = prev.map(item =>
-        item.mealId === mealId
-          ? { ...item, qty: item.qty - 1 }
-          : item
-      )
-      return updated.filter(item => item.qty > 0)
-    })
+    if (!selectedSize) return
+    setSelection(prev =>
+      prev.map(i => i.mealId === mealId && i.sizeId === selectedSize.id ? { ...i, qty: i.qty - 1 } : i)
+        .filter(i => i.qty > 0)
+    )
   }
 
-  // Obtener cantidad de un meal
-  const getQty = (mealId: string) => {
-    const item = selection.find(s => s.mealId === mealId)
-    return item?.qty || 0
-  }
+  // Cantidad total de un meal (todos los sizes)
+  const getQty = (mealId: string) =>
+    selection.filter(i => i.mealId === mealId).reduce((s, i) => s + i.qty, 0)
+
+  // Cantidad de un meal en el size activo
+  const getQtyForCurrentSize = (mealId: string) =>
+    selection.find(i => i.mealId === mealId && i.sizeId === selectedSizeId)?.qty ?? 0
+
+  // Breakdown por size de un meal (para mostrar en card)
+  const getSizeBreakdown = (mealId: string) =>
+    selection.filter(i => i.mealId === mealId && i.qty > 0)
 
   // Toggle ingredientes
   const toggleIngredients = (mealId: string) => {
@@ -141,10 +168,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
       addToCart({
         mealId: item.mealId,
         mealName: item.mealName,
-        sizeId: selectedSize.id,
-        sizeName: selectedSize.name,
+        sizeId: item.sizeId,
+        sizeName: item.sizeName,
         qty: item.qty,
-        unitPrice: selectedSize.package_price,
+        unitPrice: item.unitPrice,
         packageName: pkg.name,
         packageInstanceId
       })
@@ -201,7 +228,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
         onGoToCart={handleGoToCart}
         onContinueShopping={handleContinueShopping}
         title="¡Agregado al carrito!"
-        message={`Tu paquete ${selectedSize?.name ?? pkg.name} de ${totalSelected} platillos ha sido agregado al carrito`}
+        message={`Tu paquete de ${totalSelected} platillos ha sido agregado al carrito`}
         suggestedMeals={suggestedMeals}
         selectedSize={selectedSize}
         onMealClick={handleMealClick}
@@ -272,11 +299,27 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
           </button>
         </div>
 
-        {selectedSizeId === '__custom__' && (
-          <div style={{ marginTop: 16 }}>
-            <CustomSizePanel onSizeCreated={handleCustomSizeCreated} />
-          </div>
-        )}
+        {selectedSizeId === '__custom__' && (() => {
+          // Collect unique pro/carb ingredients across all meals
+          const proMap = new Map<string, import('@/lib/types').Ingredient>()
+          const carbMap = new Map<string, import('@/lib/types').Ingredient>()
+          for (const m of meals) {
+            for (const i of m.ingredients) {
+              if (i.type === 'pro') proMap.set(i.id, i)
+              if (i.type === 'carb') carbMap.set(i.id, i)
+            }
+          }
+          return (
+            <div style={{ marginTop: 16 }}>
+              <CustomSizePanel
+                proIngredients={[...proMap.values()]}
+                carbIngredients={[...carbMap.values()]}
+                customerSizes={customerSizes}
+                onSizeCreated={handleCustomSizeCreated}
+              />
+            </div>
+          )
+        })()}
 
         {/* Descripción del size seleccionado */}
         {selectedSize?.description && (
@@ -285,55 +328,70 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
           </p>
         )}
 
-        {/* Toggle crudo/cocido + porciones del size */}
+        {/* Toggle crudo/cocido — oculto por ahora, solo crudo */}
+        {/* <div>Ver porciones en: [Crudo] [Cocido]</div> */}
+
+        {/* Porciones del size */}
         {selectedSize && (
           <div style={{ marginTop: 16 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
-              <span style={{ fontSize: 13, color: colors.textSecondary }}>Ver porciones en:</span>
-              <div style={{ display: 'flex', background: colors.black, borderRadius: 20, padding: 3, gap: 2, border: `1px solid ${colors.grayLight}` }}>
-                <button
-                  onClick={() => setPortionMode('crudo')}
-                  style={{
-                    padding: '4px 12px', borderRadius: 16, fontSize: 12, fontWeight: 'bold', border: 'none', cursor: 'pointer',
-                    background: portionMode === 'crudo' ? colors.orange : 'transparent',
-                    color: portionMode === 'crudo' ? colors.black : colors.textMuted,
-                  }}
-                >Crudo</button>
-                <button
-                  onClick={() => setPortionMode('cocido')}
-                  style={{
-                    padding: '4px 12px', borderRadius: 16, fontSize: 12, fontWeight: 'bold', border: 'none', cursor: 'pointer',
-                    background: portionMode === 'cocido' ? colors.orange : 'transparent',
-                    color: portionMode === 'cocido' ? colors.black : colors.textMuted,
-                  }}
-                >Cocido</button>
-              </div>
-            </div>
 
-            <div style={{ display: 'flex', gap: 10 }}>
-              {[
-                { label: 'Proteína', raw: selectedSize.protein_qty, type: 'protein' as const },
-                { label: 'Carbos',   raw: selectedSize.carb_qty,   type: 'carbs' as const },
-                { label: 'Verduras', raw: selectedSize.veg_qty,    type: 'veg' as const },
-              ].map(({ label, raw, type }) => {
-                const grams = portionMode === 'crudo' ? raw : toCocido(raw, type)
-                return (
-                  <div key={type} style={{
-                    flex: 1,
-                    background: colors.black,
-                    borderRadius: 8,
-                    padding: '8px 4px',
-                    textAlign: 'center',
-                    border: `1px solid ${colors.grayLight}`,
-                  }}>
-                    <div style={{ fontSize: 14, fontWeight: 'bold', color: colors.white, marginBottom: 4 }}>{label}</div>
-                    <div style={{ fontSize: 16, fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>{grams}g</div>
-                    <div style={{ fontSize: 10, color: colors.textTertiary, marginTop: 3 }}>
-                      {portionMode === 'crudo' ? `≈${toCocido(raw, type)}g coc.` : `${raw}g crudo`}
+            {/* Desglose por ingrediente */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', border: `1px solid ${colors.grayLight}`, borderRadius: 8, overflow: 'hidden' }}>
+              {/* Proteína */}
+              <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
+                <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Proteína</p>
+                {(() => {
+                  const proMap = new Map<string, import('@/lib/types').Ingredient>()
+                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'pro') proMap.set(i.id, i)
+                  return [...proMap.values()].map(ing => {
+                    const raw = selectedSize.protein_qty[ing.id] ?? 0
+                    const grams = raw
+                    return (
+                      <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
+                        <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
+                        <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{grams}g</span>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+
+              {/* Carbo */}
+              <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
+                <p style={{ color: '#eab308', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Carbo</p>
+                {(() => {
+                  const carbMap = new Map<string, import('@/lib/types').Ingredient>()
+                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'carb') carbMap.set(i.id, i)
+                  return [...carbMap.values()].map(ing => {
+                    const raw = selectedSize.carb_qty[ing.id] ?? 0
+                    const grams = raw
+                    return (
+                      <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
+                        <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
+                        <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{grams}g</span>
+                      </div>
+                    )
+                  })
+                })()}
+              </div>
+
+              {/* Verdura */}
+              <div style={{ padding: '10px 14px', minWidth: 100 }}>
+                <p style={{ color: '#22c55e', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Verdura</p>
+                {(() => {
+                  const vegMap = new Map<string, import('@/lib/types').Ingredient>()
+                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'veg') vegMap.set(i.id, i)
+                  if (vegMap.size === 0) {
+                    return <span style={{ color: colors.textMuted, fontSize: 12 }}>0g</span>
+                  }
+                  return [...vegMap.values()].map(ing => (
+                    <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
+                      <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
+                      <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{selectedSize.veg_qty}g</span>
                     </div>
-                  </div>
-                )
-              })}
+                  ))
+                })()}
+              </div>
             </div>
           </div>
         )}
@@ -373,6 +431,8 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
           {meals.map(meal => {
             const qty = getQty(meal.id)
+            const qtyCurrentSize = getQtyForCurrentSize(meal.id)
+            const breakdown = getSizeBreakdown(meal.id)
             const isExpanded = expandedMealIds.has(meal.id)
             
             // Calcular macros para este meal con el size seleccionado
@@ -381,6 +441,11 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
               const ingredientsMap = new Map(meal.ingredients.map(i => [i.id, i]))
               macros = calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
             }
+
+            // Precio por platillo (solo para custom sizes)
+            const mealUnitPrice = selectedSize && !selectedSize.is_main
+              ? calcMealCustomPrice(meal, selectedSize, fitSize ?? selectedSize)
+              : selectedSize?.package_price ?? null
             
             return (
               <div 
@@ -415,7 +480,14 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                     🍽️
                   </div>
                 )}
-                <h4 style={{ margin: '8px 0', color: colors.orange }}>{meal.name}</h4>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 8 }}>
+                  <h4 style={{ margin: '8px 0', color: colors.orange }}>{meal.name}</h4>
+                  {mealUnitPrice !== null && (
+                    <span style={{ fontSize: 13, fontWeight: 700, color: colors.white, whiteSpace: 'nowrap' }}>
+                      ${(mealUnitPrice / 100).toFixed(0)} MXN
+                    </span>
+                  )}
+                </div>
                 {meal.description && (
                   <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 8 }}>{meal.description}</p>
                 )}
@@ -451,25 +523,37 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
                   <button
                     onClick={() => handleRemove(meal.id)}
-                    disabled={qty === 0}
-                    style={{ 
-                      width: 36, 
+                    disabled={qtyCurrentSize === 0}
+                    style={{
+                      width: 36,
                       height: 36,
                       fontSize: 18,
                       border: `1px solid ${colors.grayLight}`,
                       borderRadius: 8,
                       background: colors.grayLight,
                       color: colors.white,
-                      cursor: qty === 0 ? 'not-allowed' : 'pointer',
-                      opacity: qty === 0 ? 0.5 : 1
+                      cursor: qtyCurrentSize === 0 ? 'not-allowed' : 'pointer',
+                      opacity: qtyCurrentSize === 0 ? 0.5 : 1
                     }}
                   >
                     −
                   </button>
 
-                  <span style={{ fontWeight: 'bold', minWidth: 24, textAlign: 'center', color: colors.white }}>
-                    {qty}
-                  </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', minWidth: 32 }}>
+                    <span style={{ fontWeight: 'bold', color: colors.white, lineHeight: 1 }}>
+                      {qty > 0 ? qty : 0}
+                    </span>
+                    {breakdown.length > 1 && (
+                      <span style={{ fontSize: 10, color: colors.textMuted, marginTop: 2, whiteSpace: 'nowrap' }}>
+                        {breakdown.map(i => `${i.sizeName} ×${i.qty}`).join(' · ')}
+                      </span>
+                    )}
+                    {breakdown.length === 1 && breakdown[0].sizeId !== selectedSizeId && (
+                      <span style={{ fontSize: 10, color: colors.textMuted, marginTop: 2 }}>
+                        {breakdown[0].sizeName}
+                      </span>
+                    )}
+                  </div>
 
                   <button
                     onClick={() => handleAdd(meal)}
@@ -585,7 +669,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
           {totalSelected > 0 && (
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {totalSelected} platillo{totalSelected !== 1 ? 's' : ''} · {selectedSize?.name || ''}
+                {totalSelected} platillo{totalSelected !== 1 ? 's' : ''}{(() => {
+                  const uniqueSizes = [...new Map(selection.map(i => [i.sizeId, i.sizeName])).values()]
+                  return uniqueSizes.length === 1 ? ` · ${uniqueSizes[0]}` : ` · ${uniqueSizes.join(', ')}`
+                })()}
               </div>
               <div className="pkg-footer-price" style={{ fontWeight: 'bold', color: colors.orange, lineHeight: 1 }}>
                 ${(totalPrice / 100).toFixed(0)} MXN

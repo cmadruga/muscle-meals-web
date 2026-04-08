@@ -5,7 +5,8 @@ import type { CartItem } from '@/lib/store/cart'
 export interface PackageGroup {
   packageInstanceId: string
   packageName: string
-  sizeName: string
+  sizeName: string       // único size si todos iguales, o "FIT · PLUS" si mixto
+  isMixedSizes: boolean
   items: CartItem[]
   totalPrice: number
   totalMeals: number
@@ -31,14 +32,19 @@ export function useCartGroups() {
       }
     })
     
-    return Object.entries(grouped).map(([packageInstanceId, packageItems]) => ({
-      packageInstanceId,
-      packageName: packageItems[0]?.packageName || 'Paquete',
-      sizeName: packageItems[0]?.sizeName || '',
-      items: packageItems,
-      totalPrice: packageItems.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0),
-      totalMeals: packageItems.reduce((sum, item) => sum + item.qty, 0)
-    }))
+    return Object.entries(grouped).map(([packageInstanceId, packageItems]) => {
+      const uniqueSizes = [...new Map(packageItems.map(i => [i.sizeId, i.sizeName])).values()]
+      const isMixedSizes = uniqueSizes.length > 1
+      return {
+        packageInstanceId,
+        packageName: packageItems[0]?.packageName || 'Paquete',
+        sizeName: uniqueSizes.join(' · '),
+        isMixedSizes,
+        items: packageItems,
+        totalPrice: packageItems.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0),
+        totalMeals: packageItems.reduce((sum, item) => sum + item.qty, 0),
+      }
+    })
   }, [items])
   
   // Items individuales
