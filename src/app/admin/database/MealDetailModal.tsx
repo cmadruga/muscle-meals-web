@@ -68,9 +68,9 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
   }, [onClose])
 
   // Calcular qty efectiva para ingrediente de receta principal
-  function effectiveQty(qty: number, type: string | null) {
-    if (type === 'pro') return selectedSize.protein_qty
-    if (type === 'carb') return selectedSize.carb_qty
+  function effectiveQty(qty: number, type: string | null, ingredientId: string) {
+    if (type === 'pro') return (selectedSize.protein_qty[ingredientId] ?? selectedSize.protein_qty['default'] ?? 0)
+    if (type === 'carb') return (selectedSize.carb_qty[ingredientId] ?? selectedSize.carb_qty['default'] ?? 0)
     if (type === 'veg') return selectedSize.veg_qty
     return qty
   }
@@ -91,7 +91,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
     for (const ri of mainRecipe.ingredients) {
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
-      const qty = effectiveQty(ri.qty, ing.type)
+      const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
       totalCal  += qty * ing.calories / 100
       totalPro  += qty * ing.protein / 100
       totalCarb += qty * ing.carbs / 100
@@ -148,7 +148,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                       {ings.map((ri, i) => {
                         const ing = ingredientsById.get(ri.ingredient_id)
                         if (!ing) return null
-                        const qty = effectiveQty(ri.qty, ing.type)
+                        const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
                         const cal  = qty * ing.calories / 100
                         const pro  = qty * ing.protein / 100
                         const carb = qty * ing.carbs / 100

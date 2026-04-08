@@ -1,6 +1,6 @@
 import type { WeeklyProductionData } from '@/lib/db/production'
 import type { RecipeVesselConfig } from '@/lib/types/recipe'
-import { calculateMealMacros } from './macros'
+import { calculateMealMacros, resolveQty } from './macros'
 
 export type MealIngredientRow = {
   key: string
@@ -111,9 +111,9 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
 
       let qtyPerPortion: number
       if (ingredient.type === 'pro') {
-        qtyPerPortion = size.protein_qty
+        qtyPerPortion = resolveQty(size.protein_qty, recipeIng.ingredient_id)
       } else if (ingredient.type === 'carb') {
-        qtyPerPortion = size.carb_qty
+        qtyPerPortion = resolveQty(size.carb_qty, recipeIng.ingredient_id)
       } else if (ingredient.type === 'veg') {
         qtyPerPortion = size.veg_qty
       } else {
@@ -358,7 +358,7 @@ export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] 
 }
 
 export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
-  const { items, sizesMap } = data
+  const { items, sizesMap, mealsMap, ingredientsMap } = data
 
   const mealSizeQty = new Map<string, Map<string, number>>()
   const mealNames = new Map<string, string>()
@@ -373,8 +373,21 @@ export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
   const result: PincheMeal[] = []
 
   for (const [mealId, sizeMap] of mealSizeQty) {
+    const meal = mealsMap.get(mealId)
     const sizeRows: PincheSizeRow[] = []
     let totalPortions = 0
+
+    // Find the pro and carb ingredient IDs for this meal (first match)
+    let proIngId: string | null = null
+    let carbIngId: string | null = null
+    if (meal) {
+      for (const ri of meal.mainRecipe.ingredients) {
+        const ing = ingredientsMap.get(ri.ingredient_id)
+        if (!ing) continue
+        if (ing.type === 'pro' && !proIngId) proIngId = ri.ingredient_id
+        if (ing.type === 'carb' && !carbIngId) carbIngId = ri.ingredient_id
+      }
+    }
 
     for (const [sizeId, qty] of sizeMap) {
       const size = sizesMap.get(sizeId)
@@ -385,8 +398,8 @@ export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
         sizeName: size.name,
         qty,
         isMain: size.is_main,
-        proteinQty: size.protein_qty,
-        carbQty: size.carb_qty,
+        proteinQty: proIngId ? resolveQty(size.protein_qty, proIngId) : (size.protein_qty['default'] ?? 0),
+        carbQty: carbIngId ? resolveQty(size.carb_qty, carbIngId) : (size.carb_qty['default'] ?? 0),
         vegQty: size.veg_qty,
       })
     }
