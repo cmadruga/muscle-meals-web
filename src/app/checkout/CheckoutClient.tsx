@@ -85,10 +85,8 @@ export default function CheckoutClient({
       : isAddressComplete && isPostalCodeValid
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
   
-  // Calcular total con descuento y envío
-  const subtotalOriginal = getTotal()
-  const discount = Math.round(subtotalOriginal * 0.20)
-  const subtotal = subtotalOriginal - discount
+  // Calcular total
+  const subtotal = getTotal()
   const shippingCost = SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
   
@@ -155,11 +153,11 @@ export default function CheckoutClient({
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
-      // 3. Crear preferencia de pago en MercadoPago (precios con descuento 20%)
+      // 3. Crear preferencia de pago en MercadoPago
       const mpItems = [
         ...items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
-          unit_price: Math.round(item.unitPrice * 0.80),
+          unit_price: item.unitPrice,
           quantity: item.qty
         }))
       ]
@@ -264,8 +262,6 @@ export default function CheckoutClient({
           <OrderSummary
             packageGroups={packageGroups}
             individualItems={individualItems}
-            subtotalOriginal={subtotalOriginal}
-            discount={discount}
             subtotal={subtotal}
             shippingCost={shippingCost}
             shippingType={shippingType}
@@ -372,11 +368,9 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotalOriginal, discount, subtotal, shippingCost, shippingType, total }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
-  subtotalOriginal: number
-  discount: number
   subtotal: number
   shippingCost: number
   shippingType: 'standard' | 'priority' | 'pickup'
@@ -417,21 +411,9 @@ function OrderSummary({ packageGroups, individualItems, subtotalOriginal, discou
         border: `2px solid ${colors.grayLight}`,
         borderRadius: 12,
       }}>
-        {/* Subtotal original */}
-        <div style={rowStyle}>
+        {/* Subtotal */}
+        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
           <span>Subtotal:</span>
-          <span>${(subtotalOriginal / 100).toFixed(0)} MXN</span>
-        </div>
-
-        {/* Descuento */}
-        <div style={{ ...rowStyle, color: '#10b981', fontWeight: 600 }}>
-          <span>Descuento 20%:</span>
-          <span>− ${(discount / 100).toFixed(0)} MXN</span>
-        </div>
-
-        {/* Subtotal con descuento */}
-        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, color: colors.white, fontWeight: 600 }}>
-          <span>Subtotal con descuento:</span>
           <span>${(subtotal / 100).toFixed(0)} MXN</span>
         </div>
 

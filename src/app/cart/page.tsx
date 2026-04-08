@@ -138,6 +138,7 @@ export default function CartPage() {
           <PackageCard
             key={pkg.packageInstanceId}
             package={pkg}
+            onEdit={() => router.push(`/package?edit=${pkg.packageInstanceId}`)}
             onRemove={() => setPendingDelete({ type: 'package', instanceId: pkg.packageInstanceId, name: `${pkg.packageName} · ${pkg.sizeName}` })}
           />
         ))}
@@ -216,9 +217,10 @@ function EmptyCartView() {
   )
 }
 
-function PackageCard({ package: pkg, onRemove }: { 
+function PackageCard({ package: pkg, onRemove, onEdit }: {
   package: PackageGroup
-  onRemove: () => void 
+  onRemove: () => void
+  onEdit: () => void
 }) {
   return (
     <div
@@ -242,10 +244,24 @@ function PackageCard({ package: pkg, onRemove }: {
         <span style={{ fontWeight: 'bold', color: colors.orange }}>
           {pkg.packageName} · x{pkg.totalMeals}
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontWeight: 'bold', color: colors.white }}>
             ${(pkg.totalPrice / 100).toFixed(0)} MXN
           </span>
+          <button
+            onClick={onEdit}
+            style={{
+              padding: '8px 12px',
+              border: `1px solid ${colors.orange}`,
+              borderRadius: 8,
+              background: 'transparent',
+              color: colors.orange,
+              cursor: 'pointer',
+              fontSize: 13,
+            }}
+          >
+            Editar
+          </button>
           <button
             onClick={onRemove}
             style={{
@@ -405,8 +421,6 @@ function QuantityControls({ value, onChange }: {
 }
 
 function CartSummary({ total }: { total: number }) {
-  const discount = Math.round(total * 0.20)
-  const discounted = total - discount
   return (
     <div style={{
       padding: 20,
@@ -415,18 +429,10 @@ function CartSummary({ total }: { total: number }) {
       borderRadius: 12,
       marginBottom: 24
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 15, color: colors.textSecondary }}>
-        <span>Subtotal:</span>
-        <span>${(total / 100).toFixed(0)} MXN</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 12, fontSize: 15, color: '#10b981', fontWeight: 600 }}>
-        <span>Descuento 20%:</span>
-        <span>− ${(discount / 100).toFixed(0)} MXN</span>
-      </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: `1px solid ${colors.grayLight}`, paddingTop: 12 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
         <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-          ${(discounted / 100).toFixed(0)} MXN
+          ${(total / 100).toFixed(0)} MXN
         </span>
       </div>
     </div>
