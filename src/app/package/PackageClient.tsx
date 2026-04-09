@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { Size, MealWithRecipes } from '@/lib/types'
@@ -22,6 +22,7 @@ interface PackageClientProps {
   meals: MealWithRecipes[]
   sizes: Size[]
   customerSizes?: Size[]
+  editInstanceId?: string
 }
 
 interface SelectionItem {
@@ -66,12 +67,28 @@ const pkg: PackageConfig = {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ meals, sizes, customerSizes = [] }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId }: PackageClientProps) {
   const router = useRouter()
-  const addToCart = useCartStore(state => state.addItem)
+  const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
   const [selectedSizeId, setSelectedSizeId] = useState(fitSize?.id || sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>([])
+
+  // Hidratar selección desde el carrito después del mount (evita hydration mismatch con SSR)
+  useEffect(() => {
+    if (!editInstanceId) return
+    const cartItems = useCartStore.getState().items
+      .filter(i => i.packageInstanceId === editInstanceId)
+      .map(i => ({
+        mealId: i.mealId,
+        mealName: i.mealName,
+        sizeId: i.sizeId,
+        sizeName: i.sizeName,
+        unitPrice: i.unitPrice,
+        qty: i.qty,
+      }))
+    setSelection(cartItems)
+  }, [editInstanceId])
   const [showModal, setShowModal] = useState(false)
   const [expandedMealIds, setExpandedMealIds] = useState<Set<string>>(new Set())
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
@@ -160,6 +177,11 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
   const handleAddToCart = () => {
     if (!canSubmit || !selectedSize) return
 
+    // Si estamos editando, eliminar el paquete original primero
+    if (editInstanceId) {
+      removePackage(editInstanceId)
+    }
+
     // Generar un ID único para esta instancia del paquete
     const packageInstanceId = `pkg_${crypto.randomUUID()}`
 
@@ -195,7 +217,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
   const handleContinueShopping = () => {
     setShowModal(false)
     setSelection([])
-    router.push('/menu')
+    router.push(editInstanceId ? '/cart' : '/menu')
   }
 
   const handleMealClick = (mealId: string, sizeId?: string) => {
@@ -227,8 +249,8 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
         onClose={handleCloseModal}
         onGoToCart={handleGoToCart}
         onContinueShopping={handleContinueShopping}
-        title="¡Agregado al carrito!"
-        message={`Tu paquete de ${totalSelected} platillos ha sido agregado al carrito`}
+        title={editInstanceId ? '¡Paquete actualizado!' : '¡Agregado al carrito!'}
+        message={editInstanceId ? `Tu paquete de ${totalSelected} platillos ha sido actualizado` : `Tu paquete de ${totalSelected} platillos ha sido agregado al carrito`}
         suggestedMeals={suggestedMeals}
         selectedSize={selectedSize}
         onMealClick={handleMealClick}
@@ -701,7 +723,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [] }: Pack
             }}
           >
             {totalSelected < pkg.minMeals
-              ? `Agrega ${pkg.minMeals - totalSelected} más`
+              ? `Agrega ${pkg.minMeals - totalSelected} más` : editInstanceId ? 'Actualizar paquete'
               : 'Agregar al carrito'
             }
           </button>
