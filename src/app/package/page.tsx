@@ -9,7 +9,12 @@ import PackageClient from './PackageClient'
  * Server Component para la página de paquete
  * Carga meals + sizes; la config del paquete viene de la constante PACKAGE
  */
-export default async function PackagePage() {
+export default async function PackagePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ edit?: string }>
+}) {
+  const { edit: editInstanceId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
 
@@ -26,7 +31,7 @@ export default async function PackagePage() {
     getGlobalSizes()
   ])
 
-  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} />
+  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} />
 }
 
 export const metadata = {

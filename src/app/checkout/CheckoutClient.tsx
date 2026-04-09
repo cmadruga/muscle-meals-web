@@ -85,11 +85,10 @@ export default function CheckoutClient({
       : isAddressComplete && isPostalCodeValid
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
   
-  // Calcular total con descuento y envío
-  const subtotalOriginal = getTotal()
-  const discount = Math.round(subtotalOriginal * 0.20)
-  const subtotal = subtotalOriginal - discount
-  const shippingCost = SHIPPING_COSTS[shippingType]
+  // Calcular total
+  const isLoggedIn = Boolean(prefill?.customerId)
+  const subtotal = getTotal()
+  const shippingCost = shippingType === 'standard' && isLoggedIn ? 0 : SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
   
   // Validar pickup spot si es necesario
@@ -155,11 +154,11 @@ export default function CheckoutClient({
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
-      // 3. Crear preferencia de pago en MercadoPago (precios con descuento 20%)
+      // 3. Crear preferencia de pago en MercadoPago
       const mpItems = [
         ...items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
-          unit_price: Math.round(item.unitPrice * 0.80),
+          unit_price: item.unitPrice,
           quantity: item.qty
         }))
       ]
@@ -264,8 +263,6 @@ export default function CheckoutClient({
           <OrderSummary
             packageGroups={packageGroups}
             individualItems={individualItems}
-            subtotalOriginal={subtotalOriginal}
-            discount={discount}
             subtotal={subtotal}
             shippingCost={shippingCost}
             shippingType={shippingType}
@@ -280,6 +277,7 @@ export default function CheckoutClient({
           onPickupSpotChange={setSelectedPickupSpot}
           pickupSpots={pickupSpots}
           disabled={isProcessing}
+          freeStandard={isLoggedIn}
         />
 
         <CustomerForm
@@ -372,11 +370,9 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotalOriginal, discount, subtotal, shippingCost, shippingType, total }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
-  subtotalOriginal: number
-  discount: number
   subtotal: number
   shippingCost: number
   shippingType: 'standard' | 'priority' | 'pickup'
@@ -417,21 +413,9 @@ function OrderSummary({ packageGroups, individualItems, subtotalOriginal, discou
         border: `2px solid ${colors.grayLight}`,
         borderRadius: 12,
       }}>
-        {/* Subtotal original */}
-        <div style={rowStyle}>
+        {/* Subtotal */}
+        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
           <span>Subtotal:</span>
-          <span>${(subtotalOriginal / 100).toFixed(0)} MXN</span>
-        </div>
-
-        {/* Descuento */}
-        <div style={{ ...rowStyle, color: '#10b981', fontWeight: 600 }}>
-          <span>Descuento 20%:</span>
-          <span>− ${(discount / 100).toFixed(0)} MXN</span>
-        </div>
-
-        {/* Subtotal con descuento */}
-        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, color: colors.white, fontWeight: 600 }}>
-          <span>Subtotal con descuento:</span>
           <span>${(subtotal / 100).toFixed(0)} MXN</span>
         </div>
 
@@ -905,13 +889,14 @@ function CustomerForm({
   )
 }
 
-function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled }: {
+function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, freeStandard }: {
   selectedType: 'standard' | 'priority' | 'pickup'
   onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
   selectedPickupSpot: string
   onPickupSpotChange: (spotId: string) => void
   pickupSpots: PickupSpot[]
   disabled: boolean
+  freeStandard?: boolean
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
@@ -966,18 +951,44 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
               )}
             </div>
             <div style={{ flex: 1 }}>
-              <div style={{
-                fontFamily: 'Franchise, sans-serif',
-                fontSize: 20,
-                letterSpacing: 0,
-                color: colors.white,
-                marginBottom: 4
-              }}>
-                Envío Estándar - $49 MXN
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
+                <span style={{
+                  fontFamily: 'Franchise, sans-serif',
+                  fontSize: 20,
+                  letterSpacing: 0,
+                  color: colors.white,
+                }}>
+                  Envío Estándar
+                </span>
+                {freeStandard ? (
+                  <>
+                    <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>$49 MXN</span>
+                    <span style={{
+                      fontSize: 14,
+                      fontWeight: 700,
+                      color: '#10b981',
+                      background: '#10b98120',
+                      border: '1px solid #10b98155',
+                      borderRadius: 6,
+                      padding: '2px 8px',
+                    }}>
+                      GRATIS
+                    </span>
+                  </>
+                ) : (
+                  <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: colors.white }}>
+                    - $49 MXN
+                  </span>
+                )}
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
                 Entrega en horario regular (Domingo 9AM - 4PM)
               </div>
+              {freeStandard && (
+                <div style={{ marginTop: 4, fontSize: 12, color: '#10b981', fontWeight: 600 }}>
+                  Envío gratis por inicio de sesión 🎉
+                </div>
+              )}
 
               {/* Mensaje expandido cuando está seleccionado */}
               {selectedType === 'standard' && (
