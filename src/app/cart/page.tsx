@@ -17,7 +17,7 @@ type PendingDelete =
 
 export default function CartPage() {
   const router = useRouter()
-  const { removeItem, removePackage, updateQty, clearCart, getTotal } = useCartStore()
+  const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
 

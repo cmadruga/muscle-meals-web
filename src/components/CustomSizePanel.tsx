@@ -14,6 +14,19 @@ interface CustomSizePanelProps {
   mealsIncluded?: number
 }
 
+type IngGroup = { displayName: string; ids: string[] }
+
+function groupIngredients(ings: Ingredient[]): IngGroup[] {
+  const map = new Map<string, string[]>()
+  for (const ing of ings) {
+    const key = ing.public_name ?? ing.name
+    const arr = map.get(key) ?? []
+    arr.push(ing.id)
+    map.set(key, arr)
+  }
+  return [...map.entries()].map(([displayName, ids]) => ({ displayName, ids }))
+}
+
 const inputStyle: React.CSSProperties = {
   width: 68,
   padding: '5px 8px',
@@ -152,9 +165,11 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, custo
         {/* Proteína */}
         <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
           <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>Proteína</p>
-          {proIngredients.map(ing => (
-            <IngRow key={ing.id} name={ing.public_name ?? ing.name} id={ing.id}
-              value={proQtys[ing.id] ?? ''} onChange={v => setProQtys(p => ({ ...p, [ing.id]: v }))} accent="#ef4444" />
+          {groupIngredients(proIngredients).map(group => (
+            <IngRow key={group.ids[0]} name={group.displayName} id={group.ids[0]}
+              value={proQtys[group.ids[0]] ?? ''}
+              onChange={v => setProQtys(p => { const n = { ...p }; group.ids.forEach(id => { n[id] = v }); return n })}
+              accent="#ef4444" />
           ))}
           {proIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>—</p>}
         </div>
@@ -162,9 +177,11 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, custo
         {/* Carbo */}
         <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
           <p style={{ color: '#eab308', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>Carbo</p>
-          {carbIngredients.map(ing => (
-            <IngRow key={ing.id} name={ing.public_name ?? ing.name} id={ing.id}
-              value={carbQtys[ing.id] ?? ''} onChange={v => setCarbQtys(p => ({ ...p, [ing.id]: v }))} accent="#eab308" />
+          {groupIngredients(carbIngredients).map(group => (
+            <IngRow key={group.ids[0]} name={group.displayName} id={group.ids[0]}
+              value={carbQtys[group.ids[0]] ?? ''}
+              onChange={v => setCarbQtys(p => { const n = { ...p }; group.ids.forEach(id => { n[id] = v }); return n })}
+              accent="#eab308" />
           ))}
           {carbIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>—</p>}
         </div>

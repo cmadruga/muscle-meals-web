@@ -1,6 +1,7 @@
 import { getActiveMealsWithRecipes } from '@/lib/db/meals'
 import { getGlobalSizes, getCustomerSizes } from '@/lib/db/sizes'
 import { getCustomerByUserId } from '@/lib/db/customers'
+import { getAllIngredients } from '@/lib/db/ingredients'
 import { createClient } from '@/lib/supabase/server'
 import type { Size } from '@/lib/types'
 import PackageClient from './PackageClient'
@@ -26,12 +27,16 @@ export default async function PackagePage({
     }
   }
 
-  const [meals, sizes] = await Promise.all([
+  const [meals, sizes, allIngredients] = await Promise.all([
     getActiveMealsWithRecipes(),
-    getGlobalSizes()
+    getGlobalSizes(),
+    getAllIngredients()
   ])
 
-  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} />
+  const proIngredients = allIngredients.filter(i => i.type === 'pro')
+  const carbIngredients = allIngredients.filter(i => i.type === 'carb')
+
+  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} proIngredients={proIngredients} carbIngredients={carbIngredients} />
 }
 
 export const metadata = {
