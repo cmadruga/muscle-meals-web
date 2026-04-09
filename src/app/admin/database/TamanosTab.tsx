@@ -105,7 +105,13 @@ function SizeCard({
               <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 8px' }}>Proteína</p>
               {proIngredients.map(ing => (
                 <IngRow key={ing.id} name={ing.name} value={proQtys[ing.id] ?? ''}
-                  onChange={v => setProQtys(p => ({ ...p, [ing.id]: v }))} accent="#ef4444" />
+                  onChange={v => setProQtys(p => {
+                    const n = { ...p }
+                    n[ing.id] = v
+                    const key = ing.public_name ?? ing.name
+                    proIngredients.filter(i => (i.public_name ?? i.name) === key && i.id !== ing.id).forEach(i => { n[i.id] = v })
+                    return n
+                  })} accent="#ef4444" />
               ))}
               {proIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>Sin ingredientes</p>}
             </div>
@@ -115,7 +121,13 @@ function SizeCard({
               <p style={{ color: '#eab308', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 8px' }}>Carbo</p>
               {carbIngredients.map(ing => (
                 <IngRow key={ing.id} name={ing.name} value={carbQtys[ing.id] ?? ''}
-                  onChange={v => setCarbQtys(p => ({ ...p, [ing.id]: v }))} accent="#eab308" />
+                  onChange={v => setCarbQtys(p => {
+                    const n = { ...p }
+                    n[ing.id] = v
+                    const key = ing.public_name ?? ing.name
+                    carbIngredients.filter(i => (i.public_name ?? i.name) === key && i.id !== ing.id).forEach(i => { n[i.id] = v })
+                    return n
+                  })} accent="#eab308" />
               ))}
               {carbIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>Sin ingredientes</p>}
             </div>

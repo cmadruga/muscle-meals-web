@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
-import type { Size, MealWithRecipes } from '@/lib/types'
+import type { Size, MealWithRecipes, Ingredient } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros } from '@/lib/utils/macros'
 // import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
@@ -23,6 +23,8 @@ interface PackageClientProps {
   sizes: Size[]
   customerSizes?: Size[]
   editInstanceId?: string
+  proIngredients?: Ingredient[]
+  carbIngredients?: Ingredient[]
 }
 
 interface SelectionItem {
@@ -67,7 +69,7 @@ const pkg: PackageConfig = {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [] }: PackageClientProps) {
   const router = useRouter()
   const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
@@ -87,6 +89,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
         unitPrice: i.unitPrice,
         qty: i.qty,
       }))
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSelection(cartItems)
   }, [editInstanceId])
   const [showModal, setShowModal] = useState(false)
@@ -322,20 +325,11 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
         </div>
 
         {selectedSizeId === '__custom__' && (() => {
-          // Collect unique pro/carb ingredients across all meals
-          const proMap = new Map<string, import('@/lib/types').Ingredient>()
-          const carbMap = new Map<string, import('@/lib/types').Ingredient>()
-          for (const m of meals) {
-            for (const i of m.ingredients) {
-              if (i.type === 'pro') proMap.set(i.id, i)
-              if (i.type === 'carb') carbMap.set(i.id, i)
-            }
-          }
           return (
             <div style={{ marginTop: 16 }}>
               <CustomSizePanel
-                proIngredients={[...proMap.values()]}
-                carbIngredients={[...carbMap.values()]}
+                proIngredients={proIngredients}
+                carbIngredients={carbIngredients}
                 customerSizes={customerSizes}
                 onSizeCreated={handleCustomSizeCreated}
               />
@@ -357,64 +351,76 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
         {selectedSize && (
           <div style={{ marginTop: 16 }}>
 
-            {/* Desglose por ingrediente */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', border: `1px solid ${colors.grayLight}`, borderRadius: 8, overflow: 'hidden' }}>
-              {/* Proteína */}
-              <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
-                <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Proteína</p>
-                {(() => {
-                  const proMap = new Map<string, import('@/lib/types').Ingredient>()
-                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'pro') proMap.set(i.id, i)
-                  return [...proMap.values()].map(ing => {
-                    const raw = selectedSize.protein_qty[ing.id] ?? 0
-                    const grams = raw
-                    return (
-                      <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
-                        <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
-                        <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{grams}g</span>
-                      </div>
-                    )
-                  })
-                })()}
-              </div>
+            {/* Porciones estilo cards */}
+            {(() => {
+              type Section = { names: string[]; qty: number }
 
-              {/* Carbo */}
-              <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
-                <p style={{ color: '#eab308', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Carbo</p>
-                {(() => {
-                  const carbMap = new Map<string, import('@/lib/types').Ingredient>()
-                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'carb') carbMap.set(i.id, i)
-                  return [...carbMap.values()].map(ing => {
-                    const raw = selectedSize.carb_qty[ing.id] ?? 0
-                    const grams = raw
-                    return (
-                      <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
-                        <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
-                        <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{grams}g</span>
-                      </div>
-                    )
-                  })
-                })()}
-              </div>
+              const buildSections = (ings: Ingredient[], qtyMap: Record<string, number>): Section[] => {
+                const nameGroups = new Map<string, string[]>()
+                for (const ing of ings) {
+                  const key = ing.public_name ?? ing.name
+                  const arr = nameGroups.get(key) ?? []; arr.push(ing.id); nameGroups.set(key, arr)
+                }
+                const qtyGroups = new Map<number, string[]>()
+                for (const [displayName, ids] of nameGroups) {
+                  const qty = qtyMap[ids[0]] ?? 0
+                  const arr = qtyGroups.get(qty) ?? []; arr.push(displayName); qtyGroups.set(qty, arr)
+                }
+                return [...qtyGroups.entries()].sort((a, b) => b[0] - a[0]).map(([qty, names]) => ({ names, qty })).slice(0, 3)
+              }
 
-              {/* Verdura */}
-              <div style={{ padding: '10px 14px', minWidth: 100 }}>
-                <p style={{ color: '#22c55e', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.04em', margin: '0 0 6px' }}>Verdura</p>
-                {(() => {
-                  const vegMap = new Map<string, import('@/lib/types').Ingredient>()
-                  for (const m of meals) for (const i of m.ingredients) if (i.type === 'veg') vegMap.set(i.id, i)
-                  if (vegMap.size === 0) {
-                    return <span style={{ color: colors.textMuted, fontSize: 12 }}>0g</span>
-                  }
-                  return [...vegMap.values()].map(ing => (
-                    <div key={ing.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '3px 0', borderBottom: '1px solid #1a1a1a' }}>
-                      <span style={{ color: colors.textSecondary, fontSize: 12 }}>{ing.public_name ?? ing.name}</span>
-                      <span style={{ color: colors.white, fontSize: 13, fontWeight: 600, marginLeft: 8 }}>{selectedSize.veg_qty}g</span>
+              const renderCard = (label: string, color: string, sections: Section[]) => {
+                if (sections.length === 0) return null
+                if (sections.length === 1) return (
+                  <div style={{ flex: 1, background: colors.black, borderRadius: 8, padding: '12px 8px', textAlign: 'center', border: `1px solid ${colors.grayLight}` }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.white, marginBottom: 4 }}>{label}</div>
+                    <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>({sections[0].names.join(', ')})</div>
+                    <div style={{ fontSize: 22, fontWeight: 'bold', color: colors.orange }}>{sections[0].qty}g</div>
+                  </div>
+                )
+                return (
+                  <div style={{ flex: 1, background: colors.black, borderRadius: 8, border: `1px solid ${colors.grayLight}`, overflow: 'hidden' }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.white, padding: '10px 8px 4px', textAlign: 'center' }}>{label}</div>
+                    <div style={{ display: 'flex' }}>
+                      {sections.map((sec, i) => (
+                        <div key={i} style={{ flex: 1, padding: '4px 6px 12px', textAlign: 'center', borderLeft: i > 0 ? `1px solid ${colors.grayLight}` : undefined }}>
+                          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 4 }}>({sec.names.join(', ')})</div>
+                          <div style={{ fontSize: 18, fontWeight: 'bold', color: colors.orange }}>{sec.qty}g</div>
+                        </div>
+                      ))}
                     </div>
-                  ))
-                })()}
-              </div>
-            </div>
+                  </div>
+                )
+              }
+
+              // Only show ingredients from active meals in the display
+              const proIngsFromMeals: Ingredient[] = []
+              const proSeen = new Set<string>()
+              for (const m of meals) for (const i of m.ingredients) if (i.type === 'pro' && !proSeen.has(i.id)) { proSeen.add(i.id); proIngsFromMeals.push(i) }
+
+              const carbIngsFromMeals: Ingredient[] = []
+              const carbSeen = new Set<string>()
+              for (const m of meals) for (const i of m.ingredients) if (i.type === 'carb' && !carbSeen.has(i.id)) { carbSeen.add(i.id); carbIngsFromMeals.push(i) }
+
+              const proSections = buildSections(proIngsFromMeals, selectedSize.protein_qty)
+              const carbSections = buildSections(carbIngsFromMeals, selectedSize.carb_qty)
+
+              const vegNameSet = new Set<string>()
+              for (const m of meals) for (const i of m.ingredients) if (i.type === 'veg') vegNameSet.add(i.public_name ?? i.name)
+              const vegNames = [...vegNameSet]
+
+              return (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  {renderCard('Proteína', '#ef4444', proSections)}
+                  {renderCard('Carbo', '#eab308', carbSections)}
+                  <div style={{ flex: 1, background: colors.black, borderRadius: 8, padding: '12px 8px', textAlign: 'center', border: `1px solid ${colors.grayLight}` }}>
+                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.white, marginBottom: 4 }}>Verdura</div>
+                    {vegNames.length > 0 && <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>({vegNames.join(', ')})</div>}
+                    <div style={{ fontSize: 22, fontWeight: 'bold', color: colors.orange }}>{selectedSize.veg_qty}g</div>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         )}
       </div>
