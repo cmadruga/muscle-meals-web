@@ -45,7 +45,7 @@ export default function LoginBanner() {
           onClick={() => setOpen(v => !v)}
           style={{
             width: '100%',
-            background: colors.grayDark,
+            background: colors.orange,
             border: 'none',
             borderBottom: `1px solid ${colors.grayLight}`,
             padding: '12px 20px',
@@ -56,14 +56,14 @@ export default function LoginBanner() {
             color: colors.white,
           }}
         >
-          <span style={{ fontSize: 13, color: colors.textMuted, fontWeight: 500 }}>
-            Inicia sesión · Envío gratis
+          <span style={{ fontSize: 13, color: colors.black, fontWeight: 800 }}>
+            ¿Ya tienes cuenta? Regístrate y obtén envío gratis en tu próximo pedido.
           </span>
           <span
             className="login-drawer-tab"
             style={{
               fontSize: 12,
-              color: colors.textMuted,
+              color: colors.black,
               transform: open ? 'rotate(180deg)' : 'rotate(0deg)',
             }}
           >
