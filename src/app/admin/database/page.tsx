@@ -15,12 +15,12 @@ import Link from 'next/link'
 import { getAllSizesAdmin } from '@/app/actions/database'
 
 const TABS = [
+  { id: 'tamanos', label: 'Tamaños' },
   { id: 'materiales', label: 'Materiales' },
   { id: 'pinche', label: 'Pinche' },
   { id: 'ingredientes', label: 'Ingredientes' },
   { id: 'recetas', label: 'Recetas' },
   { id: 'meals', label: 'Platillos' },
-  { id: 'tamanos', label: 'Tamaños' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']

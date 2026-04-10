@@ -59,7 +59,9 @@ export default function MealsTab({ meals: initial, recipes, ingredients, mainSiz
   const [meals, setMeals] = useState(initial)
   const [modalMeal, setModalMeal] = useState<Meal | null | 'new'>(null)
   const [detailMeal, setDetailMeal] = useState<Meal | null>(null)
-  const [selectedSizeId, setSelectedSizeId] = useState(mainSizes[0]?.id ?? '')
+  const [selectedSizeId, setSelectedSizeId] = useState(
+    (mainSizes.find(s => s.name.toUpperCase() === 'FIT') ?? mainSizes[0])?.id ?? ''
+  )
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'inactive'>('all')
   const [, startToggle] = useTransition()
