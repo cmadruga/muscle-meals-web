@@ -99,6 +99,26 @@ export default async function Home() {
             >
               Ordena Ahora
             </Link>
+            <a
+              href="#footer"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '10px 44px',
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 32,
+                lineHeight: 1,
+                background: colors.black,
+                color: colors.white,
+                borderRadius: 8,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: 0,
+                border: `3px solid ${colors.white}`,
+              }}
+            >
+              Contacto ↓
+            </a>
           </div>
         </div>
       </section>
@@ -468,51 +488,53 @@ export default async function Home() {
         borderTop: `2px solid ${colors.grayLight}`,
         textAlign: 'center'
       }}>
-        <Image
-          src="/media/MuscleMeals_Logo_Horizontal_HomeColorBlanco.png"
-          alt="Muscle Meals"
-          width={280}
-          height={64}
-          style={{ margin: '0 auto 24px', objectFit: 'contain', width: '100%', maxWidth: 280, height: 'auto' }}
-        />
+        <section id="footer">
+          <Image
+            src="/media/MuscleMeals_Logo_Horizontal_HomeColorBlanco.png"
+            alt="Muscle Meals"
+            width={280}
+            height={64}
+            style={{ margin: '0 auto 24px', objectFit: 'contain', width: '100%', maxWidth: 280, height: 'auto' }}
+          />
 
-        {/* Redes sociales */}
-        <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24 }}>
-          <a href="https://www.instagram.com/musclemeals.mx" target="_blank" rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
-              background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
-              fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
-              <circle cx="12" cy="12" r="4"/>
-              <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-            </svg>
-            Instagram
-          </a>
-          <a href="https://www.facebook.com/profile.php?id=61552292761945" target="_blank" rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
-              background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
-              fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill={colors.orange}>
-              <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-            </svg>
-            Facebook
-          </a>
-          <a href="https://wa.me/8136069805" target="_blank" rel="noopener noreferrer"
-            style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
-              background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
-              fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill={colors.orange}>
-              <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
-              <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.858L.057 23.57a.75.75 0 0 0 .93.909l5.878-1.557A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.1-1.404l-.36-.215-3.733.988.997-3.645-.235-.374A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
-            </svg>
-            WhatsApp
-          </a>
-        </div>
+          {/* Redes sociales */}
+          <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginBottom: 24 }}>
+            <a href="https://www.instagram.com/musclemeals.mx" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
+                background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
+                fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                <circle cx="12" cy="12" r="4"/>
+                <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+              </svg>
+              Instagram
+            </a>
+            <a href="https://www.facebook.com/profile.php?id=61552292761945" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
+                background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
+                fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={colors.orange}>
+                <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+              </svg>
+              Facebook
+            </a>
+            <a href="https://wa.me/8136069805" target="_blank" rel="noopener noreferrer"
+              style={{ display: 'flex', alignItems: 'center', gap: 8, color: colors.textMuted, textDecoration: 'none',
+                background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '8px 16px',
+                fontFamily: 'Franchise, sans-serif', fontSize: 18, letterSpacing: 0 }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill={colors.orange}>
+                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/>
+                <path d="M12 0C5.373 0 0 5.373 0 12c0 2.127.558 4.126 1.535 5.858L.057 23.57a.75.75 0 0 0 .93.909l5.878-1.557A11.945 11.945 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.944 9.944 0 0 1-5.1-1.404l-.36-.215-3.733.988.997-3.645-.235-.374A9.944 9.944 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/>
+              </svg>
+              WhatsApp
+            </a>
+          </div>
 
-        <p style={{ color: colors.textDisabled, fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0 }}>
-          © 2026 Muscle Meals. Todos los derechos reservados.
-        </p>
+          <p style={{ color: colors.textDisabled, fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0 }}>
+            © 2026 Muscle Meals. Todos los derechos reservados.
+          </p>
+        </section>
       </footer>
     </main>
   )
