@@ -72,12 +72,13 @@ export default async function PanelOrdersPage({
   const byStatus: Record<string, { orders: number; meals: number }> = {}
   for (const order of orders) {
     const portions = order.items.reduce((s, i) => s + i.qty, 0)
-    const key = order.status === 'admin' ? 'paid' : order.status
+    const key = order.status || 'unknown'
     if (!byStatus[key]) byStatus[key] = { orders: 0, meals: 0 }
     byStatus[key].orders += 1
     byStatus[key].meals += portions
   }
-  const totalMeals = orders.reduce((s, o) => s + o.items.reduce((ss, i) => ss + i.qty, 0), 0)
+  const totalConfirmed = orders.reduce((s, o) => s + (o.status === 'paid' || o.status === 'admin' || o.status === 'extra' ? 1 : 0), 0)
+  const totalConfirmedMeals = orders.reduce((s, o) => s + (o.status === 'paid' || o.status === 'admin' || o.status === 'extra' ? o.items.reduce((ss, i) => ss + i.qty, 0) : 0), 0)
   const statusBreakdown = Object.entries(byStatus)
     .map(([status, { orders: o, meals: m }]) => `${STATUS_ES[status] ?? status}: ${o} (${m})`)
     .join(' · ')
@@ -97,7 +98,7 @@ export default async function PanelOrdersPage({
         />
       </div>
       <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 2 }}>
-        {orders.length} órdenes esta semana ({totalMeals} comidas)
+        {totalConfirmed} órdenes esta semana ({totalConfirmedMeals} comidas confirmadas)
       </p>
       {statusBreakdown && (
         <p style={{ color: colors.textMuted, fontSize: 13, marginBottom: 16 }}>
