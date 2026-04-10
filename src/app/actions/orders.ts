@@ -102,6 +102,31 @@ export async function createAdminOrder(
   return {}
 }
 
+export async function updateAdminOrder(
+  orderId: string,
+  items: AdminOrderItem[],
+): Promise<{ error?: string }> {
+  if (items.length === 0) return { error: 'Agrega al menos un ítem' }
+  const supabase = createAdminClient()
+
+  const { error: deleteError } = await supabase.from('order_items').delete().eq('order_id', orderId)
+  if (deleteError) return { error: deleteError.message }
+
+  const { error: insertError } = await supabase.from('order_items').insert(
+    items.map(item => ({
+      order_id: orderId,
+      meal_id: item.meal_id,
+      size_id: item.size_id,
+      qty: item.qty,
+      unit_price: 0,
+    }))
+  )
+  if (insertError) return { error: insertError.message }
+
+  revalidatePath('/admin/orders')
+  return {}
+}
+
 export async function saveOrderNote(orderId: string, note: string): Promise<void> {
   const supabase = createAdminClient()
   const { error } = await supabase
