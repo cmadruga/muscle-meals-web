@@ -109,8 +109,9 @@ function IngredientRow({
 }) {
   const ing = ingredients.find((i) => i.id === row.ingredient_id)
 
+  const conversions = ing?.unit_conversions ?? []
   const availableUnits = ing
-    ? [ing.unit, ...(ing.unit_conversions ?? []).map(c => c.unit)]
+    ? [...new Set([ing.unit, ...conversions.map(c => c.unit), ...(conversions.length > 0 ? ['g' as const] : [])])]
     : [row.unit]
 
   function handleIngredientChange(id: string) {
