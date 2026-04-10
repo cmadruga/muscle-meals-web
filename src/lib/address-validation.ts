@@ -89,7 +89,7 @@ export function isValidPostalCode(cp: string): boolean {
   }
   
   // Santa Catarina (661xx)
-  if (normalized.startsWith('661')) {
+  if (normalized.startsWith('661') || normalized.startsWith('663')) {
     return !EXCLUDED_CPS_SANTA_CATARINA.has(normalized)
   }
   
@@ -114,7 +114,7 @@ export function getZoneByPostalCode(cp: string): string {
   if (normalized.startsWith('671')) return 'Guadalupe'
   if (normalized.startsWith('673')) return 'Santiago'
   if (normalized.startsWith('666')) return 'Apodaca'
-  if (normalized.startsWith('661')) return 'Santa Catarina'
+  if (normalized.startsWith('661') || normalized.startsWith('663')) return 'Santa Catarina'
   if (normalized.startsWith('660')) return 'Escobedo'
   
   return 'Área Metropolitana de Monterrey'
