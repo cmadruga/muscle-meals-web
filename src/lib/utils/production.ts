@@ -69,6 +69,7 @@ export type MatrixRow = {
   orderId: string
   orderNumber: string
   customerName: string
+  orderStatus: string
   cells: Record<string, MatrixCell[]>
   totalPortions: number
 }
@@ -267,7 +268,7 @@ export function buildMatrix(
   // Group by orderId — each order is its own row
   const orderMap = new Map<
     string,
-    { orderNumber: string; customerName: string; cells: Map<string, Map<string, number>>; totalPortions: number }
+    { orderNumber: string; customerName: string; orderStatus: string; cells: Map<string, Map<string, number>>; totalPortions: number }
   >()
 
   for (const item of items) {
@@ -275,6 +276,7 @@ export function buildMatrix(
       orderMap.set(item.orderId, {
         orderNumber: item.orderNumber,
         customerName: item.customerName ?? (item.orderStatus === 'extra' ? 'Extra' : 'Desconocido'),
+        orderStatus: item.orderStatus,
         cells: new Map(),
         totalPortions: 0,
       })
@@ -295,7 +297,7 @@ export function buildMatrix(
     for (const [mealId, sizeMap] of data.cells) {
       cells[mealId] = [...sizeMap.entries()].map(([sizeName, qty]) => ({ qty, sizeName }))
     }
-    rows.push({ orderId, orderNumber: data.orderNumber, customerName: data.customerName, cells, totalPortions: data.totalPortions })
+    rows.push({ orderId, orderNumber: data.orderNumber, customerName: data.customerName, orderStatus: data.orderStatus, cells, totalPortions: data.totalPortions })
   }
 
   rows.sort((a, b) => a.customerName.localeCompare(b.customerName) || a.orderNumber.localeCompare(b.orderNumber))
