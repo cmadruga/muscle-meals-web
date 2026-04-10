@@ -7,7 +7,7 @@ import { adminLogout } from '@/app/actions/admin-auth'
 import { colors } from '@/lib/theme'
 
 const NAV_LINKS = [
-  { href: '/admin/orders', label: 'Órdenes' },
+  { href: '/admin/orders', label: 'Pedidos' },
   { href: '/admin/lista', label: 'Lista' },
   { href: '/admin/empaques', label: 'Empaques' },
   { href: '/admin/recetario', label: 'Recetario' },
@@ -18,9 +18,11 @@ const NAV_LINKS = [
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [open, setOpen] = useState(false)
+  const [collapsed, setCollapsed] = useState(false)
   const pathname = usePathname()
 
   // Cerrar sidebar al navegar
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setOpen(false), [pathname])
 
   const navLinks = (
@@ -59,11 +61,17 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           top: 0; left: 0;
           height: 100vh;
           z-index: 50;
-          transition: transform 0.25s ease;
+          transition: width 0.2s ease, transform 0.25s ease;
+          overflow: hidden;
+        }
+        .adm-sidebar.collapsed {
+          width: 48px;
+          padding: 24px 8px;
         }
         .adm-topbar { display: none; }
         .adm-overlay { display: none; }
-        .adm-content { margin-left: 220px; padding: 32px; min-height: 100vh; }
+        .adm-content { margin-left: 220px; padding: 32px; min-height: 100vh; transition: margin-left 0.2s ease; }
+        .adm-content.collapsed { margin-left: 48px; }
 
         @media (max-width: 768px) {
           .adm-sidebar {
@@ -100,31 +108,49 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       `}</style>
 
       {/* Sidebar */}
-      <aside className={`adm-sidebar${open ? ' open' : ''}`}>
-        <div style={{ marginBottom: 32, paddingLeft: 8 }}>
-          <span style={{ color: colors.orange, fontWeight: 700, fontSize: 18 }}>Muscle Meals</span>
-          <p style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>Panel Admin</p>
-        </div>
-
-        {navLinks}
-
-        <form action={adminLogout} suppressHydrationWarning>
+      <aside className={`adm-sidebar${open ? ' open' : ''}${collapsed ? ' collapsed' : ''}`}>
+        {/* Header + collapse button */}
+        <div style={{ marginBottom: 32, display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+          {!collapsed && (
+            <div style={{ paddingLeft: 8 }}>
+              <span style={{ color: colors.orange, fontWeight: 700, fontSize: 18 }}>Muscle Meals</span>
+              <p style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>Panel Admin</p>
+            </div>
+          )}
           <button
-            type="submit"
+            onClick={() => setCollapsed(v => !v)}
+            title={collapsed ? 'Expandir' : 'Colapsar'}
             style={{
-              width: '100%',
-              background: 'transparent',
-              border: `1px solid ${colors.grayLight}`,
-              borderRadius: 8,
-              padding: '8px 12px',
-              color: colors.textMuted,
-              fontSize: 14,
-              cursor: 'pointer',
+              background: 'transparent', border: 'none', cursor: 'pointer',
+              color: colors.textMuted, fontSize: 18, padding: 4, lineHeight: 1,
+              marginLeft: collapsed ? 'auto' : 0, marginRight: collapsed ? 'auto' : 0,
             }}
           >
-            Cerrar sesión
+            {collapsed ? '›' : '‹'}
           </button>
-        </form>
+        </div>
+
+        {!collapsed && navLinks}
+
+        {!collapsed && (
+          <form action={adminLogout} suppressHydrationWarning>
+            <button
+              type="submit"
+              style={{
+                width: '100%',
+                background: 'transparent',
+                border: `1px solid ${colors.grayLight}`,
+                borderRadius: 8,
+                padding: '8px 12px',
+                color: colors.textMuted,
+                fontSize: 14,
+                cursor: 'pointer',
+              }}
+            >
+              Salir
+            </button>
+          </form>
+        )}
       </aside>
 
       {/* Overlay móvil */}
@@ -144,7 +170,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </div>
 
       {/* Contenido */}
-      <main className="adm-content">
+      <main className={`adm-content${collapsed ? ' collapsed' : ''}`}>
         {children}
       </main>
     </div>
