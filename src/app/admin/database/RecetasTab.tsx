@@ -201,6 +201,24 @@ export default function RecetasTab({
     return matchSearch && matchType
   })
 
+  // Ingredientes de una receta cuya unidad no tiene conversión en el ingrediente
+  const ingMap = new Map(ingredients.map(i => [i.id, i]))
+  type RecipeMismatch = { recipe: Recipe; problems: { ingName: string; unit: string }[] }
+  const missingConversions: RecipeMismatch[] = []
+  for (const r of recipes) {
+    const problems: { ingName: string; unit: string }[] = []
+    for (const ri of r.ingredients) {
+      const ing = ingMap.get(ri.ingredient_id)
+      if (!ing) continue
+      if (ri.unit === 'g') continue
+      const hasConversion = ing.unit_conversions.some(c => c.unit === ri.unit)
+      if (!hasConversion) {
+        problems.push({ ingName: ing.name, unit: ri.unit })
+      }
+    }
+    if (problems.length > 0) missingConversions.push({ recipe: r, problems })
+  }
+
   const btn = (active: boolean): React.CSSProperties => ({
     padding: '7px 14px', borderRadius: 8, cursor: 'pointer', fontSize: 13,
     border: `1px solid ${active ? colors.orange : colors.grayLight}`,
@@ -230,6 +248,27 @@ export default function RecetasTab({
           + Nueva receta
         </button>
       </div>
+
+      {missingConversions.length > 0 && (
+        <div style={{ background: '#f59e0b22', border: '1px solid #f59e0b55', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: 13, marginBottom: 8 }}>
+            ⚠ {missingConversions.length} receta{missingConversions.length > 1 ? 's' : ''} con unidades sin conversión
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {missingConversions.map(({ recipe, problems }) => (
+              <div key={recipe.id} style={{ fontSize: 12, color: colors.textSecondary }}>
+                <span style={{ color: colors.white, fontWeight: 600 }}>{recipe.name}</span>
+                {' — '}
+                {problems.map((p, i) => (
+                  <span key={i} style={{ display: 'inline-block', background: '#f59e0b11', border: '1px solid #f59e0b33', borderRadius: 4, padding: '1px 7px', marginRight: 4, marginBottom: 2 }}>
+                    {p.ingName} <span style={{ color: colors.textMuted }}>({p.unit})</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {deleteError && (
         <div style={{ background: '#ef444422', border: '1px solid #ef444455', borderRadius: 8, padding: '10px 14px', color: colors.error, fontSize: 13, marginBottom: 16 }}>
