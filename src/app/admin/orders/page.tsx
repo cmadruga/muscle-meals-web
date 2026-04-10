@@ -106,7 +106,14 @@ export default async function PanelOrdersPage({
       )}
 
       <WeekNav weekStr={weekStr} />
-      <OrdersTable orders={orders} weekStr={weekStr} matrixData={matrixData} customers={customers} />
+      <OrdersTable
+        orders={orders}
+        weekStr={weekStr}
+        matrixData={matrixData}
+        customers={customers}
+        meals={meals.map(m => ({ id: m.id, name: m.name }))}
+        sizes={sizes.map(s => ({ id: s.id, name: s.customer_name ? `${s.name} (${s.customer_name})` : s.name }))}
+      />
     </div>
   )
 }
