@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useEffect } from 'react'
-import type { Meal, Recipe, Ingredient, Size } from '@/lib/types'
+import type { Meal, Recipe, Ingredient, Size, Unit } from '@/lib/types'
 import { colors } from '@/lib/theme'
+import { toGrams } from '@/lib/utils/macros'
 
 const SECTION_LABEL: Record<string, string> = { pro: 'Proteína', carb: 'Carbohidratos', veg: 'Verdura' }
 const SECTION_COLOR: Record<string, string> = { pro: '#f87171', carb: '#fbbf24', veg: '#4ade80' }
@@ -92,10 +93,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
       const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
-      totalCal  += qty * ing.calories / 100
-      totalPro  += qty * ing.protein / 100
-      totalCarb += qty * ing.carbs / 100
-      totalFat  += qty * ing.fats / 100
+      const grams = toGrams(qty, ri.unit as Unit, ing)
+      totalCal  += grams * ing.calories / 100
+      totalPro  += grams * ing.protein / 100
+      totalCarb += grams * ing.carbs / 100
+      totalFat  += grams * ing.fats / 100
     }
   }
   for (const sub of subRecipes) {
@@ -104,10 +106,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
       const qty = ri.qty / p
-      totalCal  += qty * ing.calories / 100
-      totalPro  += qty * ing.protein / 100
-      totalCarb += qty * ing.carbs / 100
-      totalFat  += qty * ing.fats / 100
+      const grams = toGrams(qty, ri.unit as Unit, ing)
+      totalCal  += grams * ing.calories / 100
+      totalPro  += grams * ing.protein / 100
+      totalCarb += grams * ing.carbs / 100
+      totalFat  += grams * ing.fats / 100
     }
   }
 
@@ -125,8 +128,8 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
         <div style={{ background: colors.orange, padding: '14px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
           <div>
             <span style={{ color: colors.white, fontWeight: 700, fontSize: 16 }}>{meal.name}</span>
-            <span style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginLeft: 12 }}>
-              {Math.round(totalCal)} kcal · <span style={{ color: '#f87171' }}>{Math.round(totalPro)}P</span> · <span style={{ color: '#fbbf24' }}>{Math.round(totalCarb)}C</span> · <span style={{ color: '#60a5fa' }}>{Math.round(totalFat)}G</span> · {selectedSize.name}
+            <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 13, marginLeft: 12 }}>
+              {Math.round(totalCal)} kcal · {Math.round(totalPro)}P · {Math.round(totalCarb)}C · {Math.round(totalFat)}G · {selectedSize.name}
             </span>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.8)', cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 0 }}>✕</button>
@@ -149,10 +152,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                         const ing = ingredientsById.get(ri.ingredient_id)
                         if (!ing) return null
                         const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
-                        const cal  = qty * ing.calories / 100
-                        const pro  = qty * ing.protein / 100
-                        const carb = qty * ing.carbs / 100
-                        const fat  = qty * ing.fats / 100
+                        const grams = toGrams(qty, ri.unit as Unit, ing)
+                        const cal  = grams * ing.calories / 100
+                        const pro  = grams * ing.protein / 100
+                        const carb = grams * ing.carbs / 100
+                        const fat  = grams * ing.fats / 100
                         return <IngRow key={`${sec ?? 'none'}-${i}`} name={ing.name} qty={qty} unit={ri.unit} calories={cal} protein={pro} carbs={carb} fats={fat} section={sec} />
                       })}
                     </React.Fragment>
@@ -177,10 +181,11 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                     const ing = ingredientsById.get(ri.ingredient_id)
                     if (!ing) return null
                     const qty  = ri.qty / (sub.portions > 0 ? sub.portions : 1)
-                    const cal  = qty * ing.calories / 100
-                    const pro  = qty * ing.protein / 100
-                    const carb = qty * ing.carbs / 100
-                    const fat  = qty * ing.fats / 100
+                    const grams = toGrams(qty, ri.unit as Unit, ing)
+                    const cal  = grams * ing.calories / 100
+                    const pro  = grams * ing.protein / 100
+                    const carb = grams * ing.carbs / 100
+                    const fat  = grams * ing.fats / 100
                     return <IngRow key={i} name={ing.name} qty={qty} unit={ri.unit} calories={cal} protein={pro} carbs={carb} fats={fat} />
                   })}
                 </tbody>

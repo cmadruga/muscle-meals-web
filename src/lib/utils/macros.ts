@@ -4,7 +4,7 @@ export function resolveQty(qtyJson: Record<string, number>, ingredientId: string
   return qtyJson[ingredientId] ?? qtyJson['default'] ?? 0
 }
 
-function toGrams(qty: number, unit: Unit, ingredient: Ingredient): number {
+export function toGrams(qty: number, unit: Unit, ingredient: Ingredient): number {
   if (unit === 'g') return qty
   const conv = ingredient.unit_conversions?.find(c => c.unit === unit)
   return conv ? qty * conv.gr_equiv : qty
