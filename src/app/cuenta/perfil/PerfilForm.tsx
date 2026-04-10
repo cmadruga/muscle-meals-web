@@ -42,19 +42,17 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
   const [numeroInterior, setNumeroInterior] = useState('')
   const [colonia, setColonia] = useState('')
   const [codigoPostal, setCodigoPostal] = useState('')
-  const [ciudad, setCiudad] = useState('Monterrey')
-  const [estado] = useState('Nuevo León')
 
   const cpValido = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
   const zone = cpValido ? getZoneByPostalCode(codigoPostal) : null
+  const ciudad = zone ?? ''
+  const estado = 'Nuevo León'
 
   const addressComplete =
     calle.trim() !== '' &&
     numeroExterior.trim() !== '' &&
     colonia.trim() !== '' &&
-    codigoPostal.length === 5 &&
-    cpValido &&
-    ciudad.trim() !== ''
+    cpValido
 
   const canSave = fullName.trim() !== '' && (!editingAddress || addressComplete)
 
@@ -65,7 +63,6 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
     setNumeroInterior('')
     setColonia('')
     setCodigoPostal('')
-    setCiudad('Monterrey')
   }
 
   // Al guardar con éxito, cerrar el formulario de dirección
@@ -88,7 +85,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
           type="text"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
-          placeholder="Juan Pérez García"
+          placeholder="Nombre y apellido"
           required
           style={inputStyle}
         />
@@ -102,7 +99,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
           type="tel"
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
-          placeholder="8112345678"
+          placeholder="10 dígitos"
           style={inputStyle}
         />
         <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
@@ -197,7 +194,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
               type="text"
               value={calle}
               onChange={(e) => setCalle(e.target.value)}
-              placeholder="Av. Constitución"
+              placeholder=""
               style={inputStyle}
             />
           </div>
@@ -212,7 +209,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
                 type="text"
                 value={numeroExterior}
                 onChange={(e) => setNumeroExterior(e.target.value)}
-                placeholder="123"
+                placeholder=""
                 style={inputStyle}
               />
             </div>
@@ -224,7 +221,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
                 type="text"
                 value={numeroInterior}
                 onChange={(e) => setNumeroInterior(e.target.value)}
-                placeholder="Depto. 4B"
+                placeholder="Opcional"
                 style={inputStyle}
               />
             </div>
@@ -239,7 +236,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
               type="text"
               value={colonia}
               onChange={(e) => setColonia(e.target.value)}
-              placeholder="Centro"
+              placeholder=""
               style={inputStyle}
             />
           </div>
@@ -257,58 +254,50 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
                   const v = e.target.value.replace(/\D/g, '')
                   if (v.length <= 5) setCodigoPostal(v)
                 }}
-                placeholder="64000"
+                placeholder=""
                 style={{
                   ...inputStyle,
-                  borderColor: codigoPostal.length === 5
-                    ? (cpValido ? '#10b981' : '#ef4444')
+                  borderColor: codigoPostal.length === 5 && !cpValido
+                    ? '#ef4444'
                     : colors.grayLight,
                 }}
               />
             </div>
             <div>
-              <label style={labelStyle} htmlFor="ciudad">Ciudad *</label>
+              <label style={labelStyle} htmlFor="ciudad">Ciudad</label>
               <input
                 id="ciudad"
                 name="ciudad"
                 type="text"
-                value={ciudad}
-                onChange={(e) => setCiudad(e.target.value)}
-                placeholder="Monterrey"
-                style={inputStyle}
+                value={zone ?? ''}
+                readOnly
+                placeholder="Se llena con el CP"
+                style={{
+                  ...inputStyle,
+                  opacity: zone ? 1 : 0.5,
+                  cursor: 'default',
+                  color: zone ? colors.white : colors.textMuted,
+                }}
               />
             </div>
           </div>
 
-          {/* Mensaje validación CP */}
-          {codigoPostal.length === 5 && (
+          <input type="hidden" name="estado" value={estado} />
+
+          {/* Error CP fuera de zona */}
+          {codigoPostal.length === 5 && !cpValido && (
             <div style={{
-              background: cpValido ? '#10b98120' : '#ef444420',
-              border: `2px solid ${cpValido ? '#10b981' : '#ef4444'}`,
+              background: '#ef444420',
+              border: '2px solid #ef4444',
               borderRadius: 8,
               padding: 12,
               fontSize: 14,
-              color: cpValido ? '#10b981' : '#ef4444',
+              color: '#ef4444',
               textAlign: 'center',
             }}>
-              {cpValido
-                ? `✅ CP válido — Zona: ${zone}`
-                : '❌ CP fuera del área de entrega (Solo Área Metropolitana de Monterrey)'}
+              CP fuera del área de entrega (solo Área Metropolitana de Monterrey)
             </div>
           )}
-
-          {/* Estado (fijo) */}
-          <div>
-            <label style={labelStyle} htmlFor="estado">Estado *</label>
-            <input
-              id="estado"
-              name="estado"
-              type="text"
-              value={estado}
-              readOnly
-              style={{ ...inputStyle, opacity: 0.6, cursor: 'not-allowed' }}
-            />
-          </div>
 
         </>
       )}
