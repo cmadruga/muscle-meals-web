@@ -393,20 +393,25 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
                 )
               }
 
-              // Only show ingredients from active meals in the display
+              // Only show main-recipe ingredients in the display (sub-recipe ingredients are excluded)
               const proIngsFromMeals: Ingredient[] = []
               const proSeen = new Set<string>()
-              for (const m of meals) for (const i of m.ingredients) if (i.type === 'pro' && !proSeen.has(i.id)) { proSeen.add(i.id); proIngsFromMeals.push(i) }
-
               const carbIngsFromMeals: Ingredient[] = []
               const carbSeen = new Set<string>()
-              for (const m of meals) for (const i of m.ingredients) if (i.type === 'carb' && !carbSeen.has(i.id)) { carbSeen.add(i.id); carbIngsFromMeals.push(i) }
+              const vegNameSet = new Set<string>()
+
+              for (const m of meals) {
+                const mainIngIds = new Set(m.mainRecipe.ingredients.map(ri => ri.ingredient_id))
+                for (const i of m.ingredients) {
+                  if (!mainIngIds.has(i.id)) continue
+                  if (i.type === 'pro' && !proSeen.has(i.id)) { proSeen.add(i.id); proIngsFromMeals.push(i) }
+                  else if (i.type === 'carb' && !carbSeen.has(i.id)) { carbSeen.add(i.id); carbIngsFromMeals.push(i) }
+                  else if (i.type === 'veg') vegNameSet.add(i.public_name ?? i.name)
+                }
+              }
 
               const proSections = buildSections(proIngsFromMeals, selectedSize.protein_qty)
               const carbSections = buildSections(carbIngsFromMeals, selectedSize.carb_qty)
-
-              const vegNameSet = new Set<string>()
-              for (const m of meals) for (const i of m.ingredients) if (i.type === 'veg') vegNameSet.add(i.public_name ?? i.name)
               const vegNames = [...vegNameSet]
 
               return (
