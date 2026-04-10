@@ -74,4 +74,6 @@ export interface OrderWithCustomer extends Order {
   customer_name: string | null
   customer_phone: string | null
   customer_address: string | null
+  pickup_spot_name: string | null
+  pickup_spot_address: string | null
 }
