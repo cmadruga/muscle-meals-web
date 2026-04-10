@@ -193,7 +193,7 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
           </div>
 
           <div>
-            <label style={labelStyle}>Equivalencias de unidad</label>
+            <label style={labelStyle}>Equivalencias de unidad <span style={{ color: colors.textMuted, fontWeight: 400 }}>(cuántos gramos equivale 1 unidad)</span></label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
               {form.unit_conversions.map((conv, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -207,7 +207,7 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
                     }}
                     style={{ ...inputStyle, width: 90 }}
                   >
-                    {UNITS.filter(u => u !== form.unit).map(u => <option key={u} value={u}>{u}</option>)}
+                    {UNITS.filter(u => u !== 'g').map(u => <option key={u} value={u}>{u}</option>)}
                   </select>
                   <span style={{ color: colors.textMuted, fontSize: 13 }}>=</span>
                   <input
@@ -222,7 +222,7 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
                     }}
                     style={{ ...inputStyle, width: 80 }}
                   />
-                  <span style={{ color: colors.textMuted, fontSize: 13 }}>{form.unit}</span>
+                  <span style={{ color: colors.textMuted, fontSize: 13 }}>g</span>
                   <button
                     type="button"
                     onClick={() => set('unit_conversions', form.unit_conversions.filter((_, j) => j !== i))}
@@ -236,7 +236,7 @@ export function IngredientModal({ ingredient, onClose, onCreated, zIndex = 100 }
                 type="button"
                 onClick={() => {
                   const usedUnits = new Set(form.unit_conversions.map(c => c.unit))
-                  const available = UNITS.filter(u => u !== form.unit && !usedUnits.has(u))
+                  const available = UNITS.filter(u => u !== 'g' && !usedUnits.has(u))
                   if (available.length === 0) return
                   set('unit_conversions', [...form.unit_conversions, { unit: available[0], gr_equiv: 0 }])
                 }}
