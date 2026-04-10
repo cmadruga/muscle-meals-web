@@ -58,6 +58,10 @@ export default function IngredientesTab({ ingredients: initial }: { ingredients:
     })
   }
 
+  const missingConversion = initial.filter(
+    ing => ing.unit !== 'g' && !ing.unit_conversions.some(c => c.unit === ing.unit)
+  )
+
   const filtered = initial.filter((ing) => {
     const matchSearch = ing.name.toLowerCase().includes(search.toLowerCase())
     const matchType = typeFilter === 'all'
@@ -97,6 +101,24 @@ export default function IngredientesTab({ ingredients: initial }: { ingredients:
         </button>
       </div>
 
+      {missingConversion.length > 0 && (
+        <div style={{ background: '#f59e0b22', border: '1px solid #f59e0b55', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+          <div style={{ color: '#f59e0b', fontWeight: 700, fontSize: 13, marginBottom: 6 }}>
+            ⚠ {missingConversion.length} ingrediente{missingConversion.length > 1 ? 's' : ''} sin conversión a gramos
+          </div>
+          <div style={{ color: colors.textSecondary, fontSize: 12, lineHeight: 1.6 }}>
+            {missingConversion.map(ing => (
+              <span key={ing.id} style={{ display: 'inline-block', background: '#f59e0b11', border: '1px solid #f59e0b33', borderRadius: 4, padding: '1px 7px', marginRight: 6, marginBottom: 4 }}>
+                {ing.name} <span style={{ color: colors.textMuted }}>({ing.unit})</span>
+              </span>
+            ))}
+          </div>
+          <div style={{ color: colors.textMuted, fontSize: 11, marginTop: 6 }}>
+            Si se usan en recetas, los macros se calcularán incorrectamente. Edita cada uno y agrega su equivalencia en gramos.
+          </div>
+        </div>
+      )}
+
       {deleteError && (
         <div style={{ background: '#ef444422', border: '1px solid #ef444455', borderRadius: 8, padding: '10px 14px', color: colors.error, fontSize: 13, marginBottom: 16 }}>
           {deleteError}
@@ -124,7 +146,12 @@ export default function IngredientesTab({ ingredients: initial }: { ingredients:
                 <td style={{ padding: '12px', color: colors.textSecondary }}>{ing.protein}g</td>
                 <td style={{ padding: '12px', color: colors.textSecondary }}>{ing.carbs}g</td>
                 <td style={{ padding: '12px', color: colors.textSecondary }}>{ing.fats}g</td>
-                <td style={{ padding: '12px', color: colors.textSecondary }}>{ing.cant} {ing.unit}</td>
+                <td style={{ padding: '12px', color: colors.textSecondary }}>
+                  {ing.cant} {ing.unit}
+                  {ing.unit !== 'g' && !ing.unit_conversions.some(c => c.unit === ing.unit) && (
+                    <span title="Sin conversión a gramos" style={{ marginLeft: 6, color: '#f59e0b', fontSize: 12 }}>⚠</span>
+                  )}
+                </td>
                 <td style={{ padding: '12px', color: colors.textSecondary }}>${ing.precio.toFixed(2)}</td>
                 <td style={{ padding: '12px', color: colors.textSecondary }}>${ing.precio_por_unidad.toFixed(4)}</td>
                 <td style={{ padding: '12px', color: colors.textMuted, fontSize: 13 }}>{ing.proveedor ?? '—'}</td>
