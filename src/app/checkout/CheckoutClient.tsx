@@ -64,26 +64,26 @@ export default function CheckoutClient({
   const [numeroInterior, setNumeroInterior] = useState('')
   const [colonia, setColonia] = useState('')
   const [codigoPostal, setCodigoPostal] = useState('')
-  const [ciudad, setCiudad] = useState('Monterrey')
-  const [estado, setEstado] = useState('Nuevo León')
-  
+
+  const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+  const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
+  // ciudad y estado siempre derivados del CP (no editables)
+  const ciudad = zone ?? ''
+  const estado = 'Nuevo León'
+
   // Validación automática
   const isAddressComplete = Boolean(
-    calle.trim() && 
-    numeroExterior.trim() && 
-    colonia.trim() && 
-    codigoPostal.trim() && 
-    ciudad.trim() && 
-    estado.trim()
+    calle.trim() &&
+    numeroExterior.trim() &&
+    colonia.trim() &&
+    isPostalCodeValid
   )
-  
-  const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
+
   const addressValidated = shippingType === 'pickup'
     ? true
     : addressOption === 'saved'
       ? true
-      : isAddressComplete && isPostalCodeValid
-  const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
+      : isAddressComplete
   
   // Calcular total
   const isLoggedIn = Boolean(prefill?.customerId)
@@ -288,8 +288,6 @@ export default function CheckoutClient({
           numeroInterior={numeroInterior}
           colonia={colonia}
           codigoPostal={codigoPostal}
-          ciudad={ciudad}
-          estado={estado}
           onNameChange={setCustomerName}
           onPhoneChange={setCustomerPhone}
           onCalleChange={setCalle}
@@ -297,8 +295,6 @@ export default function CheckoutClient({
           onNumeroInteriorChange={setNumeroInterior}
           onColoniaChange={setColonia}
           onCodigoPostalChange={setCodigoPostal}
-          onCiudadChange={setCiudad}
-          onEstadoChange={setEstado}
           addressValidated={addressValidated}
           zone={zone}
           showAddress={shippingType !== 'pickup'}
@@ -536,8 +532,6 @@ function CustomerForm({
   numeroInterior,
   colonia,
   codigoPostal,
-  ciudad,
-  estado,
   onNameChange,
   onPhoneChange,
   onCalleChange,
@@ -545,8 +539,6 @@ function CustomerForm({
   onNumeroInteriorChange,
   onColoniaChange,
   onCodigoPostalChange,
-  onCiudadChange,
-  onEstadoChange,
   addressValidated,
   zone,
   showAddress,
@@ -563,8 +555,6 @@ function CustomerForm({
   numeroInterior: string
   colonia: string
   codigoPostal: string
-  ciudad: string
-  estado: string
   onNameChange: (value: string) => void
   onPhoneChange: (value: string) => void
   onCalleChange: (value: string) => void
@@ -572,8 +562,6 @@ function CustomerForm({
   onNumeroInteriorChange: (value: string) => void
   onColoniaChange: (value: string) => void
   onCodigoPostalChange: (value: string) => void
-  onCiudadChange: (value: string) => void
-  onEstadoChange: (value: string) => void
   addressValidated: boolean
   zone: string | null
   showAddress: boolean
@@ -626,7 +614,7 @@ function CustomerForm({
             type="text"
             value={name}
             onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Juan Pérez García"
+            placeholder="Nombre y apellido"
             disabled={disabled}
             style={inputStyle}
           />
@@ -646,7 +634,7 @@ function CustomerForm({
               const digits = raw.replace(/\D/g, '')
               if (digits.length <= 13) onPhoneChange(raw)
             }}
-            placeholder="8112345678"
+            placeholder="10 dígitos"
             disabled={disabled}
             style={{
               ...inputStyle,
@@ -737,7 +725,7 @@ function CustomerForm({
             type="text"
             value={calle}
             onChange={(e) => onCalleChange(e.target.value)}
-            placeholder="Av. Constitución"
+            placeholder=""
             disabled={disabled}
             style={inputStyle}
           />
@@ -753,7 +741,7 @@ function CustomerForm({
               type="text"
               value={numeroExterior}
               onChange={(e) => onNumeroExteriorChange(e.target.value)}
-              placeholder="123"
+              placeholder=""
               disabled={disabled}
               style={inputStyle}
             />
@@ -766,7 +754,7 @@ function CustomerForm({
               type="text"
               value={numeroInterior}
               onChange={(e) => onNumeroInteriorChange(e.target.value)}
-              placeholder="Depto. 4B"
+              placeholder="Opcional"
               disabled={disabled}
               style={inputStyle}
             />
@@ -782,7 +770,7 @@ function CustomerForm({
             type="text"
             value={colonia}
             onChange={(e) => onColoniaChange(e.target.value)}
-            placeholder="Centro"
+            placeholder=""
             disabled={disabled}
             style={inputStyle}
           />
@@ -801,85 +789,48 @@ function CustomerForm({
                 const value = e.target.value.replace(/\D/g, '')
                 if (value.length <= 5) onCodigoPostalChange(value)
               }}
-              placeholder="64000"
+              placeholder=""
               disabled={disabled}
               style={{
                 ...inputStyle,
-                borderColor: codigoPostal.length === 5 
-                  ? (validateCP(codigoPostal) && isValidPostalCode(codigoPostal) ? '#10b981' : '#ef4444')
+                borderColor: codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal))
+                  ? '#ef4444'
                   : colors.grayLight
               }}
             />
           </div>
           <div>
             <label style={labelStyle}>
-              Ciudad *
+              Ciudad
             </label>
             <input
               type="text"
-              value={ciudad}
-              onChange={(e) => onCiudadChange(e.target.value)}
-              placeholder="Monterrey"
+              value={zone ?? ''}
+              readOnly
               disabled={disabled}
-              style={inputStyle}
+              placeholder="Se llena con el CP"
+              style={{
+                ...inputStyle,
+                opacity: zone ? 1 : 0.5,
+                cursor: 'default',
+                color: zone ? colors.white : colors.textMuted,
+              }}
             />
           </div>
         </div>
 
-        {/* Mensaje de validación de CP */}
-        {codigoPostal.length === 5 && (
+        {/* Error de CP fuera de zona */}
+        {codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal)) && (
           <div style={{
-            background: validateCP(codigoPostal) && isValidPostalCode(codigoPostal) 
-              ? '#10b98120' 
-              : '#ef444420',
-            border: validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
-              ? '2px solid #10b981'
-              : '2px solid #ef4444',
+            background: '#ef444420',
+            border: '2px solid #ef4444',
             borderRadius: 8,
             padding: 12,
             fontSize: 14,
-            color: validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
-              ? '#10b981'
-              : '#ef4444',
+            color: '#ef4444',
             textAlign: 'center'
           }}>
-            {validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
-              ? `✅ CP válido - Zona: ${zone}`
-              : '❌ CP fuera del área de entrega (Solo Área Metropolitana de Monterrey)'}
-          </div>
-        )}
-
-        {/* Estado */}
-        <div>
-          <label style={labelStyle}>
-            Estado *
-          </label>
-          <input
-            type="text"
-            value={estado}
-            onChange={(e) => onEstadoChange(e.target.value)}
-            placeholder="Nuevo León"
-            disabled={true}
-            style={{
-              ...inputStyle,
-              opacity: 0.6,
-              cursor: 'not-allowed'
-            }}
-          />
-        </div>
-
-        {/* Indicador de dirección completa */}
-        {addressValidated && addressOption === 'new' && (
-          <div style={{
-            background: '#10b98120',
-            border: '2px solid #10b981',
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 14,
-            color: '#10b981',
-            textAlign: 'center'
-          }}>
-            ✅ Dirección completa y validada - Listo para proceder al pago
+            CP fuera del área de entrega (solo Área Metropolitana de Monterrey)
           </div>
         )}
         </>)}
