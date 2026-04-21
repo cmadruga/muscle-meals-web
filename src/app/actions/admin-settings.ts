@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { setSalesEnabled } from '@/lib/db/settings'
+import { setSalesEnabled, setSalesPauseMessage } from '@/lib/db/settings'
 
 async function checkAdmin() {
   const cookieStore = await cookies()
@@ -18,4 +18,10 @@ export async function toggleSalesEnabled(enabled: boolean): Promise<void> {
   revalidatePath('/admin/orders')
   revalidatePath('/menu')
   revalidatePath('/package')
+}
+
+export async function saveSalesPauseMessage(message: string): Promise<void> {
+  await checkAdmin()
+  await setSalesPauseMessage(message)
+  revalidatePath('/menu')
 }

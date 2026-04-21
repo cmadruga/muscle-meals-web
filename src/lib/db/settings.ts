@@ -27,3 +27,30 @@ export async function setSalesEnabled(enabled: boolean): Promise<void> {
     .from('site_settings')
     .upsert({ key: 'sales_enabled', value: enabled, updated_at: new Date().toISOString() })
 }
+
+/**
+ * Lee el mensaje de pausa (mostrado en el popup del menu).
+ */
+export async function getSalesPauseMessage(): Promise<string> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'sales_pause_message')
+      .single()
+
+    if (error || !data) return ''
+    return typeof data.value === 'string' ? data.value : String(data.value ?? '')
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Guarda el mensaje de pausa.
+ */
+export async function setSalesPauseMessage(message: string): Promise<void> {
+  await createAdminClient()
+    .from('site_settings')
+    .upsert({ key: 'sales_pause_message', value: message.trim(), updated_at: new Date().toISOString() })
+}

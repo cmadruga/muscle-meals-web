@@ -527,7 +527,7 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             background: '#ef444422', border: '1px solid #ef4444',
             color: '#ef4444', fontSize: 15, fontWeight: 600, boxSizing: 'border-box',
           }}>
-            Ventas temporalmente cerradas
+            Ventas temporalmente pausadas
           </div>
         ) : (
           <button

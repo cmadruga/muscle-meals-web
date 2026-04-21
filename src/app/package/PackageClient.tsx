@@ -829,7 +829,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
               background: '#ef444422', border: '1px solid #ef4444',
               color: '#ef4444', fontSize: 14, fontWeight: 600,
             }}>
-              Ventas temporalmente cerradas
+              Ventas temporalmente pausadas
             </div>
           ) : (
             <button
