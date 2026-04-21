@@ -162,6 +162,18 @@ export async function updatePaymentGatewayId(orderId: string, gatewayId: string)
 }
 
 /**
+ * Guarda el método de pago de una orden
+ */
+export async function updatePaymentMethod(orderId: string, method: string): Promise<void> {
+  const { error } = await createAdminClient()
+    .from('orders')
+    .update({ payment_method: method, updated_at: new Date().toISOString() })
+    .eq('id', orderId)
+
+  if (error) console.error('Error updating payment_method:', error)
+}
+
+/**
  * Busca una orden por payment_gateway_id
  */
 export async function getOrderByGatewayId(gatewayId: string): Promise<Order | null> {

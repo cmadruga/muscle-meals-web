@@ -55,6 +55,7 @@ export interface Order {
   pickup_spot_id: string | null
   shipping_cost: number
   note: string | null
+  payment_method: string | null
   created_at: string
   updated_at: string
 }

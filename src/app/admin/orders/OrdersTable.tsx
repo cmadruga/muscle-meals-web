@@ -445,6 +445,11 @@ export default function OrdersTable({
                               }}>
                                 {STATUS_LABELS[order.status]}
                               </span>
+                              {order.payment_method && (
+                                <div style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
+                                  {order.payment_method}
+                                </div>
+                              )}
                             </td>
                             <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
                               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>

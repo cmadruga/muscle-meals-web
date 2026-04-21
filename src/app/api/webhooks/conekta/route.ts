@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { headers } from 'next/headers'
 import crypto from 'crypto'
-import { updateOrderStatus, updatePaymentGatewayId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
+import { updateOrderStatus, updatePaymentGatewayId, updatePaymentMethod, getOrderById, getOrderWithItems } from '@/lib/db/orders'
 import { getCustomerById } from '@/lib/db/customers'
 import type { ConektaOrder, ConektaCharge } from '@/lib/types/conekta'
 import { sendPaymentConfirmation, sendPaymentPending, sendOrderExpired, sendInternalOrderAlert } from '@/lib/whatsapp'
@@ -88,6 +88,19 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Extrae el método de pago legible de un ConektaOrder
+ */
+function extractPaymentMethod(conektaOrder: ConektaOrder): string | null {
+  const charge = conektaOrder.charges?.data?.[0]
+  const pm = charge?.payment_method
+  if (!pm) return null
+  if (pm.type === 'card') return pm.brand ? `${pm.brand} ····${pm.last4 ?? ''}` : `Tarjeta ····${pm.last4 ?? ''}`
+  if (pm.type === 'oxxo_cash') return 'OXXO'
+  if (pm.type === 'spei') return 'SPEI'
+  return pm.type
+}
+
+/**
  * Maneja el evento order.paid - Orden pagada exitosamente
  */
 async function handleOrderPaid(conektaOrder: ConektaOrder) {
@@ -104,8 +117,10 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
     // Actualizar estado en nuestra DB
     await updateOrderStatus(ourOrderId, 'paid')
     
-    // Guardar el ID de Conekta para referencia
+    // Guardar el ID de Conekta y el método de pago
     await updatePaymentGatewayId(ourOrderId, conektaOrder.id)
+    const method = extractPaymentMethod(conektaOrder)
+    if (method) await updatePaymentMethod(ourOrderId, method)
 
     // Obtener la orden completa con customer_id
     const order = await getOrderById(ourOrderId)
@@ -195,6 +210,8 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
     console.log(`⏳ Orden pendiente: ${ourOrderId}`)
     await updateOrderStatus(ourOrderId, 'pending')
     await updatePaymentGatewayId(ourOrderId, conektaOrder.id)
+    const method = extractPaymentMethod(conektaOrder)
+    if (method) await updatePaymentMethod(ourOrderId, method)
     
     const order = await getOrderById(ourOrderId)
     
