@@ -3,6 +3,7 @@ import { getMealById, getMealsBasic } from '@/lib/db/meals'
 import { getGlobalSizes, getCustomerSizes } from '@/lib/db/sizes'
 import { getCustomerByUserId } from '@/lib/db/customers'
 import { createClient } from '@/lib/supabase/server'
+import { getSalesEnabled } from '@/lib/db/settings'
 import type { Size } from '@/lib/types'
 import MealClient from './MealClient'
 
@@ -29,10 +30,11 @@ export default async function MealPage({ params, searchParams }: MealPageProps) 
     }
   }
 
-  const [meal, sizes, allMeals] = await Promise.all([
+  const [meal, sizes, allMeals, salesEnabled] = await Promise.all([
     getMealById(id),
     getGlobalSizes(),
-    getMealsBasic()
+    getMealsBasic(),
+    getSalesEnabled(),
   ])
 
   if (!meal) {
@@ -42,7 +44,7 @@ export default async function MealPage({ params, searchParams }: MealPageProps) 
   // Filtrar otros meals (excluir el actual) para sugerencias
   const suggestedMeals = allMeals.filter(m => m.id !== meal.id)
 
-  return <MealClient meal={meal} sizes={sizes} customerSizes={customerSizes} suggestedMeals={suggestedMeals} initialSizeId={sizeId} />
+  return <MealClient meal={meal} sizes={sizes} customerSizes={customerSizes} suggestedMeals={suggestedMeals} initialSizeId={sizeId} isAuthenticated={!!user} salesEnabled={salesEnabled} />
 }
 
 /**

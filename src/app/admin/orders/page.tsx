@@ -8,9 +8,11 @@ import { getActiveMeals } from '@/lib/db/meals'
 import { getAllSizesWithCustomer } from '@/lib/db/sizes'
 import type { CustomerBasic } from '@/lib/db/customers'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
+import { getSalesEnabled } from '@/lib/db/settings'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
 import NewOrderButton from './NewOrderButton'
+import SalesToggle from '../SalesToggle'
 import { colors } from '@/lib/theme'
 
 function parseLocalDate(str: string): Date {
@@ -52,13 +54,14 @@ export default async function PanelOrdersPage({
   const supabase = await createClient()
   const admin = createAdminClient()
 
-  const [orders, productionData, meals, sizes, customersRes, pickupSpots] = await Promise.all([
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
     getAllSizesWithCustomer(),
     admin.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
     getActivePickupSpots(),
+    getSalesEnabled(),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
@@ -89,13 +92,16 @@ export default async function PanelOrdersPage({
         <h1 style={{ color: colors.white, fontSize: 26, fontWeight: 700, margin: 0 }}>
           Pedidos
         </h1>
-        <NewOrderButton
-          weekStr={weekStr}
-          meals={meals.map(m => ({ id: m.id, name: m.name }))}
-          sizes={sizes.map(s => ({ id: s.id, name: s.customer_name ? `${s.name} (${s.customer_name})` : s.name }))}
-          customers={customers}
-          pickupSpots={pickupSpots}
-        />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <SalesToggle initialEnabled={salesEnabled} />
+          <NewOrderButton
+            weekStr={weekStr}
+            meals={meals.map(m => ({ id: m.id, name: m.name }))}
+            sizes={sizes.map(s => ({ id: s.id, name: s.customer_name ? `${s.name} (${s.customer_name})` : s.name }))}
+            customers={customers}
+            pickupSpots={pickupSpots}
+          />
+        </div>
       </div>
       <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 2 }}>
         {totalConfirmed} órdenes esta semana ({totalConfirmedMeals} comidas confirmadas)

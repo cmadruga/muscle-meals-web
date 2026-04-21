@@ -9,6 +9,20 @@ import { calculateMealMacros } from '@/lib/utils/macros'
 // import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
 import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { colors } from '@/lib/theme'
+
+function calcMinPackagePrice(size: Size, fitSize: Size | undefined): number {
+  const proNorms = Object.entries(size.protein_qty).map(([id, qty]) => {
+    const fitQty = fitSize?.protein_qty[id] ?? 0
+    return fitQty > 0 ? qty * PROTEIN_BASE.FIT / fitQty : qty
+  }).filter(v => v > 0)
+  const carbNorms = Object.entries(size.carb_qty).map(([id, qty]) => {
+    const fitQty = fitSize?.carb_qty[id] ?? 0
+    return fitQty > 0 ? qty * CARB_BASE.FIT / fitQty : qty
+  }).filter(v => v > 0)
+  const proMin = proNorms.length > 0 ? Math.min(...proNorms) : 0
+  const carbMin = carbNorms.length > 0 ? Math.min(...carbNorms) : 0
+  return calculateCustomSizePrice(proMin, carbMin, size.veg_qty).packagePrice
+}
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
 
@@ -25,6 +39,8 @@ interface PackageClientProps {
   editInstanceId?: string
   proIngredients?: Ingredient[]
   carbIngredients?: Ingredient[]
+  isAuthenticated?: boolean
+  salesEnabled?: boolean
 }
 
 interface SelectionItem {
@@ -69,12 +85,28 @@ const pkg: PackageConfig = {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [] }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [], isAuthenticated, salesEnabled = true }: PackageClientProps) {
   const router = useRouter()
   const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
-  const [selectedSizeId, setSelectedSizeId] = useState(fitSize?.id || sizes[0]?.id || '')
-  const [selection, setSelection] = useState<SelectionItem[]>([])
+  const customerDefault = customerSizes.find(s => s.is_main)
+  const [selectedSizeId, setSelectedSizeId] = useState(customerDefault?.id || fitSize?.id || sizes[0]?.id || '')
+  const [selection, setSelection] = useState<SelectionItem[]>(() => {
+    if (editInstanceId) return [] // se hidrata del carrito en useEffect
+    const defaultSizeId = customerDefault?.id || fitSize?.id || sizes[0]?.id || ''
+    const defaultSize = [...sizes, ...customerSizes].find(s => s.id === defaultSizeId)
+    if (!defaultSize) return []
+    return meals.map(meal => ({
+      mealId: meal.id,
+      mealName: meal.name,
+      sizeId: defaultSize.id,
+      sizeName: defaultSize.name,
+      unitPrice: defaultSize.customer_id
+        ? calcMealCustomPrice(meal, defaultSize, fitSize ?? defaultSize)
+        : defaultSize.package_price,
+      qty: 1,
+    }))
+  })
 
   // Hidratar selección desde el carrito después del mount (evita hydration mismatch con SSR)
   useEffect(() => {
@@ -97,6 +129,11 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
   // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
+  // Sin sesión: limitar ingredientes del panel a los que usan los platillos activos
+  const activeMealIngIds = new Set(meals.flatMap(m => m.ingredients.map(i => i.id)))
+  const panelProIngredients = isAuthenticated ? proIngredients : proIngredients.filter(i => activeMealIngIds.has(i.id))
+  const panelCarbIngredients = isAuthenticated ? carbIngredients : carbIngredients.filter(i => activeMealIngIds.has(i.id))
+
   // Convertir meals a formato MealBasic para sugerencias
   const suggestedMeals = meals.map(m => ({
     id: m.id,
@@ -105,14 +142,44 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
     img: m.img
   }))
 
-  const allSizes = [...sizes, ...customerSizes, ...sessionSizes]
+  // sessionSizes tiene prioridad sobre customerSizes (puede ser versión editada)
+  const sessionIds = new Set(sessionSizes.map(s => s.id))
+  const allSizes = [...sizes, ...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
+  const [customInitialSize, setCustomInitialSize] = useState<Size | undefined>()
+  const [isTouched, setIsTouched] = useState(false)
+
   const handleCustomSizeCreated = (size: Size) => {
-    setSessionSizes(prev => [...prev, size])
+    setSessionSizes(prev => [...prev.filter(s => s.id !== size.id), size])
+    setCustomInitialSize(undefined)
+    setIsTouched(false) // nuevo tamaño creado → volver a modo sincronizado
     setSelectedSizeId(size.id)
   }
-  
+
+  const handleEditCustomSize = (size: Size) => {
+    setCustomInitialSize(size)
+    setSelectedSizeId('__custom__')
+  }
+
+  // Mientras no se haya tocado nada, cambiar de tamaño actualiza toda la selección
+  useEffect(() => {
+    if (isTouched || selectedSizeId === '__custom__') return
+    const newSize = allSizes.find(s => s.id === selectedSizeId)
+    if (!newSize) return
+    setSelection(meals.map(meal => ({
+      mealId: meal.id,
+      mealName: meal.name,
+      sizeId: newSize.id,
+      sizeName: newSize.name,
+      unitPrice: newSize.customer_id
+        ? calcMealCustomPrice(meal, newSize, fitSize ?? newSize)
+        : newSize.package_price,
+      qty: 1,
+    })))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSizeId])
+
   // Total de comidas seleccionadas
   const totalSelected = useMemo(
     () => selection.reduce((sum, item) => sum + item.qty, 0),
@@ -130,9 +197,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   // Agregar meal con el size activo
   const handleAdd = (meal: MealWithRecipes) => {
     if (!selectedSize) return
-    const unitPrice = selectedSize.is_main
-      ? selectedSize.package_price
-      : calcMealCustomPrice(meal, selectedSize, fitSize ?? selectedSize)
+    setIsTouched(true)
+    const unitPrice = selectedSize.customer_id
+      ? calcMealCustomPrice(meal, selectedSize, fitSize ?? selectedSize)
+      : selectedSize.package_price
     setSelection(prev => {
       const existing = prev.find(i => i.mealId === meal.id && i.sizeId === selectedSize.id)
       if (existing) {
@@ -145,6 +213,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   // Remover del size activo
   const handleRemove = (mealId: string) => {
     if (!selectedSize) return
+    setIsTouched(true)
     setSelection(prev =>
       prev.map(i => i.mealId === mealId && i.sizeId === selectedSize.id ? { ...i, qty: i.qty - 1 } : i)
         .filter(i => i.qty > 0)
@@ -274,6 +343,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
 
         {/* Botones de tamaño */}
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {/* Tamaños principales */}
           {sizes.filter(s => s.is_main).map(size => {
             const isSelected = selectedSizeId === size.id
             return (
@@ -302,47 +372,88 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
             )
           })}
 
-          {/* Botón Custom */}
-          <button
-            onClick={() => setSelectedSizeId('__custom__')}
-            style={{
-              flex: '1 1 0',
-              minWidth: 80,
-              padding: '14px 8px',
-              borderRadius: 10,
-              border: `2px solid ${selectedSizeId === '__custom__' ? colors.orange : colors.grayLight}`,
-              background: selectedSizeId === '__custom__' ? 'rgba(254,151,57,0.15)' : colors.black,
-              color: selectedSizeId === '__custom__' ? colors.orange : colors.textMuted,
-              cursor: 'pointer',
-              textAlign: 'center',
-              lineHeight: 1.3,
-              fontFamily: 'Franchise, sans-serif',
-            }}
-          >
-            <div style={{ fontSize: 22 }}>＋</div>
-            <div style={{ fontSize: 13, marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>tamaño personalizado</div>
-          </button>
+          {/* 4to botón: mis tamaños + crear nuevo como última opción del select */}
+          {(() => {
+            const myList = [...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+            const active = myList.find(s => s.id === selectedSizeId)
+            const isCreating = selectedSizeId === '__custom__'
+            const isSelected = !!active || isCreating
+            return (
+              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative' }}>
+                <div style={{
+                  padding: '14px 8px',
+                  borderRadius: 10,
+                  border: `2px solid ${isSelected ? colors.orange : colors.grayLight}`,
+                  background: isSelected ? 'rgba(254,151,57,0.15)' : colors.black,
+                  color: isSelected ? colors.orange : colors.textMuted,
+                  textAlign: 'center',
+                  lineHeight: 1.3,
+                  fontFamily: 'Franchise, sans-serif',
+                  pointerEvents: 'none',
+                }}>
+                  <div style={{ fontSize: isCreating || active ? 16 : 22, textTransform: 'uppercase', letterSpacing: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {active ? active.name : isCreating ? 'Crear nuevo' : '＋'}
+                  </div>
+                  <div style={{ fontSize: 13, marginTop: 3, fontFamily: 'sans-serif', fontWeight: 600 }}>
+                    {active ? `$${(calcMinPackagePrice(active, fitSize) / 100).toFixed(0)}/platillo` : 'personalizado'}
+                  </div>
+                </div>
+                <select
+                  value={isSelected ? selectedSizeId : ''}
+                  onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                >
+                  <option value="">Personalizado...</option>
+                  {myList.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} — ${(calcMinPackagePrice(s, fitSize) / 100).toFixed(0)}/platillo</option>
+                  ))}
+                  <option value="__custom__">＋ Crear nuevo</option>
+                </select>
+              </div>
+            )
+          })()}
         </div>
 
-        {selectedSizeId === '__custom__' && (() => {
-          return (
-            <div style={{ marginTop: 16 }}>
-              <CustomSizePanel
-                proIngredients={proIngredients}
-                carbIngredients={carbIngredients}
-                customerSizes={customerSizes}
-                onSizeCreated={handleCustomSizeCreated}
-              />
-            </div>
-          )
-        })()}
+        {selectedSizeId === '__custom__' && (
+          <div style={{ marginTop: 16 }}>
+            <CustomSizePanel
+              proIngredients={panelProIngredients}
+              carbIngredients={panelCarbIngredients}
+              fitSize={fitSize}
+              initialSize={customInitialSize}
+              isAuthenticated={isAuthenticated}
+              onSizeCreated={handleCustomSizeCreated}
+            />
+          </div>
+        )}
 
-        {/* Descripción del size seleccionado */}
-        {selectedSize?.description && (
+        {/* Descripción del size seleccionado (solo main) / Editar (solo custom guardado) */}
+        {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' ? (
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <div style={{ flex: '3 1 0' }} />
+            <button
+              onClick={() => handleEditCustomSize(selectedSize)}
+              style={{
+                flex: '1 1 0',
+                minWidth: 80,
+                padding: '7px 8px',
+                borderRadius: 8,
+                border: `1px solid ${colors.grayLight}`,
+                background: 'transparent',
+                color: colors.textMuted,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'sans-serif',
+              }}
+            >
+              Editar
+            </button>
+          </div>
+        ) : selectedSize?.description ? (
           <p style={{ fontSize: 13, margin: '12px 0 0 0', color: colors.textMuted, fontStyle: 'italic' }}>
             {selectedSize.description}
           </p>
-        )}
+        ) : null}
 
         {/* Toggle crudo/cocido — oculto por ahora, solo crudo */}
         {/* <div>Ver porciones en: [Crudo] [Cocido]</div> */}
@@ -475,8 +586,8 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
               macros = calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
             }
 
-            // Precio por platillo (solo para custom sizes)
-            const mealUnitPrice = selectedSize && !selectedSize.is_main
+            // Precio por platillo: custom sizes calculan por ingrediente del platillo
+            const mealUnitPrice = selectedSize && !!selectedSize.customer_id
               ? calcMealCustomPrice(meal, selectedSize, fitSize ?? selectedSize)
               : selectedSize?.package_price ?? null
             
@@ -712,32 +823,42 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
               </div>
             </div>
           )}
-          <button
-            className={`pkg-footer-btn franchise-stroke`}
-            onClick={handleAddToCart}
-            disabled={!canSubmit}
-            style={{
-              flex: totalSelected > 0 ? 'none' : 1,
-              padding: '14px 24px',
-              cursor: canSubmit ? 'pointer' : 'not-allowed',
-              opacity: canSubmit ? 1 : 0.5,
-              background: canSubmit ? colors.orange : colors.grayLight,
-              color: canSubmit ? colors.white : colors.textMuted,
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 20,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {totalSelected < pkg.minMeals
-              ? `Agrega ${pkg.minMeals - totalSelected} más` : editInstanceId ? 'Actualizar paquete'
-              : 'Agregar al carrito'
-            }
-          </button>
+          {!salesEnabled ? (
+            <div style={{
+              flex: 1, padding: '14px 20px', borderRadius: 8, textAlign: 'center',
+              background: '#ef444422', border: '1px solid #ef4444',
+              color: '#ef4444', fontSize: 14, fontWeight: 600,
+            }}>
+              Ventas temporalmente pausadas
+            </div>
+          ) : (
+            <button
+              className={`pkg-footer-btn franchise-stroke`}
+              onClick={handleAddToCart}
+              disabled={!canSubmit}
+              style={{
+                flex: totalSelected > 0 ? 'none' : 1,
+                padding: '14px 24px',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                opacity: canSubmit ? 1 : 0.5,
+                background: canSubmit ? colors.orange : colors.grayLight,
+                color: canSubmit ? colors.white : colors.textMuted,
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 20,
+                letterSpacing: 0,
+                lineHeight: 1,
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {totalSelected < pkg.minMeals
+                ? `Agrega ${pkg.minMeals - totalSelected} más` : editInstanceId ? 'Actualizar paquete'
+                : 'Agregar al carrito'
+              }
+            </button>
+          )}
         </div>
       </div>
     </main>

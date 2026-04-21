@@ -7,7 +7,38 @@ import type { Size, MealBasic, MealWithRecipes } from '@/lib/types'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 // import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
+import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { colors } from '@/lib/theme'
+
+function calcMealPrice(meal: MealWithRecipes, customSize: Size, fitSize: Size | undefined): number {
+  let proIngId: string | null = null
+  let carbIngId: string | null = null
+  for (const ing of meal.ingredients) {
+    if (ing.type === 'pro' && !proIngId) proIngId = ing.id
+    if (ing.type === 'carb' && !carbIngId) carbIngId = ing.id
+  }
+  const proQty  = proIngId  ? (customSize.protein_qty[proIngId]  ?? 0) : 0
+  const carbQty = carbIngId ? (customSize.carb_qty[carbIngId]    ?? 0) : 0
+  const fitPro  = proIngId  ? (fitSize?.protein_qty[proIngId]  ?? 0) : 0
+  const fitCarb = carbIngId ? (fitSize?.carb_qty[carbIngId]    ?? 0) : 0
+  const normPro  = fitPro  > 0 ? proQty  * PROTEIN_BASE.FIT / fitPro  : proQty
+  const normCarb = fitCarb > 0 ? carbQty * CARB_BASE.FIT    / fitCarb : carbQty
+  return calculateCustomSizePrice(normPro, normCarb, customSize.veg_qty).price
+}
+
+function calcMinPrice(size: Size, fitSize: Size | undefined): number {
+  const proNorms = Object.entries(size.protein_qty).map(([id, qty]) => {
+    const fitQty = fitSize?.protein_qty[id] ?? 0
+    return fitQty > 0 ? qty * PROTEIN_BASE.FIT / fitQty : qty
+  }).filter(v => v > 0)
+  const carbNorms = Object.entries(size.carb_qty).map(([id, qty]) => {
+    const fitQty = fitSize?.carb_qty[id] ?? 0
+    return fitQty > 0 ? qty * CARB_BASE.FIT / fitQty : qty
+  }).filter(v => v > 0)
+  const proMin = proNorms.length > 0 ? Math.min(...proNorms) : 0
+  const carbMin = carbNorms.length > 0 ? Math.min(...carbNorms) : 0
+  return calculateCustomSizePrice(proMin, carbMin, size.veg_qty).price
+}
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
 
@@ -17,19 +48,22 @@ interface MealClientProps {
   customerSizes?: Size[]
   suggestedMeals?: MealBasic[]
   initialSizeId?: string
+  isAuthenticated?: boolean
+  salesEnabled?: boolean
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId }: MealClientProps) {
+export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId, isAuthenticated, salesEnabled = true }: MealClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
 
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
+  const customerDefault = customerSizes.find(s => s.is_main)
   const defaultSizeId = (initialSizeId && [...sizes, ...customerSizes].find(s => s.id === initialSizeId))
     ? initialSizeId
-    : fitSize?.id || sizes[0]?.id || ''
+    : customerDefault?.id || fitSize?.id || sizes[0]?.id || ''
   const [selectedSizeId, setSelectedSizeId] = useState(defaultSizeId)
   const [qty, setQty] = useState(1)
   const [showModal, setShowModal] = useState(false)
@@ -37,12 +71,21 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
   // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
-  const allSizes = [...sizes, ...customerSizes, ...sessionSizes]
+  const sessionIds = new Set(sessionSizes.map(s => s.id))
+  const allSizes = [...sizes, ...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
+  const [customInitialSize, setCustomInitialSize] = useState<Size | undefined>()
+
   const handleCustomSizeCreated = (size: Size) => {
-    setSessionSizes(prev => [...prev, size])
+    setSessionSizes(prev => [...prev.filter(s => s.id !== size.id), size])
+    setCustomInitialSize(undefined)
     setSelectedSizeId(size.id)
+  }
+
+  const handleEditCustomSize = (size: Size) => {
+    setCustomInitialSize(size)
+    setSelectedSizeId('__custom__')
   }
 
   // Calcular macros según size seleccionado
@@ -53,7 +96,11 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
     return calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
   }, [meal, selectedSize])
 
-  const totalPrice = selectedSize ? selectedSize.price * qty : 0
+  const totalPrice = selectedSize
+    ? (selectedSize.customer_id
+        ? calcMealPrice(meal, selectedSize, fitSize) * qty
+        : selectedSize.price * qty)
+    : 0
 
   const handleAddToCart = () => {
     if (!selectedSize) return
@@ -64,7 +111,9 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
       sizeId: selectedSize.id,
       sizeName: selectedSize.name,
       qty: qty,
-      unitPrice: selectedSize.price
+      unitPrice: selectedSize.customer_id
+        ? calcMealPrice(meal, selectedSize, fitSize)
+        : selectedSize.price
     })
 
     // Mostrar modal de confirmación
@@ -145,6 +194,7 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
         </label>
 
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          {/* Tamaños principales */}
           {sizes.filter(s => s.is_main).map(size => {
             const isSelected = selectedSizeId === size.id
             return (
@@ -173,26 +223,46 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             )
           })}
 
-          {/* Botón Custom */}
-          <button
-            onClick={() => setSelectedSizeId('__custom__')}
-            style={{
-              flex: '1 1 0',
-              minWidth: 80,
-              padding: '14px 8px',
-              borderRadius: 10,
-              border: `2px solid ${selectedSizeId === '__custom__' ? colors.orange : colors.grayLight}`,
-              background: selectedSizeId === '__custom__' ? 'rgba(254,151,57,0.15)' : colors.black,
-              color: selectedSizeId === '__custom__' ? colors.orange : colors.textMuted,
-              cursor: 'pointer',
-              textAlign: 'center',
-              lineHeight: 1.3,
-              fontFamily: 'Franchise, sans-serif',
-            }}
-          >
-            <div style={{ fontSize: 22 }}>＋</div>
-            <div style={{ fontSize: 13, marginTop: 3, textTransform: 'uppercase', letterSpacing: 1 }}>tamaño personalizado</div>
-          </button>
+          {/* 4to botón: mis tamaños + crear nuevo como última opción del select */}
+          {(() => {
+            const myList = [...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+            const active = myList.find(s => s.id === selectedSizeId)
+            const isCreating = selectedSizeId === '__custom__'
+            const isSelected = !!active || isCreating
+            return (
+              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative' }}>
+                <div style={{
+                  padding: '14px 8px',
+                  borderRadius: 10,
+                  border: `2px solid ${isSelected ? colors.orange : colors.grayLight}`,
+                  background: isSelected ? 'rgba(254,151,57,0.15)' : colors.black,
+                  color: isSelected ? colors.orange : colors.textMuted,
+                  textAlign: 'center',
+                  lineHeight: 1.3,
+                  fontFamily: 'Franchise, sans-serif',
+                  pointerEvents: 'none',
+                }}>
+                  <div style={{ fontSize: isCreating || active ? 16 : 22, textTransform: 'uppercase', letterSpacing: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {active ? active.name : isCreating ? 'Crear nuevo' : '＋'}
+                  </div>
+                  <div style={{ fontSize: 13, marginTop: 3, fontFamily: 'sans-serif', fontWeight: 600 }}>
+                    {active ? `$${(calcMealPrice(meal, active, fitSize) / 100).toFixed(0)} MXN` : 'personalizado'}
+                  </div>
+                </div>
+                <select
+                  value={isSelected ? selectedSizeId : ''}
+                  onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                >
+                  <option value="">Personalizado...</option>
+                  {myList.map(s => (
+                    <option key={s.id} value={s.id}>{s.name} — ${(calcMealPrice(meal, s, fitSize) / 100).toFixed(0)} MXN</option>
+                  ))}
+                  <option value="__custom__">＋ Crear nuevo</option>
+                </select>
+              </div>
+            )
+          })()}
         </div>
 
         {selectedSizeId === '__custom__' && (
@@ -200,9 +270,35 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             <CustomSizePanel
               proIngredients={meal.ingredients.filter(i => i.type === 'pro')}
               carbIngredients={meal.ingredients.filter(i => i.type === 'carb')}
-              customerSizes={customerSizes}
+              fitSize={fitSize}
+              initialSize={customInitialSize}
+              isAuthenticated={isAuthenticated}
               onSizeCreated={handleCustomSizeCreated}
             />
+          </div>
+        )}
+
+        {/* Editar tamaño custom guardado */}
+        {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' && (
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <div style={{ flex: '3 1 0' }} />
+            <button
+              onClick={() => handleEditCustomSize(selectedSize)}
+              style={{
+                flex: '1 1 0',
+                minWidth: 80,
+                padding: '7px 8px',
+                borderRadius: 8,
+                border: `1px solid ${colors.grayLight}`,
+                background: 'transparent',
+                color: colors.textMuted,
+                cursor: 'pointer',
+                fontSize: 13,
+                fontFamily: 'sans-serif',
+              }}
+            >
+              Editar
+            </button>
           </div>
         )}
       </div>
@@ -425,28 +521,38 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>${(totalPrice / 100).toFixed(0)} MXN</span>
         </div>
         
-        <button
-          onClick={handleAddToCart}
-          disabled={!selectedSize}
-          className="franchise-stroke"
-          style={{
-            width: '100%',
-            padding: '16px 24px',
-            cursor: !selectedSize ? 'not-allowed' : 'pointer',
-            opacity: !selectedSize ? 0.5 : 1,
-            background: colors.orange,
-            color: colors.white,
-            border: 'none',
-            borderRadius: 8,
-            fontFamily: 'Franchise, sans-serif',
-            fontSize: 22,
-            letterSpacing: 0,
-            lineHeight: 1,
-            textTransform: 'uppercase'
-          }}
-        >
-          Agregar al carrito
-        </button>
+        {!salesEnabled ? (
+          <div style={{
+            width: '100%', padding: '16px 20px', borderRadius: 8, textAlign: 'center',
+            background: '#ef444422', border: '1px solid #ef4444',
+            color: '#ef4444', fontSize: 15, fontWeight: 600, boxSizing: 'border-box',
+          }}>
+            Ventas temporalmente pausadas
+          </div>
+        ) : (
+          <button
+            onClick={handleAddToCart}
+            disabled={!selectedSize}
+            className="franchise-stroke"
+            style={{
+              width: '100%',
+              padding: '16px 24px',
+              cursor: !selectedSize ? 'not-allowed' : 'pointer',
+              opacity: !selectedSize ? 0.5 : 1,
+              background: colors.orange,
+              color: colors.white,
+              border: 'none',
+              borderRadius: 8,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase'
+            }}
+          >
+            Agregar al carrito
+          </button>
+        )}
         </div>
       </div>
     </main>

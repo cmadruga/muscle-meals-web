@@ -9,6 +9,13 @@ export interface ConektaCustomerInfo {
   phone: string
 }
 
+export interface ConektaPaymentMethod {
+  type: string          // 'card', 'oxxo_cash', 'spei'
+  object: string        // 'card_payment', 'cash_payment', 'bank_transfer_payment'
+  brand?: string        // 'visa', 'mastercard' (solo tarjeta)
+  last4?: string        // últimos 4 dígitos (solo tarjeta)
+}
+
 export interface ConektaOrder {
   id: string
   amount: number
@@ -19,6 +26,11 @@ export interface ConektaOrder {
     [key: string]: unknown
   }
   status: string
+  charges?: {
+    data: Array<{
+      payment_method?: ConektaPaymentMethod
+    }>
+  }
 }
 
 export interface ConektaCharge {
@@ -27,6 +39,7 @@ export interface ConektaCharge {
   amount: number
   currency: string
   status: string
+  payment_method?: ConektaPaymentMethod
 }
 
 export interface ConektaWebhookEvent {
