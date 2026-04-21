@@ -42,7 +42,7 @@ export default async function MealPage({ params, searchParams }: MealPageProps) 
   // Filtrar otros meals (excluir el actual) para sugerencias
   const suggestedMeals = allMeals.filter(m => m.id !== meal.id)
 
-  return <MealClient meal={meal} sizes={sizes} customerSizes={customerSizes} suggestedMeals={suggestedMeals} initialSizeId={sizeId} />
+  return <MealClient meal={meal} sizes={sizes} customerSizes={customerSizes} suggestedMeals={suggestedMeals} initialSizeId={sizeId} isAuthenticated={!!user} />
 }
 
 /**

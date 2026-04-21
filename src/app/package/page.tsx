@@ -36,7 +36,7 @@ export default async function PackagePage({
   const proIngredients = allIngredients.filter(i => i.type === 'pro')
   const carbIngredients = allIngredients.filter(i => i.type === 'carb')
 
-  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} proIngredients={proIngredients} carbIngredients={carbIngredients} />
+  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} proIngredients={proIngredients} carbIngredients={carbIngredients} isAuthenticated={!!user} />
 }
 
 export const metadata = {
