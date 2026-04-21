@@ -3,9 +3,9 @@
 import { useState } from 'react'
 import { colors } from '@/lib/theme'
 
-const DEFAULT_MESSAGE = 'Por el momento no estamos recibiendo pedidos. ¡Vuelve pronto!'
+const DEFAULT_MESSAGE = 'Estaremos de vuelta el Lunes para recibir tu pedido!💪🏼\n(Proxima entrega Domingo 3 Mayo)'
 
-export default function SalesPausedModal({ message }: { message: string }) {
+export default function SalesPausedModal() {
   const [open, setOpen] = useState(true)
 
   if (!open) return null
@@ -33,7 +33,6 @@ export default function SalesPausedModal({ message }: { message: string }) {
           boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
         }}
       >
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⏸️</div>
         <h2 style={{
           color: '#ef4444', fontFamily: 'Franchise, sans-serif',
           fontSize: 28, letterSpacing: 1, margin: '0 0 12px',
@@ -43,20 +42,21 @@ export default function SalesPausedModal({ message }: { message: string }) {
         </h2>
         <p style={{
           color: colors.textSecondary, fontSize: 16, lineHeight: 1.5,
-          margin: '0 0 28px',
+          margin: '0 0 28px', whiteSpace: 'pre-line',
         }}>
-          {message || DEFAULT_MESSAGE}
+          {DEFAULT_MESSAGE}
         </p>
         <button
           onClick={() => setOpen(false)}
+          className="franchise-stroke"
           style={{
-            padding: '10px 28px', borderRadius: 8, cursor: 'pointer',
-            border: `1px solid ${colors.grayLight}`,
-            background: colors.black, color: colors.textMuted,
-            fontSize: 14, fontWeight: 600,
+            padding: '12px 28px', borderRadius: 8, cursor: 'pointer',
+            border: 'none', background: colors.orange, color: colors.white,
+            fontFamily: 'Franchise, sans-serif', fontSize: 20,
+            letterSpacing: 0, lineHeight: 1, textTransform: 'uppercase',
           }}
         >
-          Ver el menú de todas formas
+          Ver el menú
         </button>
       </div>
     </div>

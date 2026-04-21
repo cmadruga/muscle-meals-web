@@ -2,7 +2,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getActiveMeals } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
-import { getSalesEnabled, getSalesPauseMessage } from '@/lib/db/settings'
+import { getSalesEnabled } from '@/lib/db/settings'
 import SalesPausedModal from './SalesPausedModal'
 import { colors } from '@/lib/theme'
 
@@ -10,11 +10,10 @@ import { colors } from '@/lib/theme'
  * Página de menú - Lista de paquetes y meals disponibles
  */
 export default async function MenuPage() {
-  const [meals, sizes, salesEnabled, salesPauseMessage] = await Promise.all([
+  const [meals, sizes, salesEnabled] = await Promise.all([
     getActiveMeals(),
     getMainSizes(),
     getSalesEnabled(),
-    getSalesPauseMessage(),
   ])
 
   // Precio más bajo para mostrar "desde $X"
@@ -56,7 +55,7 @@ export default async function MenuPage() {
       </section>
 
       {/* Popup ventas pausadas */}
-      {!salesEnabled && <SalesPausedModal message={salesPauseMessage} />}
+      {!salesEnabled && <SalesPausedModal />}
 
       {/* PAQUETES */}
       <section style={{ padding: '60px 24px', maxWidth: 1200, margin: '0 auto' }}>

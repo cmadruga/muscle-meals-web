@@ -8,7 +8,7 @@ import { getActiveMeals } from '@/lib/db/meals'
 import { getAllSizesWithCustomer } from '@/lib/db/sizes'
 import type { CustomerBasic } from '@/lib/db/customers'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
-import { getSalesEnabled, getSalesPauseMessage } from '@/lib/db/settings'
+import { getSalesEnabled } from '@/lib/db/settings'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
 import NewOrderButton from './NewOrderButton'
@@ -54,7 +54,7 @@ export default async function PanelOrdersPage({
   const supabase = await createClient()
   const admin = createAdminClient()
 
-  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, salesPauseMessage] = await Promise.all([
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
@@ -62,7 +62,6 @@ export default async function PanelOrdersPage({
     admin.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
     getActivePickupSpots(),
     getSalesEnabled(),
-    getSalesPauseMessage(),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
@@ -94,7 +93,7 @@ export default async function PanelOrdersPage({
           Pedidos
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <SalesToggle initialEnabled={salesEnabled} initialMessage={salesPauseMessage} />
+          <SalesToggle initialEnabled={salesEnabled} />
           <NewOrderButton
             weekStr={weekStr}
             meals={meals.map(m => ({ id: m.id, name: m.name }))}
