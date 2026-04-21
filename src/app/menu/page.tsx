@@ -116,18 +116,37 @@ export default async function MenuPage() {
               <h3 style={{
                 fontSize: 26,
                 color: colors.orange,
-                margin: '0 0 6px 0',
+                margin: '0 0 8px 0',
                 textTransform: 'uppercase',
                 letterSpacing: 2,
                 lineHeight: 1
               }}>
                 Crea tu paquete
               </h3>
-              <p style={{ color: colors.textSecondary, fontSize: 15, margin: '0 0 4px 0' }}>
-                Mínimo 5 platillos · <strong style={{ color: colors.white }}>${(lowestPackagePrice / 100).toFixed(0)} MXN</strong> por platillo
+              {lowestPrice > lowestPackagePrice && (
+                <span style={{
+                  display: 'inline-block',
+                  background: colors.orange,
+                  color: colors.white,
+                  fontSize: 20,
+                  fontWeight: 700,
+                  padding: '2px 10px',
+                  borderRadius: 20,
+                  marginBottom: 8,
+                  letterSpacing: 0.5,
+                  textTransform: 'uppercase',
+                }}>
+                  Y Ahorra ${((lowestPrice - lowestPackagePrice) / 100).toFixed(0)} por platillo.
+                </span>
+              )}
+              <p style={{ color: colors.textSecondary, fontSize: 18, margin: '0 0 4px 0' }}>
+                Mínimo 5 platillos ·{' '}
+                <strong style={{ color: colors.white }}>${(lowestPackagePrice / 100).toFixed(0)} MXN</strong>
+                {' '}<span style={{ color: colors.textMuted, textDecoration: 'line-through', fontSize: 13 }}>${(lowestPrice / 100).toFixed(0)}</span>
+                {' '}por platillo
               </p>
               <p style={{ color: colors.textMuted, fontSize: 13, margin: 0 }}>
-                Agrega los que quieras — precio paquete en todos
+                Combina los platillos que quieras — precio de paquete en todos
               </p>
             </div>
           </div>
