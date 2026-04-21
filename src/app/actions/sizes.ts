@@ -11,6 +11,7 @@ interface CreateCustomSizeData {
   protein_qty: Record<string, number>
   carb_qty: Record<string, number>
   veg_qty: number
+  is_main?: boolean
 }
 
 export async function createCustomSize(
@@ -65,7 +66,7 @@ export async function createCustomSize(
       id: crypto.randomUUID(),
       name: data.name.trim(),
       description: null,
-      is_main: false,
+      is_main: data.is_main ?? false,
       customer_id: null,
       protein_qty: proteinQty,
       carb_qty: carbQty,
@@ -85,6 +86,15 @@ export async function createCustomSize(
     return { error: 'No se pudo encontrar el cliente para el usuario autenticado.' }
   }
 
+  // Si se marca como principal, quitar is_main de todos los demás tamaños del cliente
+  if (data.is_main) {
+    await supabase
+      .from('sizes')
+      .update({ is_main: false })
+      .eq('customer_id', customerId)
+      .eq('is_main', true)
+  }
+
   const { data: existingSize } = await supabase
     .from('sizes')
     .select('id')
@@ -102,11 +112,12 @@ export async function createCustomSize(
         veg_qty: data.veg_qty,
         price,
         package_price: packagePrice,
+        is_main: data.is_main ?? false,
       })
       .eq('id', existingSize.id)
       .select()
       .single()
-    
+
     if (error) return { error: `Error al actualizar el tamaño: ${error.message}` }
     return { size: updated as Size }
   }
@@ -117,7 +128,7 @@ export async function createCustomSize(
     .insert({
       name: data.name.trim(),
       description: null,
-      is_main: false,
+      is_main: data.is_main ?? false,
       customer_id: customerId,
       protein_qty: proteinQty,
       carb_qty: carbQty,

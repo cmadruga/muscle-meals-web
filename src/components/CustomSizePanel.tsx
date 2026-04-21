@@ -2,14 +2,16 @@
 
 import { useState } from 'react'
 import type { Size, Ingredient } from '@/lib/types'
-import { calculateCustomSizePrice } from '@/lib/utils/pricing'
+import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { createCustomSize } from '@/app/actions/sizes'
 import { colors } from '@/lib/theme'
 
 interface CustomSizePanelProps {
   proIngredients: Ingredient[]
   carbIngredients: Ingredient[]
-  customerSizes?: Size[]
+  fitSize?: Size
+  initialSize?: Size
+  isAuthenticated?: boolean
   onSizeCreated: (size: Size) => void
   mealsIncluded?: number
 }
@@ -58,44 +60,49 @@ function IngRow({ name: ingName, id, value, onChange, accent }: {
   )
 }
 
-export default function CustomSizePanel({ proIngredients, carbIngredients, customerSizes = [], onSizeCreated, mealsIncluded }: CustomSizePanelProps) {
-  const [proQtys, setProQtys] = useState<Record<string, string>>({})
-  const [carbQtys, setCarbQtys] = useState<Record<string, string>>({})
-  const [vegQty, setVegQty] = useState('')
-  const [name, setName] = useState('')
+export default function CustomSizePanel({ proIngredients, carbIngredients, fitSize, initialSize, isAuthenticated, onSizeCreated, mealsIncluded }: CustomSizePanelProps) {
+  const [proQtys, setProQtys] = useState<Record<string, string>>(() =>
+    initialSize ? Object.fromEntries(Object.entries(initialSize.protein_qty).map(([k, v]) => [k, String(v)])) : {}
+  )
+  const [carbQtys, setCarbQtys] = useState<Record<string, string>>(() =>
+    initialSize ? Object.fromEntries(Object.entries(initialSize.carb_qty).map(([k, v]) => [k, String(v)])) : {}
+  )
+  const [vegQty, setVegQty] = useState(() => initialSize ? String(initialSize.veg_qty) : '')
+  const [name, setName] = useState(() => initialSize?.name ?? '')
+  const [isMain, setIsMain] = useState(() => initialSize?.is_main ?? false)
   const [isCreating, setIsCreating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const handleSelectTemplate = (sizeId: string) => {
-    const template = customerSizes.find(s => s.id === sizeId)
-    if (!template) {
-      setName('')
-      setProQtys({})
-      setCarbQtys({})
-      setVegQty('')
-      return
-    }
-
-    setName(template.name)
-    const pro: Record<string, string> = {}
-    for (const [id, val] of Object.entries(template.protein_qty)) {
-      pro[id] = String(val)
-    }
-    setProQtys(pro)
-
-    const carb: Record<string, string> = {}
-    for (const [id, val] of Object.entries(template.carb_qty)) {
-      carb[id] = String(val)
-    }
-    setCarbQtys(carb)
-    setVegQty(String(template.veg_qty))
-  }
-
-  // Derive price from filled values
-  const proteinForPrice = Math.max(0, ...Object.values(proQtys).map(v => parseFloat(v) || 0))
-  const carbForPrice = Math.max(0, ...Object.values(carbQtys).map(v => parseFloat(v) || 0))
   const vegForPrice = parseFloat(vegQty) || 0
-  const { price, packagePrice } = calculateCustomSizePrice(proteinForPrice, carbForPrice, vegForPrice)
+
+  // Normalizar proteínas: normPro = qty * PROTEIN_BASE.FIT / fitQty
+  const proNormValues = Object.entries(proQtys)
+    .map(([id, v]) => {
+      const qty = parseFloat(v) || 0
+      if (qty === 0) return null
+      const fitQty = fitSize?.protein_qty[id] ?? 0
+      return fitQty > 0 ? qty * PROTEIN_BASE.FIT / fitQty : qty
+    })
+    .filter((n): n is number => n !== null)
+
+  // Normalizar carbos: normCarb = qty * CARB_BASE.FIT / fitQty
+  const carbNormValues = Object.entries(carbQtys)
+    .map(([id, v]) => {
+      const qty = parseFloat(v) || 0
+      if (qty === 0) return null
+      const fitQty = fitSize?.carb_qty[id] ?? 0
+      return fitQty > 0 ? qty * CARB_BASE.FIT / fitQty : qty
+    })
+    .filter((n): n is number => n !== null)
+
+  // Rango: min usa la proteína más barata + carbo más barato; max usa la más cara + carbo más caro
+  const proMin = proNormValues.length > 0 ? Math.min(...proNormValues) : 0
+  const proMax = proNormValues.length > 0 ? Math.max(...proNormValues) : 0
+  const carbMin = carbNormValues.length > 0 ? Math.min(...carbNormValues) : 0
+  const carbMax = carbNormValues.length > 0 ? Math.max(...carbNormValues) : 0
+
+  const { price: priceMin, packagePrice: pkgMin } = calculateCustomSizePrice(proMin, carbMin, vegForPrice)
+  const { price: priceMax, packagePrice: pkgMax } = calculateCustomSizePrice(proMax, carbMax, vegForPrice)
 
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es requerido'); return }
@@ -118,6 +125,7 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, custo
       protein_qty: proteinQty,
       carb_qty: carbQty,
       veg_qty: parseFloat(vegQty) || 0,
+      is_main: isMain,
     })
 
     if (result.error) { setError(result.error); setIsCreating(false); return }
@@ -134,34 +142,43 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, custo
         Crear tamaño personalizado
       </h4>
 
-      {/* Plantillas */}
-      {customerSizes.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          <label style={{ display: 'block', fontSize: 12, color: colors.textMuted, marginBottom: 5 }}>Usar plantilla</label>
-          <select
-            onChange={e => handleSelectTemplate(e.target.value)}
+      {/* Nombre + switch principal */}
+      <div style={{ marginBottom: 16, display: 'flex', gap: 10, alignItems: 'flex-end' }}>
+        <div style={{ flex: 1 }}>
+          <label style={{ display: 'block', fontSize: 12, color: colors.textMuted, marginBottom: 5 }}>Nombre del tamaño</label>
+          <input
+            type="text" value={name} onChange={e => setName(e.target.value)}
+            placeholder="Ej: Mi Tamaño" maxLength={50}
             style={{ width: '100%', padding: '9px 12px', fontSize: 14, borderRadius: 8, boxSizing: 'border-box',
-              border: `1px solid ${colors.grayLight}`, background: colors.grayDark, color: colors.white, appearance: 'none' }}
-          >
-            <option value="">Seleccionar tamaño guardado...</option>
-            {customerSizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-          </select>
+              border: `1px solid ${colors.grayLight}`, background: colors.grayDark, color: colors.white }}
+          />
         </div>
-      )}
-
-      {/* Nombre */}
-      <div style={{ marginBottom: 16 }}>
-        <label style={{ display: 'block', fontSize: 12, color: colors.textMuted, marginBottom: 5 }}>Nombre del tamaño</label>
-        <input
-          type="text" value={name} onChange={e => setName(e.target.value)}
-          placeholder="Ej: Mi Tamaño" maxLength={50}
-          style={{ width: '100%', padding: '9px 12px', fontSize: 14, borderRadius: 8, boxSizing: 'border-box',
-            border: `1px solid ${colors.grayLight}`, background: colors.grayDark, color: colors.white }}
-        />
+        {isAuthenticated && (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, paddingBottom: 2 }}>
+            <span style={{ fontSize: 11, color: colors.textMuted, whiteSpace: 'nowrap' }}>Principal</span>
+            <div
+              onClick={() => setIsMain(v => !v)}
+              style={{
+                width: 40, height: 22, borderRadius: 11, cursor: 'pointer', position: 'relative',
+                background: isMain ? colors.orange : colors.grayLight,
+                transition: 'background 0.2s',
+              }}
+            >
+              <div style={{
+                position: 'absolute', top: 2,
+                left: isMain ? 20 : 2,
+                width: 18, height: 18, borderRadius: '50%',
+                background: colors.white,
+                transition: 'left 0.15s',
+              }} />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Grid pro / carb / veg */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 0, marginBottom: 14, border: `1px solid ${colors.grayLight}`, borderRadius: 8, overflow: 'hidden' }}>
+      <div style={{ overflowX: 'auto', marginBottom: 14, border: `1px solid ${colors.grayLight}`, borderRadius: 8 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 0, minWidth: 340 }}>
         {/* Proteína */}
         <div style={{ padding: '10px 14px', borderRight: `1px solid ${colors.grayLight}` }}>
           <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 11, textTransform: 'uppercase', letterSpacing: '0.05em', margin: '0 0 8px' }}>Proteína</p>
@@ -197,14 +214,20 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, custo
           </div>
         </div>
       </div>
+      </div>
 
       {/* Precio */}
       <div style={{ padding: '9px 14px', background: colors.grayDark, borderRadius: 8, marginBottom: 14, fontSize: 13, display: 'flex', justifyContent: 'space-between' }}>
-        <span>Precio: <strong style={{ color: colors.orange }}>${(price / 100).toFixed(0)} MXN</strong></span>
+        <span>Precio: <strong style={{ color: colors.orange }}>
+          {priceMin === priceMax
+            ? `$${(priceMin / 100).toFixed(0)}`
+            : `$${(priceMin / 100).toFixed(0)} - $${(priceMax / 100).toFixed(0)}`
+          } MXN
+        </strong></span>
         <span style={{ color: colors.textMuted }}>
           {mealsIncluded
-            ? `Paquete total: $${(packagePrice * mealsIncluded / 100).toFixed(0)} MXN`
-            : `Paquete: $${(packagePrice / 100).toFixed(0)} MXN`}
+            ? `Paquete total: $${(pkgMin * mealsIncluded / 100).toFixed(0)}${pkgMin !== pkgMax ? ` - $${(pkgMax * mealsIncluded / 100).toFixed(0)}` : ''} MXN`
+            : `Paquete: $${(pkgMin / 100).toFixed(0)}${pkgMin !== pkgMax ? ` - $${(pkgMax / 100).toFixed(0)}` : ''} MXN`}
         </span>
       </div>
 
