@@ -49,12 +49,13 @@ interface MealClientProps {
   suggestedMeals?: MealBasic[]
   initialSizeId?: string
   isAuthenticated?: boolean
+  salesEnabled?: boolean
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId, isAuthenticated }: MealClientProps) {
+export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId, isAuthenticated, salesEnabled = true }: MealClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
 
@@ -520,28 +521,38 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>${(totalPrice / 100).toFixed(0)} MXN</span>
         </div>
         
-        <button
-          onClick={handleAddToCart}
-          disabled={!selectedSize}
-          className="franchise-stroke"
-          style={{
-            width: '100%',
-            padding: '16px 24px',
-            cursor: !selectedSize ? 'not-allowed' : 'pointer',
-            opacity: !selectedSize ? 0.5 : 1,
-            background: colors.orange,
-            color: colors.white,
-            border: 'none',
-            borderRadius: 8,
-            fontFamily: 'Franchise, sans-serif',
-            fontSize: 22,
-            letterSpacing: 0,
-            lineHeight: 1,
-            textTransform: 'uppercase'
-          }}
-        >
-          Agregar al carrito
-        </button>
+        {!salesEnabled ? (
+          <div style={{
+            width: '100%', padding: '16px 20px', borderRadius: 8, textAlign: 'center',
+            background: '#ef444422', border: '1px solid #ef4444',
+            color: '#ef4444', fontSize: 15, fontWeight: 600, boxSizing: 'border-box',
+          }}>
+            Ventas temporalmente cerradas
+          </div>
+        ) : (
+          <button
+            onClick={handleAddToCart}
+            disabled={!selectedSize}
+            className="franchise-stroke"
+            style={{
+              width: '100%',
+              padding: '16px 24px',
+              cursor: !selectedSize ? 'not-allowed' : 'pointer',
+              opacity: !selectedSize ? 0.5 : 1,
+              background: colors.orange,
+              color: colors.white,
+              border: 'none',
+              borderRadius: 8,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase'
+            }}
+          >
+            Agregar al carrito
+          </button>
+        )}
         </div>
       </div>
     </main>

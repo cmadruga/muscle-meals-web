@@ -2,15 +2,17 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getActiveMeals } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
+import { getSalesEnabled } from '@/lib/db/settings'
 import { colors } from '@/lib/theme'
 
 /**
  * Página de menú - Lista de paquetes y meals disponibles
  */
 export default async function MenuPage() {
-  const [meals, sizes] = await Promise.all([
+  const [meals, sizes, salesEnabled] = await Promise.all([
     getActiveMeals(),
-    getMainSizes()
+    getMainSizes(),
+    getSalesEnabled(),
   ])
 
   // Precio más bajo para mostrar "desde $X"
@@ -51,12 +53,35 @@ export default async function MenuPage() {
         </p>
       </section>
 
+      {/* Banner ventas cerradas */}
+      {!salesEnabled && (
+        <div style={{
+          background: '#ef444422',
+          border: `2px solid #ef4444`,
+          borderRadius: 12,
+          padding: '18px 28px',
+          margin: '32px 24px 0',
+          maxWidth: 1200,
+          marginLeft: 'auto',
+          marginRight: 'auto',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+        }}>
+          <span style={{ fontSize: 24 }}>🚫</span>
+          <div>
+            <p style={{ color: '#ef4444', fontWeight: 700, fontSize: 16, margin: 0 }}>
+              Ventas temporalmente cerradas
+            </p>
+            <p style={{ color: '#ef444499', fontSize: 14, margin: '4px 0 0' }}>
+              Por el momento no estamos recibiendo pedidos. ¡Vuelve pronto!
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* PAQUETES */}
-      <section style={{ 
-        padding: '60px 24px',
-        maxWidth: 1200,
-        margin: '0 auto'
-      }}>
+      <section style={{ padding: '60px 24px', maxWidth: 1200, margin: '0 auto' }}>
         <div style={{
           display: 'flex',
           alignItems: 'center',

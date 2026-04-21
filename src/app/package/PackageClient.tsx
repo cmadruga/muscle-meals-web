@@ -40,6 +40,7 @@ interface PackageClientProps {
   proIngredients?: Ingredient[]
   carbIngredients?: Ingredient[]
   isAuthenticated?: boolean
+  salesEnabled?: boolean
 }
 
 interface SelectionItem {
@@ -84,7 +85,7 @@ const pkg: PackageConfig = {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [], isAuthenticated }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [], isAuthenticated, salesEnabled = true }: PackageClientProps) {
   const router = useRouter()
   const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
@@ -822,32 +823,42 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
               </div>
             </div>
           )}
-          <button
-            className={`pkg-footer-btn franchise-stroke`}
-            onClick={handleAddToCart}
-            disabled={!canSubmit}
-            style={{
-              flex: totalSelected > 0 ? 'none' : 1,
-              padding: '14px 24px',
-              cursor: canSubmit ? 'pointer' : 'not-allowed',
-              opacity: canSubmit ? 1 : 0.5,
-              background: canSubmit ? colors.orange : colors.grayLight,
-              color: canSubmit ? colors.white : colors.textMuted,
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 20,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase',
-              whiteSpace: 'nowrap',
-            }}
-          >
-            {totalSelected < pkg.minMeals
-              ? `Agrega ${pkg.minMeals - totalSelected} más` : editInstanceId ? 'Actualizar paquete'
-              : 'Agregar al carrito'
-            }
-          </button>
+          {!salesEnabled ? (
+            <div style={{
+              flex: 1, padding: '14px 20px', borderRadius: 8, textAlign: 'center',
+              background: '#ef444422', border: '1px solid #ef4444',
+              color: '#ef4444', fontSize: 14, fontWeight: 600,
+            }}>
+              Ventas temporalmente cerradas
+            </div>
+          ) : (
+            <button
+              className={`pkg-footer-btn franchise-stroke`}
+              onClick={handleAddToCart}
+              disabled={!canSubmit}
+              style={{
+                flex: totalSelected > 0 ? 'none' : 1,
+                padding: '14px 24px',
+                cursor: canSubmit ? 'pointer' : 'not-allowed',
+                opacity: canSubmit ? 1 : 0.5,
+                background: canSubmit ? colors.orange : colors.grayLight,
+                color: canSubmit ? colors.white : colors.textMuted,
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 20,
+                letterSpacing: 0,
+                lineHeight: 1,
+                textTransform: 'uppercase',
+                whiteSpace: 'nowrap',
+              }}
+            >
+              {totalSelected < pkg.minMeals
+                ? `Agrega ${pkg.minMeals - totalSelected} más` : editInstanceId ? 'Actualizar paquete'
+                : 'Agregar al carrito'
+              }
+            </button>
+          )}
         </div>
       </div>
     </main>
