@@ -10,6 +10,7 @@ export default function SalesToggle({ initialEnabled }: { initialEnabled: boolea
 
   const handleToggle = () => {
     const next = !enabled
+    if (!next && !confirm('¿Apagar ventas? Los clientes no podrán agregar pedidos.')) return
     setEnabled(next)
     startTransition(async () => {
       await toggleSalesEnabled(next)
