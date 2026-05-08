@@ -2,19 +2,31 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { getActiveMeals } from '@/lib/db/meals'
 import { getMainSizes } from '@/lib/db/sizes'
-import { getSalesEnabled } from '@/lib/db/settings'
+import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getExtraStockForWeek } from '@/lib/db/extra-stock'
+import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import SalesPausedModal from './SalesPausedModal'
+import NoStockModal from './NoStockModal'
 import { colors } from '@/lib/theme'
 
 /**
  * Página de menú - Lista de paquetes y meals disponibles
  */
 export default async function MenuPage() {
-  const [meals, sizes, salesEnabled] = await Promise.all([
+  const [meals, sizes, salesEnabled, criticalConfig] = await Promise.all([
     getActiveMeals(),
     getMainSizes(),
     getSalesEnabled(),
+    getCriticalPeriodConfig(),
   ])
+
+  const inCriticalPeriod = isInCutoffWindow(criticalConfig)
+  const extraStock = inCriticalPeriod ? await getExtraStockForWeek(getCurrentWeekMonday()) : []
+  const noStock = inCriticalPeriod && extraStock.length === 0
+
+  const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+  const cutoffDay = DAYS[criticalConfig.cutoff_day]
+  const reopenDay = DAYS[(criticalConfig.end_day + 1) % 7]
 
   // Precio más bajo para mostrar "desde $X"
   const lowestPrice = sizes.length > 0 ? Math.min(...sizes.map(s => s.price)) : 0
@@ -56,6 +68,8 @@ export default async function MenuPage() {
 
       {/* Popup ventas pausadas */}
       {!salesEnabled && <SalesPausedModal />}
+      {/* Popup sin stock (periodo crítico agotado) */}
+      {salesEnabled && noStock && <NoStockModal cutoffDay={cutoffDay} reopenDay={reopenDay} />}
 
       {/* PAQUETES */}
       <section style={{ padding: '60px 24px', maxWidth: 1200, margin: '0 auto' }}>

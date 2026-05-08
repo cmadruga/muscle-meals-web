@@ -308,7 +308,7 @@ export function buildMatrix(
 const MAIN_SIZE_ORDER = ['LOW', 'FIT', 'PLUS']
 
 export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] {
-  const { items, mealsMap, ingredientsMap, sizesMap } = data
+  const { items, mealsMap, ingredientsMap, sizesMap, sizeCustomerNames } = data
 
   // Accumulate qty per meal × size
   const mealSizeQty = new Map<string, Map<string, number>>()
@@ -336,8 +336,10 @@ export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] 
 
       totalPortions += qty
       const macros = calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, size)
+      const customerName = sizeCustomerNames.get(sizeId)
+      const sizeName = customerName ? `${size.name} - ${customerName}` : size.name
 
-      sizeRows.push({ sizeId, sizeName: size.name, qty, isMain: size.is_main, macros })
+      sizeRows.push({ sizeId, sizeName, qty, isMain: size.is_main && !size.customer_id, macros })
     }
 
     // Main sizes ordered LOW→FIT→PLUS, then custom alphabetically
@@ -360,7 +362,7 @@ export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] 
 }
 
 export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
-  const { items, sizesMap, mealsMap, ingredientsMap } = data
+  const { items, sizesMap, mealsMap, ingredientsMap, sizeCustomerNames } = data
 
   const mealSizeQty = new Map<string, Map<string, number>>()
   const mealNames = new Map<string, string>()
@@ -395,11 +397,13 @@ export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
       const size = sizesMap.get(sizeId)
       if (!size) continue
       totalPortions += qty
+      const customerName = sizeCustomerNames.get(sizeId)
+      const sizeName = customerName ? `${size.name} - ${customerName}` : size.name
       sizeRows.push({
         sizeId,
-        sizeName: size.name,
+        sizeName,
         qty,
-        isMain: size.is_main,
+        isMain: size.is_main && !size.customer_id,
         proteinQty: proIngId ? resolveQty(size.protein_qty, proIngId) : (size.protein_qty['default'] ?? 0),
         carbQty: carbIngId ? resolveQty(size.carb_qty, carbIngId) : (size.carb_qty['default'] ?? 0),
         vegQty: size.veg_qty,

@@ -21,10 +21,23 @@ export async function getAllSizesWithCustomer(): Promise<SizeWithCustomer[]> {
     (customersRes.data ?? []).map((c: { id: string; full_name: string }) => [c.id, c.full_name])
   )
 
-  return (sizesRes.data ?? []).map((s: Size) => ({
+  const result = (sizesRes.data ?? []).map((s: Size) => ({
     ...s,
     customer_name: s.customer_id ? (customerMap.get(s.customer_id) ?? null) : null,
   }))
+
+  // Global mains (LOW/FIT/PLUS) first, then everything else sorted by customer + name
+  result.sort((a, b) => {
+    const aGlobal = a.is_main && !a.customer_id
+    const bGlobal = b.is_main && !b.customer_id
+    if (aGlobal && !bGlobal) return -1
+    if (!aGlobal && bGlobal) return 1
+    const aCust = a.customer_name ?? ''
+    const bCust = b.customer_name ?? ''
+    return aCust.localeCompare(bCust) || a.name.localeCompare(b.name)
+  })
+
+  return result
 }
 
 /**
@@ -37,6 +50,7 @@ export async function getMainSizes(): Promise<Size[]> {
     .from('sizes')
     .select('*')
     .eq('is_main', true)
+    .is('customer_id', null)
     .order('price', { ascending: true })
 
   if (error) {

@@ -4,6 +4,7 @@ import { useState, useMemo } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { Size, MealBasic, MealWithRecipes } from '@/lib/types'
+import type { ExtraStockItem } from '@/lib/db/extra-stock'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros, formatMacros } from '@/lib/utils/macros'
 // import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
@@ -26,19 +27,6 @@ function calcMealPrice(meal: MealWithRecipes, customSize: Size, fitSize: Size | 
   return calculateCustomSizePrice(normPro, normCarb, customSize.veg_qty).price
 }
 
-function calcMinPrice(size: Size, fitSize: Size | undefined): number {
-  const proNorms = Object.entries(size.protein_qty).map(([id, qty]) => {
-    const fitQty = fitSize?.protein_qty[id] ?? 0
-    return fitQty > 0 ? qty * PROTEIN_BASE.FIT / fitQty : qty
-  }).filter(v => v > 0)
-  const carbNorms = Object.entries(size.carb_qty).map(([id, qty]) => {
-    const fitQty = fitSize?.carb_qty[id] ?? 0
-    return fitQty > 0 ? qty * CARB_BASE.FIT / fitQty : qty
-  }).filter(v => v > 0)
-  const proMin = proNorms.length > 0 ? Math.min(...proNorms) : 0
-  const carbMin = carbNorms.length > 0 ? Math.min(...carbNorms) : 0
-  return calculateCustomSizePrice(proMin, carbMin, size.veg_qty).price
-}
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
 
@@ -50,12 +38,14 @@ interface MealClientProps {
   initialSizeId?: string
   isAuthenticated?: boolean
   salesEnabled?: boolean
+  inCriticalPeriod?: boolean
+  extraStock?: ExtraStockItem[]
 }
 
 /**
  * Client Component para ordenar meal individual
  */
-export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId, isAuthenticated, salesEnabled = true }: MealClientProps) {
+export default function MealClient({ meal, sizes, customerSizes = [], suggestedMeals = [], initialSizeId, isAuthenticated, salesEnabled = true, inCriticalPeriod = false, extraStock = [] }: MealClientProps) {
   const router = useRouter()
   const addToCart = useCartStore(state => state.addItem)
 
@@ -77,6 +67,18 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
 
   const [customInitialSize, setCustomInitialSize] = useState<Size | undefined>()
 
+  const extraStockMap = useMemo(() => {
+    const map = new Map<string, number>()
+    for (const item of extraStock) {
+      map.set(`${item.meal_id}|${item.size_id}`, item.qty)
+    }
+    return map
+  }, [extraStock])
+
+  const extraQtyAvailable = inCriticalPeriod
+    ? (extraStockMap.get(`${meal.id}|${selectedSizeId}`) ?? 0)
+    : Infinity
+
   const handleCustomSizeCreated = (size: Size) => {
     setSessionSizes(prev => [...prev.filter(s => s.id !== size.id), size])
     setCustomInitialSize(undefined)
@@ -88,13 +90,9 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
     setSelectedSizeId('__custom__')
   }
 
-  // Calcular macros según size seleccionado
-  const macros = useMemo(() => {
-    if (!selectedSize) return null
-    
-    const ingredientsMap = new Map(meal.ingredients.map(i => [i.id, i]))
-    return calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, selectedSize)
-  }, [meal, selectedSize])
+  const macros = selectedSize
+    ? calculateMealMacros(meal.mainRecipe, meal.subRecipes, new Map(meal.ingredients.map(i => [i.id, i])), selectedSize)
+    : null
 
   const totalPrice = selectedSize
     ? (selectedSize.customer_id
@@ -280,20 +278,19 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
 
         {/* Editar tamaño custom guardado */}
         {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' && (
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <div style={{ flex: '3 1 0' }} />
+          <div style={{ display: 'flex', marginTop: 6 }}>
             <button
               onClick={() => handleEditCustomSize(selectedSize)}
               style={{
-                flex: '1 1 0',
-                minWidth: 80,
-                padding: '7px 8px',
+                marginLeft: 'auto',
+                width: 'calc((100% - 30px) / 4)',
+                padding: '5px 8px',
                 borderRadius: 8,
                 border: `1px solid ${colors.grayLight}`,
                 background: 'transparent',
                 color: colors.textMuted,
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: 12,
                 fontFamily: 'sans-serif',
               }}
             >
@@ -489,16 +486,18 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             {qty}
           </span>
           <button
-            onClick={() => setQty(q => q + 1)}
-            style={{ 
-              width: 44, 
+            onClick={() => setQty(q => Math.min(q + 1, extraQtyAvailable === Infinity ? q + 1 : extraQtyAvailable))}
+            disabled={qty >= extraQtyAvailable}
+            style={{
+              width: 44,
               height: 44,
               fontSize: 20,
               border: `1px solid ${colors.grayLight}`,
               borderRadius: 8,
               background: colors.grayLight,
               color: colors.white,
-              cursor: 'pointer'
+              cursor: qty >= extraQtyAvailable ? 'not-allowed' : 'pointer',
+              opacity: qty >= extraQtyAvailable ? 0.4 : 1,
             }}
           >
             +
@@ -529,29 +528,44 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
           }}>
             Ventas temporalmente pausadas
           </div>
+        ) : inCriticalPeriod && extraQtyAvailable === 0 ? (
+          <div style={{
+            width: '100%', padding: '16px 20px', borderRadius: 8, textAlign: 'center',
+            background: '#ef444422', border: '1px solid #ef4444',
+            color: '#ef4444', fontSize: 15, fontWeight: 600, boxSizing: 'border-box',
+          }}>
+            Sin stock disponible
+          </div>
         ) : (
-          <button
-            onClick={handleAddToCart}
-            disabled={!selectedSize}
-            className="franchise-stroke"
-            style={{
-              width: '100%',
-              padding: '16px 24px',
-              cursor: !selectedSize ? 'not-allowed' : 'pointer',
-              opacity: !selectedSize ? 0.5 : 1,
-              background: colors.orange,
-              color: colors.white,
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 22,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase'
-            }}
-          >
-            Agregar al carrito
-          </button>
+          <>
+            {inCriticalPeriod && extraQtyAvailable < Infinity && (
+              <div style={{ textAlign: 'center', marginBottom: 8, fontSize: 13, color: colors.orange }}>
+                Stock limitado · {extraQtyAvailable} disponible{extraQtyAvailable !== 1 ? 's' : ''}
+              </div>
+            )}
+            <button
+              onClick={handleAddToCart}
+              disabled={!selectedSize}
+              className="franchise-stroke"
+              style={{
+                width: '100%',
+                padding: '16px 24px',
+                cursor: !selectedSize ? 'not-allowed' : 'pointer',
+                opacity: !selectedSize ? 0.5 : 1,
+                background: colors.orange,
+                color: colors.white,
+                border: 'none',
+                borderRadius: 8,
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 22,
+                letterSpacing: 0,
+                lineHeight: 1,
+                textTransform: 'uppercase'
+              }}
+            >
+              Agregar al carrito
+            </button>
+          </>
         )}
         </div>
       </div>

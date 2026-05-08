@@ -12,6 +12,7 @@ interface CreateCustomSizeData {
   carb_qty: Record<string, number>
   veg_qty: number
   is_main?: boolean
+  sizeId?: string  // si viene → editar en lugar de crear
 }
 
 export async function createCustomSize(
@@ -63,7 +64,7 @@ export async function createCustomSize(
   if (!user) {
     // No session → return ephemeral size without DB insert
     const ephemeralSize: Size = {
-      id: crypto.randomUUID(),
+      id: data.sizeId ?? crypto.randomUUID(),
       name: data.name.trim(),
       description: null,
       is_main: data.is_main ?? false,
@@ -95,6 +96,29 @@ export async function createCustomSize(
       .eq('is_main', true)
   }
 
+  // Modo edición: actualizar por ID directamente (permite cambiar el nombre)
+  if (data.sizeId) {
+    const { data: updated, error } = await supabase
+      .from('sizes')
+      .update({
+        name: data.name.trim(),
+        protein_qty: proteinQty,
+        carb_qty: carbQty,
+        veg_qty: data.veg_qty,
+        price,
+        package_price: packagePrice,
+        is_main: data.is_main ?? false,
+      })
+      .eq('id', data.sizeId)
+      .eq('customer_id', customerId)
+      .select()
+      .single()
+
+    if (error) return { error: `Error al actualizar el tamaño: ${error.message}` }
+    return { size: updated as Size }
+  }
+
+  // Modo creación: buscar por nombre primero para evitar duplicados
   const { data: existingSize } = await supabase
     .from('sizes')
     .select('id')
@@ -103,7 +127,6 @@ export async function createCustomSize(
     .single()
 
   if (existingSize) {
-    // Update existing size
     const { data: updated, error } = await supabase
       .from('sizes')
       .update({

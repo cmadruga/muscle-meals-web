@@ -25,6 +25,7 @@ export type WeeklyProductionData = {
   mealsMap: Map<string, MealData>
   ingredientsMap: Map<string, Ingredient>
   sizesMap: Map<string, Size>
+  sizeCustomerNames: Map<string, string> // sizeId → customerName
 }
 
 export async function getWeeklyProductionData(
@@ -90,6 +91,7 @@ export async function getWeeklyProductionData(
       mealsMap: new Map(),
       ingredientsMap: new Map(),
       sizesMap: new Map(),
+      sizeCustomerNames: new Map(),
     }
   }
 
@@ -192,5 +194,24 @@ export async function getWeeklyProductionData(
     sizesMap.set(size.id, size as Size)
   }
 
-  return { items, mealsMap, ingredientsMap, sizesMap }
+  // Fetch customer names for sizes that belong to a customer
+  const customerIds = [...new Set(
+    (sizesData ?? []).map((s: Size) => s.customer_id).filter((id): id is string => !!id)
+  )]
+  const sizeCustomerNames = new Map<string, string>()
+  if (customerIds.length > 0) {
+    const { data: customersData } = await client.from('customers').select('id, full_name').in('id', customerIds)
+    const customerNameMap = new Map<string, string>(
+      (customersData ?? []).map((c: { id: string; full_name: string }) => [c.id, c.full_name])
+    )
+    for (const size of (sizesData ?? [])) {
+      const s = size as Size
+      if (s.customer_id) {
+        const name = customerNameMap.get(s.customer_id)
+        if (name) sizeCustomerNames.set(s.id, name)
+      }
+    }
+  }
+
+  return { items, mealsMap, ingredientsMap, sizesMap, sizeCustomerNames }
 }

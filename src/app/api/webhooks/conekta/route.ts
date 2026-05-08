@@ -116,7 +116,9 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
 
     // Actualizar estado en nuestra DB
     await updateOrderStatus(ourOrderId, 'paid')
-    
+    const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
+    await deductExtraStockForOrder(ourOrderId)
+
     // Guardar el ID de Conekta y el método de pago
     await updatePaymentGatewayId(ourOrderId, conektaOrder.id)
     const method = extractPaymentMethod(conektaOrder)

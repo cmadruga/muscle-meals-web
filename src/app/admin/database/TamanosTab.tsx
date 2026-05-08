@@ -76,7 +76,8 @@ function SizeCard({
     })
   }
 
-  const badge = size.is_main
+  const isGlobalMain = size.is_main && !size.customer_id
+  const badge = isGlobalMain
     ? <span style={{ background: colors.orange + '22', color: colors.orange, border: `1px solid ${colors.orange}44`, borderRadius: 5, padding: '2px 8px', fontSize: 11, fontWeight: 700 }}>Main</span>
     : <span style={{ background: '#33333388', color: colors.textMuted, border: `1px solid ${colors.grayLight}`, borderRadius: 5, padding: '2px 8px', fontSize: 11 }}>Custom</span>
 
@@ -92,6 +93,11 @@ function SizeCard({
       >
         <span style={{ color: open ? colors.white : colors.textSecondary, fontWeight: 700, fontSize: 15, flex: 1 }}>
           {size.name}
+          {size.customer_name && (
+            <span style={{ color: colors.textMuted, fontWeight: 400, fontSize: 13, marginLeft: 6 }}>
+              — {size.customer_name}
+            </span>
+          )}
         </span>
         {badge}
         <span style={{ color: colors.textMuted, fontSize: 13, marginLeft: 4 }}>{open ? '▲' : '▼'}</span>
@@ -295,8 +301,8 @@ export default function TamanosTab({ sizes, ingredients }: { sizes: SizeAdmin[];
   const proIngredients = ingredients.filter(i => i.type === 'pro')
   const carbIngredients = ingredients.filter(i => i.type === 'carb')
 
-  const mainSizes = sizes.filter(s => s.is_main)
-  const customSizes = sizes.filter(s => !s.is_main)
+  const mainSizes = sizes.filter(s => s.is_main && !s.customer_id)
+  const customSizes = sizes.filter(s => !s.is_main || s.customer_id)
 
   return (
     <div>

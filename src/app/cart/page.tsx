@@ -10,6 +10,7 @@ import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
 import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
+import { validateCart } from '@/app/actions/checkout'
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
@@ -20,9 +21,28 @@ export default function CartPage() {
   const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [validating, setValidating] = useState(false)
+  const [validationError, setValidationError] = useState<string | null>(null)
+  const items = useCartStore(state => state.items)
 
-  const handleCheckout = () => {
+  const handleCheckout = async () => {
     if (isEmpty) return
+    setValidating(true)
+    setValidationError(null)
+    const result = await validateCart(items.map(item => ({
+      mealId: item.mealId,
+      mealName: item.mealName,
+      sizeId: item.sizeId,
+      sizeName: item.sizeName,
+      qty: item.qty,
+      unitPrice: item.unitPrice,
+      packageInstanceId: item.packageInstanceId,
+    })))
+    setValidating(false)
+    if (!result.valid) {
+      setValidationError(result.errors[0].message)
+      return
+    }
     router.push('/checkout')
   }
 
@@ -158,6 +178,8 @@ export default function CartPage() {
       
       <CartActions
         onCheckout={handleCheckout}
+        validating={validating}
+        validationError={validationError}
       />
       </div>
     </main>
@@ -492,18 +514,36 @@ function DeliveryBanner() {
   )
 }
 
-function CartActions({ onCheckout }: {
+function CartActions({ onCheckout, validating, validationError }: {
   onCheckout: () => void
+  validating: boolean
+  validationError: string | null
 }) {
   return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {validationError && (
+        <div style={{
+          padding: '12px 16px',
+          background: '#ef444422',
+          border: '1px solid #ef4444',
+          borderRadius: 8,
+          color: '#ef4444',
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}>
+          {validationError}
+        </div>
+      )}
     <div style={{ display: 'flex', gap: 16 }}>
       <button
         onClick={onCheckout}
+        disabled={validating}
         className="franchise-stroke"
         style={{
           flex: 2,
           padding: '16px 24px',
-          cursor: 'pointer',
+          cursor: validating ? 'not-allowed' : 'pointer',
+          opacity: validating ? 0.7 : 1,
           background: colors.orange,
           color: colors.white,
           border: 'none',
@@ -515,8 +555,9 @@ function CartActions({ onCheckout }: {
           textTransform: 'uppercase',
         }}
       >
-        Continuar al pago →
+        {validating ? 'Verificando...' : 'Continuar al pago →'}
       </button>
+    </div>
     </div>
   )
 }

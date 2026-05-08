@@ -3,14 +3,12 @@ import { getGlobalSizes, getCustomerSizes } from '@/lib/db/sizes'
 import { getCustomerByUserId } from '@/lib/db/customers'
 import { getAllIngredients } from '@/lib/db/ingredients'
 import { createClient } from '@/lib/supabase/server'
-import { getSalesEnabled } from '@/lib/db/settings'
+import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getExtraStockForWeek } from '@/lib/db/extra-stock'
+import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import type { Size } from '@/lib/types'
 import PackageClient from './PackageClient'
 
-/**
- * Server Component para la página de paquete
- * Carga meals + sizes; la config del paquete viene de la constante PACKAGE
- */
 export default async function PackagePage({
   searchParams,
 }: {
@@ -28,17 +26,36 @@ export default async function PackagePage({
     }
   }
 
-  const [meals, sizes, allIngredients, salesEnabled] = await Promise.all([
+  const [meals, sizes, allIngredients, salesEnabled, criticalConfig] = await Promise.all([
     getActiveMealsWithRecipes(),
     getGlobalSizes(),
     getAllIngredients(),
     getSalesEnabled(),
+    getCriticalPeriodConfig(),
   ])
+
+  const inCriticalPeriod = isInCutoffWindow(criticalConfig)
+  const weekMonday = getCurrentWeekMonday()
+  const extraStock = inCriticalPeriod ? await getExtraStockForWeek(weekMonday) : []
 
   const proIngredients = allIngredients.filter(i => i.type === 'pro')
   const carbIngredients = allIngredients.filter(i => i.type === 'carb')
 
-  return <PackageClient meals={meals} sizes={sizes} customerSizes={customerSizes} editInstanceId={editInstanceId} proIngredients={proIngredients} carbIngredients={carbIngredients} isAuthenticated={!!user} salesEnabled={salesEnabled} />
+  return (
+    <PackageClient
+      meals={meals}
+      sizes={sizes}
+      customerSizes={customerSizes}
+      editInstanceId={editInstanceId}
+      proIngredients={proIngredients}
+      carbIngredients={carbIngredients}
+      isAuthenticated={!!user}
+      salesEnabled={salesEnabled}
+      inCriticalPeriod={inCriticalPeriod}
+      extraStock={extraStock}
+      criticalConfig={criticalConfig}
+    />
+  )
 }
 
 export const metadata = {
