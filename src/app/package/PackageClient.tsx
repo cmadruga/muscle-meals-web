@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import type { Size, MealWithRecipes, Ingredient } from '@/lib/types'
+import type { CriticalPeriodConfig } from '@/lib/utils/delivery'
 import { useCartStore } from '@/lib/store/cart'
 import { calculateMealMacros } from '@/lib/utils/macros'
 // import { toCocido } from '@/lib/utils/conversions' // reservado para toggle crudo/cocido
@@ -25,6 +26,7 @@ function calcMinPackagePrice(size: Size, fitSize: Size | undefined): number {
 }
 import AddToCartModal from '@/components/AddToCartModal'
 import CustomSizePanel from '@/components/CustomSizePanel'
+import type { ExtraStockItem } from '@/lib/db/extra-stock'
 
 interface PackageConfig {
   minMeals: number
@@ -41,6 +43,9 @@ interface PackageClientProps {
   carbIngredients?: Ingredient[]
   isAuthenticated?: boolean
   salesEnabled?: boolean
+  inCriticalPeriod?: boolean
+  extraStock?: ExtraStockItem[]
+  criticalConfig?: CriticalPeriodConfig
 }
 
 interface SelectionItem {
@@ -85,18 +90,31 @@ const pkg: PackageConfig = {
  * 2. Selecciona N meals
  * 3. Crea orden
  */
-export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [], isAuthenticated, salesEnabled = true }: PackageClientProps) {
+export default function PackageClient({ meals, sizes, customerSizes = [], editInstanceId, proIngredients = [], carbIngredients = [], isAuthenticated, salesEnabled = true, inCriticalPeriod = false, extraStock = [], criticalConfig }: PackageClientProps) {
   const router = useRouter()
   const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
   const customerDefault = customerSizes.find(s => s.is_main)
+
+  // Mapa de stock extra: `meal_id|size_id` → qty disponible
+  const extraStockMap = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const s of extraStock) m.set(`${s.meal_id}|${s.size_id}`, s.qty)
+    return m
+  }, [extraStock])
+
+  const visibleMeals = meals
+
   const [selectedSizeId, setSelectedSizeId] = useState(customerDefault?.id || fitSize?.id || sizes[0]?.id || '')
   const [selection, setSelection] = useState<SelectionItem[]>(() => {
-    if (editInstanceId) return [] // se hidrata del carrito en useEffect
+    if (editInstanceId) return []
     const defaultSizeId = customerDefault?.id || fitSize?.id || sizes[0]?.id || ''
     const defaultSize = [...sizes, ...customerSizes].find(s => s.id === defaultSizeId)
     if (!defaultSize) return []
-    return meals.map(meal => ({
+    const mealsToSelect = inCriticalPeriod
+      ? meals.filter(meal => (extraStockMap.get(`${meal.id}|${defaultSize.id}`) ?? 0) > 0)
+      : meals
+    return mealsToSelect.map(meal => ({
       mealId: meal.id,
       mealName: meal.name,
       sizeId: defaultSize.id,
@@ -167,7 +185,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
     if (isTouched || selectedSizeId === '__custom__') return
     const newSize = allSizes.find(s => s.id === selectedSizeId)
     if (!newSize) return
-    setSelection(meals.map(meal => ({
+    const mealsForSize = inCriticalPeriod
+      ? meals.filter(meal => (extraStockMap.get(`${meal.id}|${newSize.id}`) ?? 0) > 0)
+      : meals
+    setSelection(mealsForSize.map(meal => ({
       mealId: meal.id,
       mealName: meal.name,
       sizeId: newSize.id,
@@ -192,7 +213,11 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
     [selection]
   )
 
+  const selectionHasStock = !inCriticalPeriod || selection.every(item =>
+    (extraStockMap.get(`${item.mealId}|${item.sizeId}`) ?? 0) >= item.qty
+  )
   const canSubmit = totalSelected >= pkg.minMeals && selection.length > 0
+    && selectionHasStock
 
   // Agregar meal con el size activo
   const handleAdd = (meal: MealWithRecipes) => {
@@ -571,12 +596,34 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
           </p>
         </div>
 
+        {inCriticalPeriod && extraStock.length === 0 && criticalConfig && (() => {
+          const DAYS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado']
+          const cutoffDay = DAYS[criticalConfig.cutoff_day]
+          const reopenDay = DAYS[(criticalConfig.end_day + 1) % 7]
+          return (
+            <div style={{
+              margin: '8px 0 20px',
+              padding: '16px 20px',
+              background: '#ef444411',
+              border: '1px solid #ef4444',
+              borderRadius: 10,
+              color: '#ef4444',
+              fontSize: 14,
+              lineHeight: 1.6,
+            }}>
+              <strong>Ya no hay stock disponible.</strong> Cierran sobrepedidos el {cutoffDay} — regresa el {reopenDay} para pedir.
+            </div>
+          )
+        })()}
+
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 20 }}>
-          {meals.map(meal => {
+          {visibleMeals.map(meal => {
             const qty = getQty(meal.id)
             const qtyCurrentSize = getQtyForCurrentSize(meal.id)
             const breakdown = getSizeBreakdown(meal.id)
             const isExpanded = expandedMealIds.has(meal.id)
+            const extraQtyAvailable = selectedSize ? (extraStockMap.get(`${meal.id}|${selectedSize.id}`) ?? 0) : 0
+            const canAdd = inCriticalPeriod ? qtyCurrentSize < extraQtyAvailable : true
             
             // Calcular macros para este meal con el size seleccionado
             let macros = null
@@ -631,6 +678,17 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
                     </span>
                   )}
                 </div>
+                {inCriticalPeriod && selectedSize && (
+                  <div style={{
+                    display: 'inline-block', marginBottom: 8,
+                    padding: '2px 10px', borderRadius: 20, fontSize: 11, fontWeight: 600,
+                    background: extraQtyAvailable > 0 ? '#f97316' + '22' : '#ef444422',
+                    border: `1px solid ${extraQtyAvailable > 0 ? '#f97316' : '#ef4444'}`,
+                    color: extraQtyAvailable > 0 ? '#f97316' : '#ef4444',
+                  }}>
+                    {extraQtyAvailable > 0 ? `Stock limitado · ${extraQtyAvailable} disponibles` : 'Sin stock'}
+                  </div>
+                )}
                 {meal.description && (
                   <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 8 }}>{meal.description}</p>
                 )}
@@ -700,7 +758,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
 
                   <button
                     onClick={() => handleAdd(meal)}
-                    disabled={!selectedSize}
+                    disabled={!selectedSize || !canAdd}
                     style={{
                       width: 36,
                       height: 36,
@@ -709,8 +767,8 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
                       borderRadius: 8,
                       background: colors.grayLight,
                       color: colors.white,
-                      cursor: !selectedSize ? 'not-allowed' : 'pointer',
-                      opacity: !selectedSize ? 0.5 : 1
+                      cursor: (!selectedSize || !canAdd) ? 'not-allowed' : 'pointer',
+                      opacity: (!selectedSize || !canAdd) ? 0.5 : 1
                     }}
                   >
                     +
