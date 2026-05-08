@@ -1,22 +1,98 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getExtraStockForWeek } from '@/lib/db/extra-stock'
+import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 
 export type CheckoutItem = {
   mealId: string
+  mealName?: string
+  sizeName?: string
   sizeId: string
   qty: number
   unitPrice: number
   packageInstanceId?: string
 }
 
+export type CartValidationError = {
+  mealId: string
+  sizeId: string
+  message: string
+}
+
+export async function validateCart(
+  items: CheckoutItem[]
+): Promise<{ valid: boolean; errors: CartValidationError[] }> {
+  const supabase = createAdminClient()
+  const errors: CartValidationError[] = []
+
+  const sizeIds = [...new Set(items.map(i => i.sizeId))]
+  const mealIds = [...new Set(items.map(i => i.mealId))]
+
+  const [{ data: sizes }, { data: meals }] = await Promise.all([
+    supabase.from('sizes').select('id').in('id', sizeIds),
+    supabase.from('meals').select('id, active').in('id', mealIds),
+  ])
+
+  const validSizeIds = new Set((sizes ?? []).map((s: { id: string }) => s.id))
+  const activeMealIds = new Set(
+    (meals ?? []).filter((m: { id: string; active: boolean }) => m.active).map(m => m.id)
+  )
+
+  for (const item of items) {
+    if (!validSizeIds.has(item.sizeId)) {
+      errors.push({
+        mealId: item.mealId,
+        sizeId: item.sizeId,
+        message: `El tamaño "${item.sizeName ?? item.sizeId}" ya no existe. Elimina ${item.mealName ?? 'el platillo'} del carrito y agrégalo de nuevo con tu tamaño actualizado.`,
+      })
+    }
+    if (!activeMealIds.has(item.mealId)) {
+      errors.push({
+        mealId: item.mealId,
+        sizeId: item.sizeId,
+        message: `"${item.mealName ?? item.mealId}" ya no está disponible. Elimínalo del carrito.`,
+      })
+    }
+  }
+
+  // Stock check in critical period (computed server-side)
+  const criticalConfig = await getCriticalPeriodConfig()
+  if (isInCutoffWindow(criticalConfig)) {
+    const weekMonday = getCurrentWeekMonday()
+    const stock = await getExtraStockForWeek(weekMonday)
+    const stockMap = new Map(stock.map(s => [`${s.meal_id}|${s.size_id}`, s.qty]))
+
+    // Aggregate qty per meal+size across all cart items
+    const needed = new Map<string, { item: CheckoutItem; qty: number }>()
+    for (const item of items) {
+      const key = `${item.mealId}|${item.sizeId}`
+      const existing = needed.get(key)
+      if (existing) existing.qty += item.qty
+      else needed.set(key, { item, qty: item.qty })
+    }
+
+    for (const [key, { item, qty }] of needed) {
+      const available = stockMap.get(key) ?? 0
+      if (available < qty) {
+        errors.push({
+          mealId: item.mealId,
+          sizeId: item.sizeId,
+          message: `Sin stock para "${item.mealName ?? item.mealId}" (${item.sizeName ?? item.sizeId}). Disponible: ${available}. Actualiza tu carrito.`,
+        })
+      }
+    }
+  }
+
+  return { valid: errors.length === 0, errors }
+}
+
 export type ProcessCheckoutInput = {
-  // Si hay sesión activa, customerId viene del prefill
   customerId?: string
   customerName: string
   customerPhone: string
   customerAddress: string | null
-  // Orden
   totalAmount: number
   shippingType: 'standard' | 'priority' | 'pickup'
   pickupSpotId?: string | null
@@ -27,6 +103,25 @@ export type ProcessCheckoutInput = {
 export async function processCheckout(
   data: ProcessCheckoutInput
 ): Promise<{ orderId: string; orderNumber: string; error?: string }> {
+  // Safety-net: re-validate stock server-side (critical period computed here, not trusted from client)
+  const criticalConfig = await getCriticalPeriodConfig()
+  if (isInCutoffWindow(criticalConfig)) {
+    const weekMonday = getCurrentWeekMonday()
+    const stock = await getExtraStockForWeek(weekMonday)
+    const stockMap = new Map(stock.map(s => [`${s.meal_id}|${s.size_id}`, s.qty]))
+    const needed = new Map<string, number>()
+    for (const item of data.items) {
+      const key = `${item.mealId}|${item.sizeId}`
+      needed.set(key, (needed.get(key) ?? 0) + item.qty)
+    }
+    for (const [key, qty] of needed) {
+      const available = stockMap.get(key) ?? 0
+      if (available < qty) {
+        return { orderId: '', orderNumber: '', error: 'Sin stock suficiente. Actualiza tu carrito antes de continuar.' }
+      }
+    }
+  }
+
   const supabase = createAdminClient()
 
   let customerId = data.customerId ?? null

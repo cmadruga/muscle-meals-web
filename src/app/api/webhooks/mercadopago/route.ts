@@ -70,6 +70,8 @@ export async function POST(request: NextRequest) {
     if (payment.status === 'approved') {
       await updateOrderStatus(ourOrderId, 'paid')
       await updatePaymentGatewayId(ourOrderId, dataId)
+      const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
+      await deductExtraStockForOrder(ourOrderId)
 
       const order = await getOrderById(ourOrderId)
       if (!order) return NextResponse.json({ received: true })

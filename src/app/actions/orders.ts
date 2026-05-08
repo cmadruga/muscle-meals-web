@@ -319,5 +319,10 @@ export async function changeOrderStatus(orderId: string, status: OrderStatus): P
     throw new Error('Error al actualizar el estado')
   }
 
+  if (status === 'paid') {
+    const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
+    await deductExtraStockForOrder(orderId)
+  }
+
   revalidatePath('/admin/orders')
 }

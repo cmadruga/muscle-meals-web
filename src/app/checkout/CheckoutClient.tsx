@@ -3,14 +3,13 @@
 import { useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
-import { processCheckout } from '@/app/actions/checkout'
+import { processCheckout, validateCart } from '@/app/actions/checkout'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
-import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
 import { 
   isValidPostalCode,
   getZoneByPostalCode,
@@ -33,15 +32,16 @@ const SHIPPING_COSTS = {
 export default function CheckoutClient({
   pickupSpots,
   prefill,
+  deliveryDateStr,
 }: {
   pickupSpots: PickupSpot[]
   prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
+  deliveryDateStr?: string
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [showCutoffModal, setShowCutoffModal] = useState(false)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
@@ -125,6 +125,22 @@ export default function CheckoutClient({
     setError(null)
 
     try {
+      // 0. Validar carrito contra estado actual del servidor
+      const validation = await validateCart(items.map(item => ({
+        mealId: item.mealId,
+        mealName: item.mealName,
+        sizeId: item.sizeId,
+        sizeName: item.sizeName,
+        qty: item.qty,
+        unitPrice: item.unitPrice,
+        packageInstanceId: item.packageInstanceId,
+      })))
+      if (!validation.valid) {
+        setError(validation.errors[0].message)
+        setIsProcessing(false)
+        return
+      }
+
       // 1. Crear o actualizar cliente
       const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
       const fullAddress = shippingType === 'pickup'
@@ -252,7 +268,7 @@ export default function CheckoutClient({
             <span style={{ fontSize: 20 }}>📅</span>
             <div>
               <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: 14 }}>
-                Entrega: {formatDeliveryDate(getDeliveryDate())}
+                Entrega: {deliveryDateStr ?? '—'}
               </p>
               <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
                 Entregamos cada domingo · Pedidos cortados el viernes a mediodía
@@ -317,25 +333,11 @@ export default function CheckoutClient({
         )}
 
         <PaymentButton
-          onClick={() => {
-            if (isInCutoffWindow()) {
-              setShowCutoffModal(true)
-            } else {
-              handleCheckout()
-            }
-          }}
+          onClick={handleCheckout}
           disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
           isProcessing={isProcessing}
           addressValidated={addressValidated}
         />
-
-        {showCutoffModal && (
-          <CutoffConfirmModal
-            deliveryDate={getDeliveryDate()}
-            onConfirm={() => { setShowCutoffModal(false); handleCheckout() }}
-            onCancel={() => setShowCutoffModal(false)}
-          />
-        )}
       </div>
     </main>
     <LoginBanner />
@@ -1277,85 +1279,6 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
   )
 }
 
-function CutoffConfirmModal({ deliveryDate, onConfirm, onCancel }: {
-  deliveryDate: Date
-  onConfirm: () => void
-  onCancel: () => void
-}) {
-  return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: '#000000cc',
-      zIndex: 200,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: 24,
-    }}>
-      <div style={{
-        background: colors.grayDark,
-        border: `2px solid ${colors.orange}`,
-        borderRadius: 16,
-        padding: 32,
-        maxWidth: 460,
-        width: '100%',
-        textAlign: 'center',
-      }}>
-        <div style={{ fontSize: 48, marginBottom: 16 }}>⚠️</div>
-        <h2 style={{ color: colors.orange, fontSize: 22, marginBottom: 12 }}>
-          Pedidos de esta semana ya cerraron
-        </h2>
-        <p style={{ color: colors.textSecondary, fontSize: 15, lineHeight: 1.6, marginBottom: 8 }}>
-          Los pedidos de esta semana ya están cerrados. Tu orden se procesará para:
-        </p>
-        <p style={{ color: colors.white, fontSize: 20, fontWeight: 700, marginBottom: 24 }}>
-          {formatDeliveryDate(deliveryDate)}
-        </p>
-        <p style={{ color: colors.textMuted, fontSize: 13, marginBottom: 28, lineHeight: 1.5 }}>
-          Al confirmar, aceptas que tu entrega será el domingo de la próxima semana.
-        </p>
-        <div style={{ display: 'flex', gap: 12, flexDirection: 'column' }}>
-          <button
-            onClick={onConfirm}
-            className="franchise-stroke"
-            style={{
-              width: '100%',
-              padding: '14px 24px',
-              background: colors.orange,
-              color: colors.white,
-              border: 'none',
-              borderRadius: 8,
-              cursor: 'pointer',
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 20,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase',
-            }}
-          >
-            Entendido, continuar al pago
-          </button>
-          <button
-            onClick={onCancel}
-            style={{
-              width: '100%',
-              padding: '12px 24px',
-              fontSize: 15,
-              background: 'transparent',
-              color: colors.textMuted,
-              border: `1px solid ${colors.grayLight}`,
-              borderRadius: 8,
-              cursor: 'pointer',
-            }}
-          >
-            Cancelar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
 
 function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
   onClick: () => void
