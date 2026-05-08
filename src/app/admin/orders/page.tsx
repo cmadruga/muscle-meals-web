@@ -12,8 +12,7 @@ import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
 import NewOrderButton from './NewOrderButton'
-import SalesToggle from '../SalesToggle'
-import CriticalPeriodConfigPanel from '../CriticalPeriodConfig'
+import SettingsDrawer from '../SettingsDrawer'
 import { colors } from '@/lib/theme'
 
 function parseLocalDate(str: string): Date {
@@ -94,8 +93,8 @@ export default async function PanelOrdersPage({
         <h1 style={{ color: colors.white, fontSize: 26, fontWeight: 700, margin: 0 }}>
           Pedidos
         </h1>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <SalesToggle initialEnabled={salesEnabled} />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <SettingsDrawer salesEnabled={salesEnabled} criticalPeriodConfig={criticalPeriodConfig} />
           <NewOrderButton
             weekStr={weekStr}
             meals={meals.map(m => ({ id: m.id, name: m.name }))}
@@ -104,9 +103,6 @@ export default async function PanelOrdersPage({
             pickupSpots={pickupSpots}
           />
         </div>
-      </div>
-      <div style={{ marginBottom: 12 }}>
-        <CriticalPeriodConfigPanel initial={criticalPeriodConfig} />
       </div>
       <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 2 }}>
         {totalConfirmed} órdenes esta semana ({totalConfirmedMeals} comidas confirmadas)
