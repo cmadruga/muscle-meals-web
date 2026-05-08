@@ -8,11 +8,12 @@ import { getActiveMeals } from '@/lib/db/meals'
 import { getAllSizesWithCustomer } from '@/lib/db/sizes'
 import type { CustomerBasic } from '@/lib/db/customers'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
-import { getSalesEnabled } from '@/lib/db/settings'
+import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
 import NewOrderButton from './NewOrderButton'
 import SalesToggle from '../SalesToggle'
+import CriticalPeriodConfigPanel from '../CriticalPeriodConfig'
 import { colors } from '@/lib/theme'
 
 function parseLocalDate(str: string): Date {
@@ -54,7 +55,7 @@ export default async function PanelOrdersPage({
   const supabase = await createClient()
   const admin = createAdminClient()
 
-  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled] = await Promise.all([
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, criticalPeriodConfig] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
@@ -62,6 +63,7 @@ export default async function PanelOrdersPage({
     admin.from('customers').select('id, full_name, phone, address').order('full_name', { ascending: true }),
     getActivePickupSpots(),
     getSalesEnabled(),
+    getCriticalPeriodConfig(),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
@@ -102,6 +104,9 @@ export default async function PanelOrdersPage({
             pickupSpots={pickupSpots}
           />
         </div>
+      </div>
+      <div style={{ marginBottom: 12 }}>
+        <CriticalPeriodConfigPanel initial={criticalPeriodConfig} />
       </div>
       <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 2 }}>
         {totalConfirmed} órdenes esta semana ({totalConfirmedMeals} comidas confirmadas)

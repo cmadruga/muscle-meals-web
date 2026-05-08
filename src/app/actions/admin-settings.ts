@@ -2,7 +2,8 @@
 
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { setSalesEnabled } from '@/lib/db/settings'
+import { setSalesEnabled, setCriticalPeriodConfig } from '@/lib/db/settings'
+import type { CriticalPeriodConfig } from '@/lib/utils/delivery'
 
 async function checkAdmin() {
   const cookieStore = await cookies()
@@ -18,4 +19,10 @@ export async function toggleSalesEnabled(enabled: boolean): Promise<void> {
   revalidatePath('/admin/orders')
   revalidatePath('/menu')
   revalidatePath('/package')
+}
+
+export async function updateCriticalPeriodConfig(config: CriticalPeriodConfig): Promise<void> {
+  await checkAdmin()
+  await setCriticalPeriodConfig(config)
+  revalidatePath('/admin/orders')
 }

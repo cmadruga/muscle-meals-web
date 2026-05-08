@@ -11,3 +11,8 @@ CREATE TABLE IF NOT EXISTS site_settings (
 INSERT INTO site_settings (key, value)
 VALUES ('sales_enabled', 'true'::jsonb)
 ON CONFLICT (key) DO NOTHING;
+
+-- Período crítico (fin de semana con stock extra)
+INSERT INTO site_settings (key, value)
+VALUES ('critical_period', '{"cutoff_day": 5, "cutoff_hour": 12, "end_day": 0}'::jsonb)
+ON CONFLICT (key) DO NOTHING;
