@@ -214,17 +214,37 @@ export type SizeAdmin = {
   veg_qty: number
   is_main: boolean
   customer_id: string | null
+  customer_name: string | null
 }
 
 export async function getAllSizesAdmin(): Promise<SizeAdmin[]> {
   const supabase = createAdminClient()
-  const { data, error } = await supabase
-    .from('sizes')
-    .select('id, name, protein_qty, carb_qty, veg_qty, is_main, customer_id')
-    .order('is_main', { ascending: false })
-    .order('name', { ascending: true })
-  if (error) return []
-  return data as SizeAdmin[]
+  const [sizesRes, customersRes] = await Promise.all([
+    supabase.from('sizes').select('id, name, protein_qty, carb_qty, veg_qty, is_main, customer_id'),
+    supabase.from('customers').select('id, full_name'),
+  ])
+  if (sizesRes.error) return []
+
+  const customerMap = new Map<string, string>(
+    (customersRes.data ?? []).map((c: { id: string; full_name: string }) => [c.id, c.full_name])
+  )
+
+  const result: SizeAdmin[] = (sizesRes.data ?? []).map((s: Omit<SizeAdmin, 'customer_name'>) => ({
+    ...s,
+    customer_name: s.customer_id ? (customerMap.get(s.customer_id) ?? null) : null,
+  }))
+
+  result.sort((a, b) => {
+    const aGlobal = a.is_main && !a.customer_id
+    const bGlobal = b.is_main && !b.customer_id
+    if (aGlobal && !bGlobal) return -1
+    if (!aGlobal && bGlobal) return 1
+    const aCust = a.customer_name ?? ''
+    const bCust = b.customer_name ?? ''
+    return aCust.localeCompare(bCust) || a.name.localeCompare(b.name)
+  })
+
+  return result
 }
 
 export async function updateSizePortions(
