@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import type { Size, Ingredient } from '@/lib/types'
 import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { createCustomSize } from '@/app/actions/sizes'
@@ -41,20 +41,66 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 }
 
-function IngRow({ name: ingName, id, value, onChange, accent }: {
-  name: string; id: string; value: string; onChange: (v: string) => void; accent: string
+function IngRow({ name: ingName, id, value, onChange, accent, fitQty, tooltip }: {
+  name: string; id: string; value: string; onChange: (v: string) => void; accent: string; fitQty?: number; tooltip?: string
 }) {
+  const [tipOpen, setTipOpen] = useState(false)
+  const tipRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!tipOpen) return
+    function handleClick(e: MouseEvent) {
+      if (tipRef.current && !tipRef.current.contains(e.target as Node)) setTipOpen(false)
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [tipOpen])
+
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid #1a1a1a` }}>
       <span style={{ color: colors.textSecondary, fontSize: 13 }}>{ingName}</span>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-        <input
-          type="number" min={0} value={value}
-          onChange={e => onChange(e.target.value)}
-          placeholder="0"
-          style={{ ...inputStyle, borderColor: value ? accent + '66' : colors.grayLight }}
-        />
-        <span style={{ color: colors.textMuted, fontSize: 11, width: 12 }}>g</span>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
+          <div style={{ position: 'relative' }} ref={tipRef}>
+            <input
+              type="number" min={0} value={value}
+              onChange={e => onChange(e.target.value)}
+              placeholder="0"
+              style={{ ...inputStyle, borderColor: value ? accent + '66' : colors.grayLight }}
+            />
+            {tooltip && (
+              <button
+                type="button"
+                onClick={() => setTipOpen(v => !v)}
+                style={{
+                  position: 'absolute', top: -7, right: -7,
+                  width: 16, height: 16, borderRadius: '50%',
+                  background: colors.grayLight, border: 'none', cursor: 'pointer',
+                  color: colors.textMuted, fontSize: 10, lineHeight: 1,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  padding: 0,
+                }}
+              >
+                i
+              </button>
+            )}
+            {tooltip && tipOpen && (
+              <div style={{
+                position: 'absolute', bottom: '110%', right: 0, zIndex: 10,
+                background: colors.grayDark, border: `1px solid ${colors.grayLight}`,
+                borderRadius: 8, padding: '8px 10px', width: 180,
+                fontSize: 12, color: colors.textSecondary, lineHeight: 1.4,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+              }}>
+                {tooltip}
+              </div>
+            )}
+          </div>
+          <span style={{ color: colors.textMuted, fontSize: 11, width: 12 }}>g</span>
+        </div>
+        {fitQty != null && fitQty > 0 && (
+          <span style={{ color: colors.textMuted, fontSize: 10, alignSelf: 'flex-start' }}>FIT: {fitQty}g</span>
+        )}
       </div>
     </div>
   )
@@ -177,6 +223,10 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
         )}
       </div>
 
+      <p style={{ margin: '0 0 14px', fontSize: 13, color: '#fbbf24', fontWeight: 600 }}>
+        ⚠ Todas las cantidades se pesan en crudo. Puedes usar las cantidades de tamaño FIT que se muestran como referencia.
+      </p>
+
       {/* Grid pro / carb / veg */}
       <div style={{ overflowX: 'auto', marginBottom: 14, border: `1px solid ${colors.grayLight}`, borderRadius: 8 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr auto', gap: 0, minWidth: 340 }}>
@@ -187,7 +237,8 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
             <IngRow key={group.ids[0]} name={group.displayName} id={group.ids[0]}
               value={proQtys[group.ids[0]] ?? ''}
               onChange={v => setProQtys(p => { const n = { ...p }; group.ids.forEach(id => { n[id] = v }); return n })}
-              accent="#ef4444" />
+              accent="#ef4444"
+              fitQty={fitSize?.protein_qty[group.ids[0]]} />
           ))}
           {proIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>—</p>}
         </div>
@@ -199,7 +250,9 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
             <IngRow key={group.ids[0]} name={group.displayName} id={group.ids[0]}
               value={carbQtys[group.ids[0]] ?? ''}
               onChange={v => setCarbQtys(p => { const n = { ...p }; group.ids.forEach(id => { n[id] = v }); return n })}
-              accent="#eab308" />
+              accent="#eab308"
+              fitQty={fitSize?.carb_qty[group.ids[0]]}
+              tooltip={group.displayName.toLowerCase().includes('papa') ? 'La papa equivale ×5 vs pasta o arroz en precio. 10g de papa = 50g de pasta.' : undefined} />
           ))}
           {carbIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>—</p>}
         </div>
@@ -213,6 +266,9 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
               style={{ ...inputStyle, borderColor: vegQty ? '#22c55e66' : colors.grayLight }} />
             <span style={{ color: colors.textMuted, fontSize: 11 }}>g</span>
           </div>
+          {fitSize && fitSize.veg_qty > 0 && (
+            <span style={{ display: 'block', color: colors.textMuted, fontSize: 10, marginTop: 2 }}>FIT: {fitSize.veg_qty}g</span>
+          )}
         </div>
       </div>
       </div>
