@@ -429,20 +429,19 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
 
         {/* Descripción del size seleccionado (solo main) / Editar (solo custom guardado) */}
         {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' ? (
-          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-            <div style={{ flex: '3 1 0' }} />
+          <div style={{ display: 'flex', marginTop: 6 }}>
             <button
               onClick={() => handleEditCustomSize(selectedSize)}
               style={{
-                flex: '1 1 0',
-                minWidth: 80,
-                padding: '7px 8px',
+                marginLeft: 'auto',
+                width: 'calc((100% - 30px) / 4)',
+                padding: '5px 8px',
                 borderRadius: 8,
                 border: `1px solid ${colors.grayLight}`,
                 background: 'transparent',
                 color: colors.textMuted,
                 cursor: 'pointer',
-                fontSize: 13,
+                fontSize: 12,
                 fontFamily: 'sans-serif',
               }}
             >
