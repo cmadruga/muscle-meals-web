@@ -42,7 +42,7 @@ export default async function MenuPage() {
         .pkg-card { flex-direction: row; align-items: center; }
         .pkg-img { width: 220px; height: 140px; flex-shrink: 0; border-radius: 10px; overflow: hidden; }
         .pkg-img img { width: 100%; height: 100%; object-fit: cover; }
-        @media (max-width: 640px) {
+        @media (max-width: 500px) {
           .pkg-card { flex-direction: column; align-items: stretch; gap: 16px; padding: 20px !important; }
           .pkg-card-btn { text-align: center; }
           .pkg-img { width: 100%; height: 180px; }
@@ -98,7 +98,7 @@ export default async function MenuPage() {
         <style>{`
           .pkg-card { display: flex; align-items: center; justify-content: space-between; gap: 24; }
           .pkg-card-btn { display: inline-block; }
-          @media (max-width: 640px) {
+          @media (max-width: 775px) {
             .pkg-card { flex-direction: column; align-items: stretch; padding: 20px !important; }
             .pkg-inner { flex-direction: column; align-items: center; text-align: center; }
             .pkg-card-btn { display: block; text-align: center; margin-top: 16px; }

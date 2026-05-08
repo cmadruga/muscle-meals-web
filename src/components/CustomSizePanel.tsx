@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState } from 'react'
 import type { Size, Ingredient } from '@/lib/types'
 import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 import { createCustomSize } from '@/app/actions/sizes'
@@ -44,53 +44,32 @@ const inputStyle: React.CSSProperties = {
 function IngRow({ name: ingName, id, value, onChange, accent, fitQty, tooltip }: {
   name: string; id: string; value: string; onChange: (v: string) => void; accent: string; fitQty?: number; tooltip?: string
 }) {
-  const [tipOpen, setTipOpen] = useState(false)
-  const tipRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (!tipOpen) return
-    function handleClick(e: MouseEvent) {
-      if (tipRef.current && !tipRef.current.contains(e.target as Node)) setTipOpen(false)
-    }
-    document.addEventListener('mousedown', handleClick)
-    return () => document.removeEventListener('mousedown', handleClick)
-  }, [tipOpen])
+  const [tipVisible, setTipVisible] = useState(false)
 
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '5px 0', borderBottom: `1px solid #1a1a1a` }}>
       <span style={{ color: colors.textSecondary, fontSize: 13 }}>{ingName}</span>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 5 }}>
-          <div style={{ position: 'relative' }} ref={tipRef}>
+          <div
+            style={{ position: 'relative' }}
+            onMouseEnter={() => tooltip && setTipVisible(true)}
+            onMouseLeave={() => setTipVisible(false)}
+          >
             <input
               type="number" min={0} value={value}
               onChange={e => onChange(e.target.value)}
               placeholder="0"
               style={{ ...inputStyle, borderColor: value ? accent + '66' : colors.grayLight }}
             />
-            {tooltip && (
-              <button
-                type="button"
-                onClick={() => setTipOpen(v => !v)}
-                style={{
-                  position: 'absolute', top: -7, right: -7,
-                  width: 16, height: 16, borderRadius: '50%',
-                  background: colors.grayLight, border: 'none', cursor: 'pointer',
-                  color: colors.textMuted, fontSize: 10, lineHeight: 1,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  padding: 0,
-                }}
-              >
-                i
-              </button>
-            )}
-            {tooltip && tipOpen && (
+            {tooltip && tipVisible && (
               <div style={{
                 position: 'absolute', bottom: '110%', right: 0, zIndex: 10,
                 background: colors.grayDark, border: `1px solid ${colors.grayLight}`,
                 borderRadius: 8, padding: '8px 10px', width: 180,
                 fontSize: 12, color: colors.textSecondary, lineHeight: 1.4,
                 boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                pointerEvents: 'none',
               }}>
                 {tooltip}
               </div>
@@ -252,7 +231,7 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
               onChange={v => setCarbQtys(p => { const n = { ...p }; group.ids.forEach(id => { n[id] = v }); return n })}
               accent="#eab308"
               fitQty={fitSize?.carb_qty[group.ids[0]]}
-              tooltip={group.displayName.toLowerCase().includes('papa') ? 'La papa equivale ×5 vs pasta o arroz en precio. 10g de papa = 50g de pasta.' : undefined} />
+              tooltip={group.displayName.toLowerCase().includes('papa') ? 'La porción de papa equivale ×5 vs pasta/arroz en macros. 50g de arroz crudo = 275g de papa cruda.' : undefined} />
           ))}
           {carbIngredients.length === 0 && <p style={{ color: colors.textMuted, fontSize: 12 }}>—</p>}
         </div>
