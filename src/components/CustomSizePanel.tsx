@@ -126,6 +126,7 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
       carb_qty: carbQty,
       veg_qty: parseFloat(vegQty) || 0,
       is_main: isMain,
+      sizeId: initialSize?.id,
     })
 
     if (result.error) { setError(result.error); setIsCreating(false); return }
