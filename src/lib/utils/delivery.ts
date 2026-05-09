@@ -34,22 +34,8 @@ export function isInCutoffWindow(config: CriticalPeriodConfig = DEFAULT_CRITICAL
   }
 }
 
-export function getDeliveryDate(config: CriticalPeriodConfig = DEFAULT_CRITICAL_PERIOD): Date {
-  const now = new Date()
-  const dayOfWeek = now.getDay()
-  const isPastCutoff = isInCutoffWindow(config)
-
-  const daysToUpcomingSunday = (7 - dayOfWeek) % 7
-  const daysUntilDelivery = daysToUpcomingSunday + (isPastCutoff ? 7 : 0)
-
-  const delivery = new Date(now)
-  delivery.setDate(now.getDate() + daysUntilDelivery)
-  delivery.setHours(0, 0, 0, 0)
-  return delivery
-}
-
-/** Returns this week's Sunday (the upcoming delivery for critical period extra orders). */
-export function getThisWeekSunday(): Date {
+/** Returns the upcoming Sunday (today if it's Sunday, otherwise next Sunday). */
+export function getUpcomingSunday(): Date {
   const now = new Date()
   const day = now.getDay()
   const daysToSunday = day === 0 ? 0 : 7 - day

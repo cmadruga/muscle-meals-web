@@ -156,7 +156,7 @@ function IngSection({
               const cocidoPerPlato = canCompute ? qtyPerPlato * factor : null
               return (
                 <tr key={row.sizeId} style={{ background: i % 2 === 0 ? 'transparent' : '#1a1a1a', borderBottom: '1px solid #222' }}>
-                  <td style={{ padding: '8px 10px', color: row.isMain ? colors.white : colors.orange, fontWeight: 600 }}>
+                  <td style={{ padding: '8px 10px', color: row.isExtra ? colors.textMuted : row.isMain ? colors.white : colors.orange, fontWeight: 600, fontStyle: row.isExtra ? 'italic' : 'normal' }}>
                     {row.sizeName}
                   </td>
                   <td style={{ padding: '8px 10px', textAlign: 'right', color: colors.white, fontWeight: 800, width: 1, whiteSpace: 'nowrap' }}>

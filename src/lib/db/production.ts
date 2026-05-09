@@ -1,6 +1,8 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { Recipe, Ingredient, Size } from '@/lib/types'
 
+export const EXTRA_SIZE_SENTINEL = '__extra__'
+
 export type ProductionItem = {
   orderId: string
   orderNumber: string
@@ -8,8 +10,9 @@ export type ProductionItem = {
   orderStatus: string
   mealId: string
   mealName: string
-  sizeId: string
-  sizeName: string
+  sizeId: string   // '__extra__' for orders without size
+  sizeName: string // 'Extra' for extras
+  isExtra: boolean
   qty: number
 }
 
@@ -70,7 +73,8 @@ export async function getWeeklyProductionData(
     }>
 
     for (const item of (orderItems ?? [])) {
-      if (!item.meals || !item.sizes) continue
+      if (!item.meals) continue
+      const isExtra = !item.sizes
       items.push({
         orderId: order.id,
         orderNumber: (order as unknown as { order_number: string; status: string }).order_number,
@@ -78,8 +82,9 @@ export async function getWeeklyProductionData(
         orderStatus: (order as unknown as { order_number: string; status: string }).status,
         mealId: item.meals.id,
         mealName: item.meals.name,
-        sizeId: item.sizes.id,
-        sizeName: item.sizes.name,
+        sizeId: isExtra ? EXTRA_SIZE_SENTINEL : item.sizes!.id,
+        sizeName: isExtra ? 'Extra' : item.sizes!.name,
+        isExtra,
         qty: item.qty,
       })
     }
@@ -144,13 +149,23 @@ export async function getWeeklyProductionData(
 
   if (ingredientsError) throw ingredientsError
 
-  // Fetch sizes
+  // Fetch sizes (only real UUIDs — sentinel excluded)
+  const realSizeIds = uniqueSizeIds.filter(id => id !== EXTRA_SIZE_SENTINEL)
   const { data: sizesData, error: sizesError } = await client
     .from('sizes')
     .select('*')
-    .in('id', uniqueSizeIds)
+    .in('id', realSizeIds.length > 0 ? realSizeIds : ['__none__'])
 
   if (sizesError) throw sizesError
+
+  // Fetch PLUS size to use for extra items in production
+  const { data: plusSizeData } = await client
+    .from('sizes')
+    .select('*')
+    .eq('is_main', true)
+    .is('customer_id', null)
+    .ilike('name', 'PLUS')
+    .maybeSingle()
 
   // Build recipesMap
   const recipesMap = new Map<string, Recipe>()
@@ -192,6 +207,10 @@ export async function getWeeklyProductionData(
   const sizesMap = new Map<string, Size>()
   for (const size of (sizesData ?? [])) {
     sizesMap.set(size.id, size as Size)
+  }
+  // Map PLUS size under the extra sentinel so compute functions get PLUS quantities for extras
+  if (plusSizeData) {
+    sizesMap.set(EXTRA_SIZE_SENTINEL, plusSizeData as Size)
   }
 
   // Fetch customer names for sizes that belong to a customer

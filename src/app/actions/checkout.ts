@@ -62,24 +62,23 @@ export async function validateCart(
   if (isInCutoffWindow(criticalConfig)) {
     const weekMonday = getCurrentWeekMonday()
     const stock = await getExtraStockForWeek(weekMonday)
-    const stockMap = new Map(stock.map(s => [`${s.meal_id}|${s.size_id}`, s.qty]))
+    const stockMap = new Map(stock.map(s => [s.meal_id, s.qty]))
 
-    // Aggregate qty per meal+size across all cart items
+    // Aggregate qty per meal across all cart items
     const needed = new Map<string, { item: CheckoutItem; qty: number }>()
     for (const item of items) {
-      const key = `${item.mealId}|${item.sizeId}`
-      const existing = needed.get(key)
+      const existing = needed.get(item.mealId)
       if (existing) existing.qty += item.qty
-      else needed.set(key, { item, qty: item.qty })
+      else needed.set(item.mealId, { item, qty: item.qty })
     }
 
-    for (const [key, { item, qty }] of needed) {
-      const available = stockMap.get(key) ?? 0
+    for (const [mealId, { item, qty }] of needed) {
+      const available = stockMap.get(mealId) ?? 0
       if (available < qty) {
         errors.push({
           mealId: item.mealId,
           sizeId: item.sizeId,
-          message: `Sin stock para "${item.mealName ?? item.mealId}" (${item.sizeName ?? item.sizeId}). Disponible: ${available}. Actualiza tu carrito.`,
+          message: `Sin stock para "${item.mealName ?? item.mealId}". Disponible: ${available}. Actualiza tu carrito.`,
         })
       }
     }
@@ -108,14 +107,13 @@ export async function processCheckout(
   if (isInCutoffWindow(criticalConfig)) {
     const weekMonday = getCurrentWeekMonday()
     const stock = await getExtraStockForWeek(weekMonday)
-    const stockMap = new Map(stock.map(s => [`${s.meal_id}|${s.size_id}`, s.qty]))
+    const stockMap = new Map(stock.map(s => [s.meal_id, s.qty]))
     const needed = new Map<string, number>()
     for (const item of data.items) {
-      const key = `${item.mealId}|${item.sizeId}`
-      needed.set(key, (needed.get(key) ?? 0) + item.qty)
+      needed.set(item.mealId, (needed.get(item.mealId) ?? 0) + item.qty)
     }
-    for (const [key, qty] of needed) {
-      const available = stockMap.get(key) ?? 0
+    for (const [mealId, qty] of needed) {
+      const available = stockMap.get(mealId) ?? 0
       if (available < qty) {
         return { orderId: '', orderNumber: '', error: 'Sin stock suficiente. Actualiza tu carrito antes de continuar.' }
       }

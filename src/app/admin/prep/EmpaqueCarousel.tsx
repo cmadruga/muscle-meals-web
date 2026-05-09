@@ -126,20 +126,20 @@ export default function EmpaqueCarousel({ meals }: { meals: EmpaquesMeal[] }) {
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 800, whiteSpace: 'nowrap', width: 1 }}>
                   {row.qty}
                 </td>
-                <td style={{ padding: '9px 10px', color: row.isMain ? colors.white : colors.orange, fontWeight: 600, whiteSpace: 'nowrap' }}>
+                <td style={{ padding: '9px 10px', color: row.isExtra ? colors.textMuted : row.isMain ? colors.white : colors.orange, fontWeight: 600, whiteSpace: 'nowrap', fontStyle: row.isExtra ? 'italic' : 'normal' }}>
                   {row.sizeName}
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(row.macros.calories)}
+                  {row.macros ? Math.round(row.macros.calories) : '—'}
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(row.macros.protein)}
+                  {row.macros ? Math.round(row.macros.protein) : '—'}
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(row.macros.carbs)}
+                  {row.macros ? Math.round(row.macros.carbs) : '—'}
                 </td>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 700, whiteSpace: 'nowrap' }}>
-                  {Math.round(row.macros.fats)}
+                  {row.macros ? Math.round(row.macros.fats) : '—'}
                 </td>
               </tr>
             ))}

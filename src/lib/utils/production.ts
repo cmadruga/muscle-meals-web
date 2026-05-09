@@ -1,4 +1,5 @@
 import type { WeeklyProductionData } from '@/lib/db/production'
+import { EXTRA_SIZE_SENTINEL } from '@/lib/db/production'
 import type { RecipeVesselConfig } from '@/lib/types/recipe'
 import { calculateMealMacros, resolveQty } from './macros'
 
@@ -36,6 +37,7 @@ export type PincheSizeRow = {
   sizeName: string
   qty: number
   isMain: boolean
+  isExtra: boolean
   proteinQty: number
   carbQty: number
   vegQty: number
@@ -53,7 +55,8 @@ export type EmpaqueSizeRow = {
   sizeName: string
   qty: number
   isMain: boolean
-  macros: { calories: number; protein: number; carbs: number; fats: number }
+  isExtra: boolean
+  macros: { calories: number; protein: number; carbs: number; fats: number } | null
 }
 
 export type EmpaquesMeal = {
@@ -310,12 +313,13 @@ const MAIN_SIZE_ORDER = ['LOW', 'FIT', 'PLUS']
 export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] {
   const { items, mealsMap, ingredientsMap, sizesMap, sizeCustomerNames } = data
 
-  // Accumulate qty per meal × size
   const mealSizeQty = new Map<string, Map<string, number>>()
   const mealNames = new Map<string, string>()
+  const sizeDisplayNames = new Map<string, string>()
 
   for (const item of items) {
     mealNames.set(item.mealId, item.mealName)
+    sizeDisplayNames.set(item.sizeId, item.sizeName)
     if (!mealSizeQty.has(item.mealId)) mealSizeQty.set(item.mealId, new Map())
     const sizeMap = mealSizeQty.get(item.mealId)!
     sizeMap.set(item.sizeId, (sizeMap.get(item.sizeId) ?? 0) + item.qty)
@@ -334,16 +338,22 @@ export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] 
       const size = sizesMap.get(sizeId)
       if (!size) continue
 
+      const isExtra = sizeId === EXTRA_SIZE_SENTINEL
       totalPortions += qty
-      const macros = calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, size)
-      const customerName = sizeCustomerNames.get(sizeId)
-      const sizeName = customerName ? `${size.name} - ${customerName}` : size.name
 
-      sizeRows.push({ sizeId, sizeName, qty, isMain: size.is_main && !size.customer_id, macros })
+      const macros = isExtra
+        ? null
+        : calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, size)
+
+      const customerName = isExtra ? null : sizeCustomerNames.get(sizeId)
+      const sizeName = sizeDisplayNames.get(sizeId) ?? (customerName ? `${size.name} - ${customerName}` : size.name)
+
+      sizeRows.push({ sizeId, sizeName, qty, isMain: !isExtra && size.is_main && !size.customer_id, isExtra, macros })
     }
 
-    // Main sizes ordered LOW→FIT→PLUS, then custom alphabetically
     sizeRows.sort((a, b) => {
+      if (a.isExtra) return 1
+      if (b.isExtra) return -1
       if (a.isMain && b.isMain) {
         const ai = MAIN_SIZE_ORDER.indexOf(a.sizeName.toUpperCase())
         const bi = MAIN_SIZE_ORDER.indexOf(b.sizeName.toUpperCase())
@@ -396,14 +406,16 @@ export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
     for (const [sizeId, qty] of sizeMap) {
       const size = sizesMap.get(sizeId)
       if (!size) continue
+      const isExtra = sizeId === EXTRA_SIZE_SENTINEL
       totalPortions += qty
-      const customerName = sizeCustomerNames.get(sizeId)
-      const sizeName = customerName ? `${size.name} - ${customerName}` : size.name
+      const customerName = isExtra ? null : sizeCustomerNames.get(sizeId)
+      const sizeName = isExtra ? 'Extra' : (customerName ? `${size.name} - ${customerName}` : size.name)
       sizeRows.push({
         sizeId,
         sizeName,
         qty,
-        isMain: size.is_main && !size.customer_id,
+        isMain: !isExtra && size.is_main && !size.customer_id,
+        isExtra,
         proteinQty: proIngId ? resolveQty(size.protein_qty, proIngId) : (size.protein_qty['default'] ?? 0),
         carbQty: carbIngId ? resolveQty(size.carb_qty, carbIngId) : (size.carb_qty['default'] ?? 0),
         vegQty: size.veg_qty,
@@ -411,6 +423,8 @@ export function computePincheData(data: WeeklyProductionData): PincheMeal[] {
     }
 
     sizeRows.sort((a, b) => {
+      if (a.isExtra) return 1
+      if (b.isExtra) return -1
       if (a.isMain && b.isMain) {
         const ai = MAIN_SIZE_ORDER.indexOf(a.sizeName.toUpperCase())
         const bi = MAIN_SIZE_ORDER.indexOf(b.sizeName.toUpperCase())

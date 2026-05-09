@@ -43,6 +43,10 @@ function emptyRow(meals: Meal[], sizes: Size[]): ItemRow {
   return { mealId: meals[0]?.id ?? '', sizeId: sizes[0]?.id ?? '', qty: 1 }
 }
 
+function emptyExtraRow(meals: Meal[]): ItemRow {
+  return { mealId: meals[0]?.id ?? '', sizeId: '', qty: 1 }
+}
+
 function getMondayStr(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number)
   const date = new Date(y, m - 1, d)
@@ -102,17 +106,17 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
       setError('Ingresa la dirección de envío')
       return
     }
-    if (items.some(r => !r.mealId || !r.sizeId || r.qty < 1)) {
-      setError('Revisa los ítems — todos necesitan platillo, talla y cantidad')
+    if (items.some(r => !r.mealId || (type !== 'extras' && !r.sizeId) || r.qty < 1)) {
+      setError('Revisa los ítems — todos necesitan platillo' + (type !== 'extras' ? ', talla' : '') + ' y cantidad')
       return
     }
 
     const orderItems: AdminOrderItem[] = items.map(row => ({
       meal_id: row.mealId,
-      size_id: row.sizeId,
+      size_id: type === 'extras' ? null : row.sizeId,
       qty: row.qty,
       meal_name: meals.find(m => m.id === row.mealId)?.name ?? '',
-      size_name: sizes.find(s => s.id === row.sizeId)?.name ?? '',
+      size_name: type === 'extras' ? '' : (sizes.find(s => s.id === row.sizeId)?.name ?? ''),
     }))
 
     startTransition(async () => {
@@ -184,10 +188,10 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
         <div>
           <label style={labelStyle}>Tipo</label>
           <div style={{ display: 'flex', gap: 8 }}>
-            <button style={toggleStyle(type === 'extras')} onClick={() => setType('extras')}>
+            <button style={toggleStyle(type === 'extras')} onClick={() => { setType('extras'); setItems([emptyExtraRow(meals)]) }}>
               Extras
             </button>
-            <button style={toggleStyle(type === 'cliente')} onClick={() => setType('cliente')}>
+            <button style={toggleStyle(type === 'cliente')} onClick={() => { setType('cliente'); setItems([emptyRow(meals, sizes)]) }}>
               Cliente
             </button>
           </div>
@@ -272,7 +276,7 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
           <label style={labelStyle}>Ítems</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {items.map((row, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 56px 32px', gap: 8, alignItems: 'center' }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: type === 'extras' ? '1fr 56px 32px' : '1fr 120px 56px 32px', gap: 8, alignItems: 'center' }}>
                 <select
                   style={{ ...inputStyle, padding: '7px 10px' }}
                   value={row.mealId}
@@ -283,15 +287,17 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
                   ))}
                 </select>
 
-                <select
-                  style={{ ...inputStyle, padding: '7px 10px' }}
-                  value={row.sizeId}
-                  onChange={e => updateItem(idx, 'sizeId', e.target.value)}
-                >
-                  {sizes.map(s => (
-                    <option key={s.id} value={s.id}>{s.name}</option>
-                  ))}
-                </select>
+                {type !== 'extras' && (
+                  <select
+                    style={{ ...inputStyle, padding: '7px 10px' }}
+                    value={row.sizeId}
+                    onChange={e => updateItem(idx, 'sizeId', e.target.value)}
+                  >
+                    {sizes.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                )}
 
                 <input
                   type="number"
@@ -317,7 +323,7 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
 
           <div style={{ display: 'flex', gap: 8, marginTop: 8 }}>
             <button
-              onClick={addItem}
+              onClick={() => setItems(prev => [...prev, type === 'extras' ? emptyExtraRow(meals) : emptyRow(meals, sizes)])}
               style={{
                 flex: 1, padding: '7px 0',
                 borderRadius: 8, border: `1px dashed #333`,
@@ -328,7 +334,10 @@ export default function NewOrderModal({ weekStr, meals, sizes, customers, pickup
               + Agregar ítem
             </button>
             <button
-              onClick={() => setItems(meals.map(m => ({ mealId: m.id, sizeId: sizes[0]?.id ?? '', qty: 1 })))}
+              onClick={() => setItems(type === 'extras'
+                ? meals.map(m => ({ mealId: m.id, sizeId: '', qty: 1 }))
+                : meals.map(m => ({ mealId: m.id, sizeId: sizes[0]?.id ?? '', qty: 1 }))
+              )}
               style={{
                 flex: 1, padding: '7px 0',
                 borderRadius: 8, border: `1px dashed #333`,

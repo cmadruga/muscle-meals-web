@@ -6,10 +6,13 @@ import { assignExtraToClient, type AssignExtraItem } from '@/app/actions/orders'
 import type { OrderWithCustomer } from '@/lib/types'
 import type { CustomerBasic } from '@/lib/db/customers'
 
+type MainSize = { id: string; name: string }
+
 interface Props {
   order: OrderWithCustomer
   weekStr: string
   customers: CustomerBasic[]
+  mainSizes: MainSize[]
   onClose: () => void
 }
 
@@ -32,10 +35,13 @@ const labelStyle: React.CSSProperties = {
   display: 'block',
 }
 
-export default function AssignExtraModal({ order, weekStr, customers, onClose }: Props) {
-  // Per-item: selected qty (0 = no asignar)
-  const [qtys, setQtys] = useState<Record<string, number>>(
-    Object.fromEntries(order.items.map(i => [i.id, i.qty]))
+type ItemSel = { qty: number; sizeId: string }
+
+export default function AssignExtraModal({ order, weekStr, customers, mainSizes, onClose }: Props) {
+  const defaultSizeId = mainSizes[0]?.id ?? ''
+
+  const [selections, setSelections] = useState<Record<string, ItemSel>>(
+    Object.fromEntries(order.items.map(i => [i.id, { qty: i.qty, sizeId: defaultSizeId }]))
   )
   const [selectedCustomerId, setSelectedCustomerId] = useState<string | null>(null)
   const [customerName, setCustomerName] = useState('')
@@ -52,22 +58,31 @@ export default function AssignExtraModal({ order, weekStr, customers, onClose }:
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const selectedItems = order.items.filter(i => (qtys[i.id] ?? 0) > 0)
-  const totalQty = selectedItems.reduce((s, i) => s + (qtys[i.id] ?? 0), 0)
+  const selectedItems = order.items.filter(i => (selections[i.id]?.qty ?? 0) > 0)
+  const totalQty = selectedItems.reduce((s, i) => s + (selections[i.id]?.qty ?? 0), 0)
+
+  function setSel(itemId: string, patch: Partial<ItemSel>) {
+    setSelections(prev => ({ ...prev, [itemId]: { ...prev[itemId], ...patch } }))
+  }
 
   function handleSubmit() {
     setError('')
     if (!selectedCustomerId && !customerName.trim()) { setError('Selecciona o ingresa un cliente'); return }
     if (selectedItems.length === 0) { setError('Selecciona al menos un ítem'); return }
+    if (mainSizes.length === 0) { setError('No hay tamaños configurados'); return }
 
-    const items: AssignExtraItem[] = selectedItems.map(i => ({
-      itemId: i.id,
-      meal_id: i.meal_id,
-      size_id: i.size_id,
-      qty: qtys[i.id],
-      meal_name: i.meal_name ?? '',
-      size_name: i.size_name ?? '',
-    }))
+    const items: AssignExtraItem[] = selectedItems.map(i => {
+      const sel = selections[i.id]
+      const sizeName = mainSizes.find(s => s.id === sel.sizeId)?.name ?? ''
+      return {
+        itemId: i.id,
+        meal_id: i.meal_id,
+        size_id: sel.sizeId,
+        qty: sel.qty,
+        meal_name: i.meal_name ?? '',
+        size_name: sizeName,
+      }
+    })
 
     startTransition(async () => {
       const result = await assignExtraToClient({
@@ -106,7 +121,7 @@ export default function AssignExtraModal({ order, weekStr, customers, onClose }:
     }}>
       <div onClick={(e) => e.stopPropagation()} style={{
         background: '#1a1a1a', borderRadius: 14, padding: 28,
-        width: '100%', maxWidth: 520, border: '1px solid #2a2a2a',
+        width: '100%', maxWidth: 560, border: '1px solid #2a2a2a',
         display: 'flex', flexDirection: 'column', gap: 20,
       }}>
         <div>
@@ -122,40 +137,56 @@ export default function AssignExtraModal({ order, weekStr, customers, onClose }:
         <div>
           <label style={labelStyle}>Stock disponible</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {order.items.map(item => (
-              <div key={item.id} style={{
-                display: 'grid', gridTemplateColumns: '1fr auto auto', gap: 10, alignItems: 'center',
-                padding: '8px 12px', background: '#111', borderRadius: 8,
-                border: `1px solid ${(qtys[item.id] ?? 0) > 0 ? '#333' : '#222'}`,
-              }}>
-                <div>
-                  <span style={{ color: colors.white, fontSize: 14 }}>{item.meal_name}</span>
-                  {item.size_name && (
-                    <span style={{ color: colors.textMuted, fontSize: 12, marginLeft: 6 }}>
-                      {item.size_name}
-                    </span>
-                  )}
+            {order.items.map(item => {
+              const sel = selections[item.id] ?? { qty: 0, sizeId: defaultSizeId }
+              const active = sel.qty > 0
+              return (
+                <div key={item.id} style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr auto auto auto',
+                  gap: 8,
+                  alignItems: 'center',
+                  padding: '8px 12px',
+                  background: '#111',
+                  borderRadius: 8,
+                  border: `1px solid ${active ? '#333' : '#222'}`,
+                }}>
+                  <div>
+                    <span style={{ color: colors.white, fontSize: 14 }}>{item.meal_name}</span>
+                  </div>
+                  <span style={{ color: colors.textMuted, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    max {item.qty}
+                  </span>
+                  <select
+                    value={sel.sizeId}
+                    onChange={e => setSel(item.id, { sizeId: e.target.value })}
+                    style={{
+                      background: '#1a1a1a', border: '1px solid #333',
+                      borderRadius: 6, color: active ? colors.white : colors.textMuted,
+                      padding: '5px 8px', fontSize: 13, outline: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    {mainSizes.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                  <input
+                    type="number"
+                    min={0}
+                    max={item.qty}
+                    value={sel.qty}
+                    onChange={e => setSel(item.id, {
+                      qty: Math.max(0, Math.min(item.qty, parseInt(e.target.value) || 0)),
+                    })}
+                    style={{
+                      width: 56, background: '#1a1a1a', border: '1px solid #333',
+                      borderRadius: 6, color: '#fff', padding: '5px 8px',
+                      fontSize: 14, textAlign: 'center', outline: 'none',
+                    }}
+                  />
                 </div>
-                <span style={{ color: colors.textMuted, fontSize: 12 }}>
-                  max {item.qty}
-                </span>
-                <input
-                  type="number"
-                  min={0}
-                  max={item.qty}
-                  value={qtys[item.id] ?? 0}
-                  onChange={e => setQtys(prev => ({
-                    ...prev,
-                    [item.id]: Math.max(0, Math.min(item.qty, parseInt(e.target.value) || 0)),
-                  }))}
-                  style={{
-                    width: 56, background: '#1a1a1a', border: '1px solid #333',
-                    borderRadius: 6, color: '#fff', padding: '5px 8px',
-                    fontSize: 14, textAlign: 'center', outline: 'none',
-                  }}
-                />
-              </div>
-            ))}
+              )
+            })}
           </div>
           {totalQty > 0 && (
             <p style={{ color: colors.orange, fontSize: 13, margin: '6px 0 0', fontWeight: 600 }}>
@@ -215,8 +246,14 @@ export default function AssignExtraModal({ order, weekStr, customers, onClose }:
           </button>
           <button
             onClick={handleSubmit}
-            disabled={pending || totalQty === 0}
-            style={{ padding: '8px 24px', borderRadius: 8, border: 'none', background: colors.orange, color: colors.white, cursor: pending || totalQty === 0 ? 'not-allowed' : 'pointer', fontSize: 14, fontWeight: 600, opacity: pending || totalQty === 0 ? 0.5 : 1 }}
+            disabled={pending || totalQty === 0 || mainSizes.length === 0}
+            style={{
+              padding: '8px 24px', borderRadius: 8, border: 'none',
+              background: colors.orange, color: colors.white,
+              cursor: pending || totalQty === 0 ? 'not-allowed' : 'pointer',
+              fontSize: 14, fontWeight: 600,
+              opacity: pending || totalQty === 0 ? 0.5 : 1,
+            }}
           >
             {pending ? 'Creando…' : 'Crear orden'}
           </button>

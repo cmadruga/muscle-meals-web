@@ -9,7 +9,7 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
-import { getDeliveryDate, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
+import { getUpcomingSunday, isInCutoffWindow, formatDeliveryDate } from '@/lib/utils/delivery'
 import { validateCart } from '@/app/actions/checkout'
 
 type PendingDelete =
@@ -462,8 +462,8 @@ function CartSummary({ total }: { total: number }) {
 }
 
 function DeliveryBanner() {
-  const deliveryDate = getDeliveryDate()
   const inCutoff = isInCutoffWindow()
+  const deliveryDate = getUpcomingSunday()
 
   return (
     <div style={{ marginBottom: 24, display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -488,7 +488,7 @@ function DeliveryBanner() {
         </div>
       </div>
 
-      {/* Cutoff warning (only Fri 12pm – Sun) */}
+      {/* Stock limitado warning (only Fri 12pm – Sun) */}
       {inCutoff && (
         <div style={{
           padding: '14px 18px',
@@ -502,10 +502,10 @@ function DeliveryBanner() {
           <span style={{ fontSize: 22, lineHeight: 1 }}>⚠️</span>
           <div>
             <p style={{ margin: 0, fontWeight: 700, color: colors.orange, fontSize: 15 }}>
-              Pedidos de esta semana ya cerraron
+              Stock limitado · Disponibilidad sujeta al momento del pago
             </p>
             <p style={{ margin: '2px 0 0', fontSize: 13, color: colors.textSecondary }}>
-              Tu orden se procesará para el <strong style={{ color: colors.white }}>próximo domingo</strong>. Confirmarás en el checkout.
+              Tener productos en el carrito no garantiza su disponibilidad. Completa tu orden para asegurarlos.
             </p>
           </div>
         </div>

@@ -50,8 +50,9 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
   const addToCart = useCartStore(state => state.addItem)
 
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
-  const customerDefault = customerSizes.find(s => s.is_main)
-  const defaultSizeId = (initialSizeId && [...sizes, ...customerSizes].find(s => s.id === initialSizeId))
+  const effectiveCustomerSizes = inCriticalPeriod ? [] : customerSizes
+  const customerDefault = effectiveCustomerSizes.find(s => s.is_main)
+  const defaultSizeId = (initialSizeId && [...sizes, ...effectiveCustomerSizes].find(s => s.id === initialSizeId))
     ? initialSizeId
     : customerDefault?.id || fitSize?.id || sizes[0]?.id || ''
   const [selectedSizeId, setSelectedSizeId] = useState(defaultSizeId)
@@ -62,21 +63,22 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
   // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
   const sessionIds = new Set(sessionSizes.map(s => s.id))
-  const allSizes = [...sizes, ...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+  const allSizes = [...sizes, ...effectiveCustomerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
   const [customInitialSize, setCustomInitialSize] = useState<Size | undefined>()
+  const [customBtnHovered, setCustomBtnHovered] = useState(false)
 
   const extraStockMap = useMemo(() => {
     const map = new Map<string, number>()
     for (const item of extraStock) {
-      map.set(`${item.meal_id}|${item.size_id}`, item.qty)
+      map.set(item.meal_id, item.qty)
     }
     return map
   }, [extraStock])
 
   const extraQtyAvailable = inCriticalPeriod
-    ? (extraStockMap.get(`${meal.id}|${selectedSizeId}`) ?? 0)
+    ? (extraStockMap.get(meal.id) ?? 0)
     : Infinity
 
   const handleCustomSizeCreated = (size: Size) => {
@@ -221,14 +223,14 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
             )
           })}
 
-          {/* 4to botón: mis tamaños + crear nuevo como última opción del select */}
+          {/* 4to botón: mis tamaños + crear nuevo — deshabilitado en período crítico */}
           {(() => {
-            const myList = [...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+            const myList = [...effectiveCustomerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
             const active = myList.find(s => s.id === selectedSizeId)
             const isCreating = selectedSizeId === '__custom__'
             const isSelected = !!active || isCreating
             return (
-              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative' }}>
+              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative', opacity: inCriticalPeriod ? 0.45 : 1 }}>
                 <div style={{
                   padding: '14px 8px',
                   borderRadius: 10,
@@ -247,23 +249,44 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
                     {active ? `$${(calcMealPrice(meal, active, fitSize) / 100).toFixed(0)} MXN` : 'personalizado'}
                   </div>
                 </div>
-                <select
-                  value={isSelected ? selectedSizeId : ''}
-                  onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
-                >
-                  <option value="">Personalizado...</option>
-                  {myList.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} — ${(calcMealPrice(meal, s, fitSize) / 100).toFixed(0)} MXN</option>
-                  ))}
-                  <option value="__custom__">＋ Crear nuevo</option>
-                </select>
+                {inCriticalPeriod ? (
+                  <div
+                    onMouseEnter={() => setCustomBtnHovered(true)}
+                    onMouseLeave={() => setCustomBtnHovered(false)}
+                    style={{ position: 'absolute', inset: 0, cursor: 'not-allowed' }}
+                  >
+                    {customBtnHovered && (
+                      <div style={{
+                        position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                        zIndex: 10, background: colors.grayLight, border: `1px solid #555`,
+                        borderRadius: 8, padding: '8px 10px', width: 200,
+                        fontSize: 12, color: colors.white, lineHeight: 1.4,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)', pointerEvents: 'none',
+                        whiteSpace: 'normal', textAlign: 'left',
+                      }}>
+                        Con stock limitado solo están disponibles los tamaños default
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <select
+                    value={isSelected ? selectedSizeId : ''}
+                    onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  >
+                    <option value="">Personalizado...</option>
+                    {myList.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} — ${(calcMealPrice(meal, s, fitSize) / 100).toFixed(0)} MXN</option>
+                    ))}
+                    <option value="__custom__">＋ Crear nuevo</option>
+                  </select>
+                )}
               </div>
             )
           })()}
         </div>
 
-        {selectedSizeId === '__custom__' && (
+        {!inCriticalPeriod && selectedSizeId === '__custom__' && (
           <div style={{ marginTop: 16 }}>
             <CustomSizePanel
               proIngredients={meal.ingredients.filter(i => i.type === 'pro')}
@@ -276,8 +299,8 @@ export default function MealClient({ meal, sizes, customerSizes = [], suggestedM
           </div>
         )}
 
-        {/* Editar tamaño custom guardado */}
-        {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' && (
+        {/* Editar tamaño custom guardado — oculto en período crítico */}
+        {!inCriticalPeriod && selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' && (
           <div style={{ display: 'flex', marginTop: 6 }}>
             <button
               onClick={() => handleEditCustomSize(selectedSize)}

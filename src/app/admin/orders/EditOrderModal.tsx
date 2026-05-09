@@ -39,10 +39,11 @@ export default function EditOrderModal({
   sizes: Size[]
   onClose: () => void
 }) {
+  const isExtra = order.status === 'extra'
   const [items, setItems] = useState<ItemRow[]>(
     order.items.length > 0
-      ? order.items.map(i => ({ mealId: i.meal_id, sizeId: i.size_id, qty: i.qty }))
-      : [{ mealId: meals[0]?.id ?? '', sizeId: sizes[0]?.id ?? '', qty: 1 }]
+      ? order.items.map(i => ({ mealId: i.meal_id, sizeId: i.size_id ?? '', qty: i.qty }))
+      : [{ mealId: meals[0]?.id ?? '', sizeId: isExtra ? '' : (sizes[0]?.id ?? ''), qty: 1 }]
   )
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
@@ -54,7 +55,7 @@ export default function EditOrderModal({
   }, [onClose])
 
   function addItem() {
-    setItems(prev => [...prev, { mealId: meals[0]?.id ?? '', sizeId: sizes[0]?.id ?? '', qty: 1 }])
+    setItems(prev => [...prev, { mealId: meals[0]?.id ?? '', sizeId: isExtra ? '' : (sizes[0]?.id ?? ''), qty: 1 }])
   }
 
   function removeItem(idx: number) {
@@ -67,16 +68,16 @@ export default function EditOrderModal({
 
   function handleSubmit() {
     setError('')
-    if (items.some(r => !r.mealId || !r.sizeId || r.qty < 1)) {
-      setError('Revisa los ítems — todos necesitan platillo, talla y cantidad')
+    if (items.some(r => !r.mealId || (!isExtra && !r.sizeId) || r.qty < 1)) {
+      setError('Revisa los ítems — todos necesitan platillo' + (!isExtra ? ', talla' : '') + ' y cantidad')
       return
     }
     const orderItems: AdminOrderItem[] = items.map(row => ({
       meal_id: row.mealId,
-      size_id: row.sizeId,
+      size_id: isExtra ? null : row.sizeId,
       qty: row.qty,
       meal_name: meals.find(m => m.id === row.mealId)?.name ?? '',
-      size_name: sizes.find(s => s.id === row.sizeId)?.name ?? '',
+      size_name: isExtra ? '' : (sizes.find(s => s.id === row.sizeId)?.name ?? ''),
     }))
     startTransition(async () => {
       const result = await updateAdminOrder(order.id, orderItems)
@@ -110,7 +111,7 @@ export default function EditOrderModal({
           <label style={labelStyle}>Ítems</label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {items.map((row, idx) => (
-              <div key={idx} style={{ display: 'grid', gridTemplateColumns: '1fr 120px 56px 32px', gap: 8, alignItems: 'center' }}>
+              <div key={idx} style={{ display: 'grid', gridTemplateColumns: isExtra ? '1fr 56px 32px' : '1fr 120px 56px 32px', gap: 8, alignItems: 'center' }}>
                 <select
                   style={{ ...inputStyle, padding: '7px 10px' }}
                   value={row.mealId}
@@ -118,13 +119,15 @@ export default function EditOrderModal({
                 >
                   {meals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
                 </select>
-                <select
-                  style={{ ...inputStyle, padding: '7px 10px' }}
-                  value={row.sizeId}
-                  onChange={e => updateItem(idx, 'sizeId', e.target.value)}
-                >
-                  {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-                </select>
+                {!isExtra && (
+                  <select
+                    style={{ ...inputStyle, padding: '7px 10px' }}
+                    value={row.sizeId}
+                    onChange={e => updateItem(idx, 'sizeId', e.target.value)}
+                  >
+                    {sizes.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                )}
                 <input
                   type="number" min={1}
                   style={{ ...inputStyle, padding: '7px 8px', textAlign: 'center' }}

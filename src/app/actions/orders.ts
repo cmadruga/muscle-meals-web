@@ -6,7 +6,7 @@ import type { OrderStatus } from '@/lib/types'
 
 export type AdminOrderItem = {
   meal_id: string
-  size_id: string
+  size_id: string | null  // null for extras (no size)
   qty: number
   meal_name: string
   size_name: string
@@ -138,10 +138,10 @@ export async function saveOrderNote(orderId: string, note: string): Promise<void
 }
 
 export type AssignExtraItem = {
-  itemId: string      // order_item.id del extra original
+  itemId: string
   meal_id: string
   size_id: string
-  qty: number         // cantidad a asignar (≤ qty restante)
+  qty: number
   meal_name: string
   size_name: string
 }
