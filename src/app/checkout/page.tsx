@@ -3,8 +3,7 @@ import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
-import { getCriticalPeriodConfig } from '@/lib/db/settings'
-import { isInCutoffWindow, getDeliveryDate, getThisWeekSunday, formatDeliveryDate } from '@/lib/utils/delivery'
+import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 
 export default async function CheckoutPage() {
   const [pickupSpots, supabase] = await Promise.all([
@@ -36,9 +35,7 @@ export default async function CheckoutPage() {
     }
   }
 
-  const criticalConfig = await getCriticalPeriodConfig()
-  const inCriticalPeriod = isInCutoffWindow(criticalConfig)
-  const deliveryDate = inCriticalPeriod ? getThisWeekSunday() : getDeliveryDate(criticalConfig)
+  const deliveryDate = getUpcomingSunday()
 
   return (
     <CheckoutClient

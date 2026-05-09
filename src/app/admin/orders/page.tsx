@@ -9,6 +9,7 @@ import { getAllSizesWithCustomer } from '@/lib/db/sizes'
 import type { CustomerBasic } from '@/lib/db/customers'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getMainSizes } from '@/lib/db/sizes'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
 import NewOrderButton from './NewOrderButton'
@@ -54,7 +55,7 @@ export default async function PanelOrdersPage({
   const supabase = await createClient()
   const admin = createAdminClient()
 
-  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, criticalPeriodConfig] = await Promise.all([
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, criticalPeriodConfig, mainSizes] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
@@ -63,6 +64,7 @@ export default async function PanelOrdersPage({
     getActivePickupSpots(),
     getSalesEnabled(),
     getCriticalPeriodConfig(),
+    getMainSizes(),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
@@ -121,6 +123,7 @@ export default async function PanelOrdersPage({
         customers={customers}
         meals={meals.map(m => ({ id: m.id, name: m.name }))}
         sizes={sizes.map(s => ({ id: s.id, name: s.customer_name ? `${s.name} (${s.customer_name})` : s.name }))}
+        mainSizes={mainSizes.map(s => ({ id: s.id, name: s.name }))}
       />
     </div>
   )

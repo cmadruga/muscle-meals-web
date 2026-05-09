@@ -94,12 +94,13 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   const router = useRouter()
   const { addItem: addToCart, removePackage } = useCartStore()
   const fitSize = sizes.find(s => s.name.toLowerCase() === 'fit')
-  const customerDefault = customerSizes.find(s => s.is_main)
+  const effectiveCustomerSizes = inCriticalPeriod ? [] : customerSizes
+  const customerDefault = effectiveCustomerSizes.find(s => s.is_main)
 
-  // Mapa de stock extra: `meal_id|size_id` → qty disponible
+  // Mapa de stock extra: meal_id → qty disponible (sin tamaño)
   const extraStockMap = useMemo(() => {
     const m = new Map<string, number>()
-    for (const s of extraStock) m.set(`${s.meal_id}|${s.size_id}`, s.qty)
+    for (const s of extraStock) m.set(s.meal_id, s.qty)
     return m
   }, [extraStock])
 
@@ -109,10 +110,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   const [selection, setSelection] = useState<SelectionItem[]>(() => {
     if (editInstanceId) return []
     const defaultSizeId = customerDefault?.id || fitSize?.id || sizes[0]?.id || ''
-    const defaultSize = [...sizes, ...customerSizes].find(s => s.id === defaultSizeId)
+    const defaultSize = [...sizes, ...effectiveCustomerSizes].find(s => s.id === defaultSizeId)
     if (!defaultSize) return []
     const mealsToSelect = inCriticalPeriod
-      ? meals.filter(meal => (extraStockMap.get(`${meal.id}|${defaultSize.id}`) ?? 0) > 0)
+      ? meals.filter(meal => (extraStockMap.get(meal.id) ?? 0) > 0)
       : meals
     return mealsToSelect.map(meal => ({
       mealId: meal.id,
@@ -162,11 +163,12 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
 
   // sessionSizes tiene prioridad sobre customerSizes (puede ser versión editada)
   const sessionIds = new Set(sessionSizes.map(s => s.id))
-  const allSizes = [...sizes, ...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+  const allSizes = [...sizes, ...effectiveCustomerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
   const selectedSize = allSizes.find(s => s.id === selectedSizeId)
 
   const [customInitialSize, setCustomInitialSize] = useState<Size | undefined>()
   const [isTouched, setIsTouched] = useState(false)
+  const [customBtnHovered, setCustomBtnHovered] = useState(false)
 
   const handleCustomSizeCreated = (size: Size) => {
     setSessionSizes(prev => [...prev.filter(s => s.id !== size.id), size])
@@ -186,7 +188,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
     const newSize = allSizes.find(s => s.id === selectedSizeId)
     if (!newSize) return
     const mealsForSize = inCriticalPeriod
-      ? meals.filter(meal => (extraStockMap.get(`${meal.id}|${newSize.id}`) ?? 0) > 0)
+      ? meals.filter(meal => (extraStockMap.get(meal.id) ?? 0) > 0)
       : meals
     setSelection(mealsForSize.map(meal => ({
       mealId: meal.id,
@@ -214,7 +216,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   )
 
   const selectionHasStock = !inCriticalPeriod || selection.every(item =>
-    (extraStockMap.get(`${item.mealId}|${item.sizeId}`) ?? 0) >= item.qty
+    (extraStockMap.get(item.mealId) ?? 0) >= item.qty
   )
   const canSubmit = totalSelected >= pkg.minMeals && selection.length > 0
     && selectionHasStock
@@ -397,14 +399,14 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
             )
           })}
 
-          {/* 4to botón: mis tamaños + crear nuevo como última opción del select */}
+          {/* 4to botón: mis tamaños + crear nuevo — deshabilitado en período crítico */}
           {(() => {
-            const myList = [...customerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
+            const myList = [...effectiveCustomerSizes.filter(s => !sessionIds.has(s.id)), ...sessionSizes]
             const active = myList.find(s => s.id === selectedSizeId)
             const isCreating = selectedSizeId === '__custom__'
             const isSelected = !!active || isCreating
             return (
-              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative' }}>
+              <div style={{ flex: '1 1 0', minWidth: 80, position: 'relative', opacity: inCriticalPeriod ? 0.45 : 1 }}>
                 <div style={{
                   padding: '14px 8px',
                   borderRadius: 10,
@@ -423,23 +425,44 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
                     {active ? `$${(calcMinPackagePrice(active, fitSize) / 100).toFixed(0)}/platillo` : 'personalizado'}
                   </div>
                 </div>
-                <select
-                  value={isSelected ? selectedSizeId : ''}
-                  onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
-                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
-                >
-                  <option value="">Personalizado...</option>
-                  {myList.map(s => (
-                    <option key={s.id} value={s.id}>{s.name} — ${(calcMinPackagePrice(s, fitSize) / 100).toFixed(0)}/platillo</option>
-                  ))}
-                  <option value="__custom__">＋ Crear nuevo</option>
-                </select>
+                {inCriticalPeriod ? (
+                  <div
+                    onMouseEnter={() => setCustomBtnHovered(true)}
+                    onMouseLeave={() => setCustomBtnHovered(false)}
+                    style={{ position: 'absolute', inset: 0, cursor: 'not-allowed' }}
+                  >
+                    {customBtnHovered && (
+                      <div style={{
+                        position: 'absolute', bottom: '110%', left: '50%', transform: 'translateX(-50%)',
+                        zIndex: 10, background: colors.grayLight, border: `1px solid #555`,
+                        borderRadius: 8, padding: '8px 10px', width: 200,
+                        fontSize: 12, color: colors.white, lineHeight: 1.4,
+                        boxShadow: '0 4px 12px rgba(0,0,0,0.5)', pointerEvents: 'none',
+                        whiteSpace: 'normal', textAlign: 'left',
+                      }}>
+                        Con stock limitado solo están disponibles los tamaños default
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <select
+                    value={isSelected ? selectedSizeId : ''}
+                    onChange={e => { if (e.target.value) setSelectedSizeId(e.target.value) }}
+                    style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer', width: '100%', height: '100%' }}
+                  >
+                    <option value="">Personalizado...</option>
+                    {myList.map(s => (
+                      <option key={s.id} value={s.id}>{s.name} — ${(calcMinPackagePrice(s, fitSize) / 100).toFixed(0)}/platillo</option>
+                    ))}
+                    <option value="__custom__">＋ Crear nuevo</option>
+                  </select>
+                )}
               </div>
             )
           })()}
         </div>
 
-        {selectedSizeId === '__custom__' && (
+        {!inCriticalPeriod && selectedSizeId === '__custom__' && (
           <div style={{ marginTop: 16 }}>
             <CustomSizePanel
               proIngredients={panelProIngredients}
@@ -452,8 +475,8 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
           </div>
         )}
 
-        {/* Descripción del size seleccionado (solo main) / Editar (solo custom guardado) */}
-        {selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' ? (
+        {/* Descripción del size seleccionado (solo main) / Editar (solo custom guardado — oculto en período crítico) */}
+        {!inCriticalPeriod && selectedSize && !!selectedSize.customer_id && selectedSizeId !== '__custom__' ? (
           <div style={{ display: 'flex', marginTop: 6 }}>
             <button
               onClick={() => handleEditCustomSize(selectedSize)}
@@ -622,7 +645,7 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
             const qtyCurrentSize = getQtyForCurrentSize(meal.id)
             const breakdown = getSizeBreakdown(meal.id)
             const isExpanded = expandedMealIds.has(meal.id)
-            const extraQtyAvailable = selectedSize ? (extraStockMap.get(`${meal.id}|${selectedSize.id}`) ?? 0) : 0
+            const extraQtyAvailable = extraStockMap.get(meal.id) ?? 0
             const canAdd = inCriticalPeriod ? qtyCurrentSize < extraQtyAvailable : true
             
             // Calcular macros para este meal con el size seleccionado

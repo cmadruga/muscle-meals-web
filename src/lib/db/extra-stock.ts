@@ -3,15 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type ExtraStockItem = {
   meal_id: string
   meal_name: string
-  size_id: string
-  size_name: string
-  qty: number          // cantidad restante en order_items del extra
-  item_ids: string[]   // IDs de order_item para deducir
+  qty: number
+  item_ids: string[]
 }
 
 /**
- * Devuelve el stock extra disponible para la semana cuyo lunes es weekMonday.
- * Agrupa por meal_id + size_id sumando los qty restantes.
+ * Devuelve el stock extra disponible para la semana.
+ * Agrupa por meal_id únicamente — los extras no tienen tamaño.
  */
 export async function getExtraStockForWeek(weekMonday: Date): Promise<ExtraStockItem[]> {
   const start = new Date(weekMonday)
@@ -24,10 +22,8 @@ export async function getExtraStockForWeek(weekMonday: Date): Promise<ExtraStock
     .select(`
       id,
       meal_id,
-      size_id,
       qty,
       meals ( name ),
-      sizes ( name ),
       orders!inner ( status, created_at )
     `)
     .eq('orders.status', 'extra')
@@ -36,27 +32,21 @@ export async function getExtraStockForWeek(weekMonday: Date): Promise<ExtraStock
 
   if (error || !data) return []
 
-  // Agrupar por meal_id + size_id
   const map = new Map<string, ExtraStockItem>()
   for (const row of (data as unknown) as Array<{
     id: string
     meal_id: string
-    size_id: string
     qty: number
     meals: { name: string } | null
-    sizes: { name: string } | null
   }>) {
-    const key = `${row.meal_id}|${row.size_id}`
-    const existing = map.get(key)
+    const existing = map.get(row.meal_id)
     if (existing) {
       existing.qty += row.qty
       existing.item_ids.push(row.id)
     } else {
-      map.set(key, {
+      map.set(row.meal_id, {
         meal_id: row.meal_id,
         meal_name: row.meals?.name ?? row.meal_id,
-        size_id: row.size_id,
-        size_name: row.sizes?.name ?? row.size_id,
         qty: row.qty,
         item_ids: [row.id],
       })
@@ -67,24 +57,22 @@ export async function getExtraStockForWeek(weekMonday: Date): Promise<ExtraStock
 }
 
 /**
- * Deduce del stock extra. Toma de los order_items en orden FIFO.
- * Devuelve error si no hay suficiente stock.
+ * Deduce del stock extra por meal_id (sin importar tamaño). FIFO.
  */
 export async function deductExtraStock(
-  items: { meal_id: string; size_id: string; qty: number }[],
+  items: { meal_id: string; qty: number }[],
   weekMonday: Date
 ): Promise<{ error?: string }> {
   const stock = await getExtraStockForWeek(weekMonday)
   const supabase = createAdminClient()
 
   for (const needed of items) {
-    const available = stock.find(s => s.meal_id === needed.meal_id && s.size_id === needed.size_id)
+    const available = stock.find(s => s.meal_id === needed.meal_id)
     if (!available || available.qty < needed.qty) {
       return { error: `Stock insuficiente para ${available?.meal_name ?? needed.meal_id} (disponible: ${available?.qty ?? 0})` }
     }
   }
 
-  // Deducir — re-fetch item_ids frescos para garantizar consistencia
   const start = new Date(weekMonday)
   start.setHours(0, 0, 0, 0)
   const end = new Date(start)
@@ -97,7 +85,6 @@ export async function deductExtraStock(
       .from('order_items')
       .select('id, qty, orders!inner(status, created_at)')
       .eq('meal_id', needed.meal_id)
-      .eq('size_id', needed.size_id)
       .eq('orders.status', 'extra')
       .gte('orders.created_at', start.toISOString())
       .lt('orders.created_at', end.toISOString())
@@ -145,15 +132,14 @@ export async function deductExtraStock(
 }
 
 /**
- * Deduce stock extra al pagar una orden.
- * Calcula la semana desde created_at de la orden; no-op si no hay extras para esa semana.
+ * Deduce stock extra al pagar una orden. No-op si no hay periodo crítico activo.
  */
 export async function deductExtraStockForOrder(orderId: string): Promise<void> {
   const supabase = createAdminClient()
 
   const { data: order } = await supabase
     .from('orders')
-    .select('created_at, order_items(meal_id, size_id, qty)')
+    .select('created_at, order_items(meal_id, qty)')
     .eq('id', orderId)
     .single()
 
@@ -166,8 +152,8 @@ export async function deductExtraStockForOrder(orderId: string): Promise<void> {
   weekMonday.setDate(createdAt.getDate() - daysFromMonday)
   weekMonday.setHours(0, 0, 0, 0)
 
-  const items = (order.order_items as Array<{ meal_id: string; size_id: string; qty: number }>)
-    .map(i => ({ meal_id: i.meal_id, size_id: i.size_id, qty: i.qty }))
+  const items = (order.order_items as Array<{ meal_id: string; qty: number }>)
+    .map(i => ({ meal_id: i.meal_id, qty: i.qty }))
 
   const result = await deductExtraStock(items, weekMonday)
   if (result.error) {

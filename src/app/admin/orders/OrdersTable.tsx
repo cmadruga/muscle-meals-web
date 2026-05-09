@@ -247,6 +247,7 @@ export default function OrdersTable({
   customers,
   meals,
   sizes,
+  mainSizes,
 }: {
   orders: OrderWithCustomer[]
   weekStr: string
@@ -254,6 +255,7 @@ export default function OrdersTable({
   customers: CustomerBasic[]
   meals: Meal[]
   sizes: Size[]
+  mainSizes: Size[]
 }) {
   const [activeTab, setActiveTab] = useState<'ordenes' | 'empaquetado' | 'ruta'>('ordenes')
   const [search, setSearch] = useState('')
@@ -513,6 +515,7 @@ export default function OrdersTable({
           order={assigningOrder}
           weekStr={weekStr}
           customers={customers}
+          mainSizes={mainSizes}
           onClose={() => setAssigningOrder(null)}
         />
       )}
