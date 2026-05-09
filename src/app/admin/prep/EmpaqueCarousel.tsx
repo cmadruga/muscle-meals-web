@@ -122,7 +122,7 @@ export default function EmpaqueCarousel({ meals }: { meals: EmpaquesMeal[] }) {
           </thead>
           <tbody>
             {meal.sizes.map((row, i) => (
-              <tr key={row.sizeId} style={{ background: i % 2 === 0 ? 'transparent' : '#1a1a1a', borderBottom: `1px solid #222` }}>
+              <tr key={row.sizeId} style={{ background: i % 2 === 0 ? '#1e1e1e' : '#141414', borderBottom: `1px solid #2a2a2a` }}>
                 <td style={{ padding: '9px 10px', textAlign: 'right', color: colors.white, fontWeight: 800, whiteSpace: 'nowrap', width: 1 }}>
                   {row.qty}
                 </td>
