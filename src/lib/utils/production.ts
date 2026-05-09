@@ -346,7 +346,11 @@ export function computeEmpaquesData(data: WeeklyProductionData): EmpaquesMeal[] 
         : calculateMealMacros(meal.mainRecipe, meal.subRecipes, ingredientsMap, size)
 
       const customerName = isExtra ? null : sizeCustomerNames.get(sizeId)
-      const sizeName = sizeDisplayNames.get(sizeId) ?? (customerName ? `${size.name} - ${customerName}` : size.name)
+      const sizeName = isExtra
+        ? 'Extra'
+        : customerName
+          ? `${size.name} - ${customerName}`
+          : (sizeDisplayNames.get(sizeId) ?? size.name)
 
       sizeRows.push({ sizeId, sizeName, qty, isMain: !isExtra && size.is_main && !size.customer_id, isExtra, macros })
     }
