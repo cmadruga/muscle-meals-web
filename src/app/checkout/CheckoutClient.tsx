@@ -86,9 +86,8 @@ export default function CheckoutClient({
       : isAddressComplete
   
   // Calcular total
-  const isLoggedIn = Boolean(prefill?.customerId)
   const subtotal = getTotal()
-  const shippingCost = shippingType === 'standard' && isLoggedIn ? 0 : SHIPPING_COSTS[shippingType]
+  const shippingCost = SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
   
   // Validar pickup spot si es necesario
@@ -293,7 +292,6 @@ export default function CheckoutClient({
           onPickupSpotChange={setSelectedPickupSpot}
           pickupSpots={pickupSpots}
           disabled={isProcessing}
-          freeStandard={isLoggedIn}
         />
 
         <CustomerForm
@@ -311,7 +309,6 @@ export default function CheckoutClient({
           onNumeroInteriorChange={setNumeroInterior}
           onColoniaChange={setColonia}
           onCodigoPostalChange={setCodigoPostal}
-          addressValidated={addressValidated}
           zone={zone}
           showAddress={shippingType !== 'pickup'}
           savedAddress={savedAddress}
@@ -541,7 +538,6 @@ function CustomerForm({
   onNumeroInteriorChange,
   onColoniaChange,
   onCodigoPostalChange,
-  addressValidated,
   zone,
   showAddress,
   savedAddress,
@@ -564,7 +560,6 @@ function CustomerForm({
   onNumeroInteriorChange: (value: string) => void
   onColoniaChange: (value: string) => void
   onCodigoPostalChange: (value: string) => void
-  addressValidated: boolean
   zone: string | null
   showAddress: boolean
   savedAddress: string | null
@@ -842,14 +837,13 @@ function CustomerForm({
   )
 }
 
-function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, freeStandard }: {
+function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled }: {
   selectedType: 'standard' | 'priority' | 'pickup'
   onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
   selectedPickupSpot: string
   onPickupSpotChange: (spotId: string) => void
   pickupSpots: PickupSpot[]
   disabled: boolean
-  freeStandard?: boolean
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
@@ -913,35 +907,13 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                 }}>
                   Envío Estándar
                 </span>
-                {freeStandard ? (
-                  <>
-                    <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>$49 MXN</span>
-                    <span style={{
-                      fontSize: 14,
-                      fontWeight: 700,
-                      color: '#10b981',
-                      background: '#10b98120',
-                      border: '1px solid #10b98155',
-                      borderRadius: 6,
-                      padding: '2px 8px',
-                    }}>
-                      GRATIS
-                    </span>
-                  </>
-                ) : (
-                  <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: colors.white }}>
-                    - $49 MXN
-                  </span>
-                )}
+                <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: colors.white }}>
+                  - $49 MXN
+                </span>
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
                 Entrega en horario regular (Domingo 9AM - 4PM)
               </div>
-              {freeStandard && (
-                <div style={{ marginTop: 4, fontSize: 12, color: '#10b981', fontWeight: 600 }}>
-                  Envío gratis por inicio de sesión 🎉
-                </div>
-              )}
 
               {/* Mensaje expandido cuando está seleccionado */}
               {selectedType === 'standard' && (
