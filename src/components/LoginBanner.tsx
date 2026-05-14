@@ -57,7 +57,7 @@ export default function LoginBanner() {
           }}
         >
           <span style={{ fontSize: 13, color: colors.black, fontWeight: 800 }}>
-            ¿Ya tienes cuenta? Regístrate y obtén envío gratis en tu próximo pedido.
+            ¿Ya tienes cuenta? Inicia sesión o regístrate para continuar.
           </span>
           <span
             className="login-drawer-tab"
@@ -89,26 +89,15 @@ export default function LoginBanner() {
           }} />
           <div style={{ position: 'relative' }}>
             <p style={{
-              fontFamily: 'sans-serif',
-              fontSize: 15,
-              color: 'rgba(255,255,255,0.7)',
-              margin: '0 0 6px',
-              textTransform: 'uppercase',
-              letterSpacing: '0.12em',
-              fontWeight: 600,
-            }}>
-              Regístrate ahora para
-            </p>
-            <p style={{
               fontFamily: 'Franchise, sans-serif',
-              fontSize: 56,
+              fontSize: 48,
               letterSpacing: 1,
               color: colors.orange,
-              margin: '0 0 4px',
+              margin: '0 0 8px',
               lineHeight: 1,
               textTransform: 'uppercase',
             }}>
-              Envío Gratis
+              Crea tu cuenta
             </p>
             <p style={{
               fontFamily: 'Franchise, sans-serif',
@@ -118,14 +107,14 @@ export default function LoginBanner() {
               margin: 0,
               lineHeight: 1.2,
             }}>
-              en tu siguiente pedido
+              y lleva el control de tus pedidos
             </p>
             <p style={{
               fontSize: 13,
               color: 'rgba(255,255,255,0.55)',
               margin: '10px 0 0',
             }}>
-              Crea tu cuenta y tu próximo envío estándar ($49) es gratis.
+              Guarda tu dirección, revisa tu historial y pide más rápido.
             </p>
           </div>
         </div>

@@ -41,7 +41,7 @@ const inputStyle: React.CSSProperties = {
   outline: 'none',
 }
 
-function IngRow({ name: ingName, id, value, onChange, accent, fitQty, tooltip }: {
+function IngRow({ name: ingName, value, onChange, accent, fitQty, tooltip }: {
   name: string; id: string; value: string; onChange: (v: string) => void; accent: string; fitQty?: number; tooltip?: string
 }) {
   const [tipVisible, setTipVisible] = useState(false)
