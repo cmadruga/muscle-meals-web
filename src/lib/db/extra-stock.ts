@@ -132,9 +132,14 @@ export async function deductExtraStock(
 }
 
 /**
- * Deduce stock extra al pagar una orden. No-op si no hay periodo crítico activo.
+ * Deduce stock extra al pagar una orden. No-op si no estamos en periodo crítico.
  */
 export async function deductExtraStockForOrder(orderId: string): Promise<void> {
+  const { getCriticalPeriodConfig } = await import('@/lib/db/settings')
+  const { isInCutoffWindow } = await import('@/lib/utils/delivery')
+  const criticalConfig = await getCriticalPeriodConfig()
+  if (!isInCutoffWindow(criticalConfig)) return
+
   const supabase = createAdminClient()
 
   const { data: order } = await supabase
