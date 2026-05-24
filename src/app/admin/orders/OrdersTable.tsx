@@ -4,7 +4,7 @@ import React, { useState, useRef } from 'react'
 import type { OrderWithCustomer, OrderStatus, OrderItem } from '@/lib/types'
 import type { MatrixRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
-import { saveOrderNote } from '@/app/actions/orders'
+import { saveOrderNote, changeOrderStatus } from '@/app/actions/orders'
 import AssignExtraModal from './AssignExtraModal'
 import EditOrderModal from './EditOrderModal'
 import type { CustomerBasic } from '@/lib/db/customers'
@@ -263,6 +263,16 @@ export default function OrdersTable({
   const [assigningOrder, setAssigningOrder] = useState<OrderWithCustomer | null>(null)
   const [editingOrder, setEditingOrder] = useState<OrderWithCustomer | null>(null)
   const [openNoteId, setOpenNoteId] = useState<string | null>(null)
+  const [localStatuses, setLocalStatuses] = useState<Record<string, OrderStatus>>(() =>
+    Object.fromEntries(orders.map(o => [o.id, o.status]))
+  )
+
+  const handleStatusChange = (orderId: string, newStatus: OrderStatus) => {
+    setLocalStatuses(prev => ({ ...prev, [orderId]: newStatus }))
+    changeOrderStatus(orderId, newStatus).catch(() =>
+      setLocalStatuses(prev => ({ ...prev, [orderId]: orders.find(o => o.id === orderId)!.status }))
+    )
+  }
 
   // Notas: inicializar desde DB (orders prop), guardar con debounce
   const [notes, setNotes] = useState<Record<string, string>>(() =>
@@ -435,18 +445,52 @@ export default function OrdersTable({
                               )}
                             </td>
                             <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
-                              <span style={{
-                                display: 'inline-block',
-                                background: STATUS_COLORS[order.status] + '22',
-                                color: STATUS_COLORS[order.status],
-                                border: `1px solid ${STATUS_COLORS[order.status]}55`,
-                                borderRadius: 20,
-                                padding: '3px 10px',
-                                fontSize: 12,
-                                fontWeight: 600,
-                              }}>
-                                {STATUS_LABELS[order.status]}
-                              </span>
+                              {(() => {
+                                const st = localStatuses[order.id] ?? order.status
+                                const locked = st === 'extra' || st === 'admin'
+                                const editableStatuses: OrderStatus[] = ['creado', 'pending', 'paid', 'cancelled']
+                                if (locked) {
+                                  return (
+                                    <span style={{
+                                      display: 'inline-block',
+                                      background: STATUS_COLORS[st] + '22',
+                                      color: STATUS_COLORS[st],
+                                      border: `1px solid ${STATUS_COLORS[st]}55`,
+                                      borderRadius: 20,
+                                      padding: '3px 10px',
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                    }}>
+                                      {STATUS_LABELS[st]}
+                                    </span>
+                                  )
+                                }
+                                return (
+                                  <select
+                                    value={st}
+                                    onChange={e => handleStatusChange(order.id, e.target.value as OrderStatus)}
+                                    style={{
+                                      background: STATUS_COLORS[st] + '22',
+                                      color: STATUS_COLORS[st],
+                                      border: `1px solid ${STATUS_COLORS[st]}55`,
+                                      borderRadius: 20,
+                                      padding: '3px 10px',
+                                      fontSize: 12,
+                                      fontWeight: 600,
+                                      cursor: 'pointer',
+                                      outline: 'none',
+                                      appearance: 'none',
+                                      WebkitAppearance: 'none',
+                                    }}
+                                  >
+                                    {editableStatuses.map(s => (
+                                      <option key={s} value={s} style={{ background: '#1a1a1a', color: STATUS_COLORS[s] }}>
+                                        {STATUS_LABELS[s]}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )
+                              })()}
                               {order.payment_method && (
                                 <div style={{ color: colors.textMuted, fontSize: 11, marginTop: 4 }}>
                                   {order.payment_method}
