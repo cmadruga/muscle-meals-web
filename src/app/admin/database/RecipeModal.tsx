@@ -119,6 +119,14 @@ function IngredientRow({
     onChange({ ...row, ingredient_id: id, unit: found?.unit ?? 'g' })
   }
 
+  function handleUnitChange(newUnit: import('@/lib/types').Unit) {
+    if (!ing || row.qty === 0) { onChange({ ...row, unit: newUnit }); return }
+    const grEquivOf = (u: string) => u === 'g' ? 1 : (ing.unit_conversions?.find(c => c.unit === u)?.gr_equiv ?? 1)
+    const qtyInGrams = row.qty * grEquivOf(row.unit)
+    const converted = Math.round((qtyInGrams / grEquivOf(newUnit)) * 1000) / 1000
+    onChange({ ...row, qty: converted, unit: newUnit })
+  }
+
   return (
     <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
       <IngredientCombobox value={row.ingredient_id} onChange={handleIngredientChange} ingredients={ingredients} />
@@ -137,7 +145,7 @@ function IngredientRow({
       {availableUnits.length > 1 ? (
         <select
           value={row.unit}
-          onChange={(e) => onChange({ ...row, unit: e.target.value as import('@/lib/types').Unit })}
+          onChange={(e) => handleUnitChange(e.target.value as import('@/lib/types').Unit)}
           style={{ width: 60, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 8, padding: '7px 6px', color: colors.white, fontSize: 13, flexShrink: 0 }}
         >
           {availableUnits.map(u => <option key={u} value={u}>{u}</option>)}
