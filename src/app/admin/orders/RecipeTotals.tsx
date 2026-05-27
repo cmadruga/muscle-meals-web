@@ -36,7 +36,7 @@ function SizeBreakdown({ portionsBySize }: { portionsBySize: Record<string, numb
 const SECTION_LABEL: Record<string, string> = { pro: 'PROTEÍNA', carb: 'CARBO', veg: 'VERDURA' }
 const SECTION_COLOR: Record<string, string> = { pro: '#f87171', carb: '#fbbf24', veg: '#4ade80' }
 
-function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
+function RecipePanel({ mealTotals, showGrams }: { mealTotals: MealTotal[]; showGrams: boolean }) {
   const [selectedId, setSelectedId] = useState<string>(mealTotals[0]?.mealId ?? '')
   const meal = mealTotals.find(m => m.mealId === selectedId) ?? mealTotals[0]
 
@@ -53,6 +53,11 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
     letterSpacing: '0.05em',
     borderBottom: `1px solid ${colors.grayLight}`,
   }
+
+  const displayQty = (ing: MealIngredientRow) =>
+    showGrams && ing.unit !== 'g' ? Math.round(ing.totalQty * ing.grEquiv * 10) / 10 : ing.totalQty
+  const displayUnit = (ing: MealIngredientRow) =>
+    showGrams && ing.unit !== 'g' ? 'g' : ing.unit
 
   // Group main ingredients by section for split display
   const sections: Array<'pro' | 'carb' | 'veg'> = ['pro', 'carb', 'veg']
@@ -165,23 +170,23 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
                         {nBatches > 1 ? (
                           <>
                             <span style={{ color: colors.white, fontWeight: 700 }}>
-                              {formatQty(ing.totalQty / nBatches)}
+                              {formatQty(displayQty(ing) / nBatches)}
                             </span>
-                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
-                            {hasCups(ing) && (
+                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{displayUnit(ing)}</span>
+                            {hasCups(ing) && !showGrams && (
                               <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 4 }}>
                                 ({formatCups(ing.totalQty / nBatches, grPerCup!)} tazas)
                               </span>
                             )}
                             <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 8 }}>
-                              (total: {formatQty(ing.totalQty)} {ing.unit}{hasCups(ing) ? ` / ${formatCups(ing.totalQty, grPerCup!)} tazas` : ''})
+                              (total: {formatQty(displayQty(ing))} {displayUnit(ing)}{hasCups(ing) && !showGrams ? ` / ${formatCups(ing.totalQty, grPerCup!)} tazas` : ''})
                             </span>
                           </>
                         ) : (
                           <>
-                            <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
-                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
-                            {hasCups(ing) && (
+                            <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(displayQty(ing))}</span>
+                            <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{displayUnit(ing)}</span>
+                            {hasCups(ing) && !showGrams && (
                               <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 6 }}>
                                 ({formatCups(ing.totalQty, grPerCup!)} tazas)
                               </span>
@@ -199,8 +204,8 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
               <tr key={ing.key} style={{ borderLeft: '3px solid transparent' }}>
                 <td style={{ padding: '9px 16px', color: colors.white }}>{ing.name}</td>
                 <td style={{ padding: '9px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                  <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
-                  <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
+                  <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(displayQty(ing))}</span>
+                  <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{displayUnit(ing)}</span>
                 </td>
               </tr>
             ))}
@@ -216,8 +221,8 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
                   <tr key={ing.key} style={{ background: i % 2 === 0 ? 'transparent' : '#1a1a1a' }}>
                     <td style={{ padding: '9px 16px', color: colors.white }}>{ing.name}</td>
                     <td style={{ padding: '9px 16px', textAlign: 'right', whiteSpace: 'nowrap' }}>
-                      <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(ing.totalQty)}</span>
-                      <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{ing.unit}</span>
+                      <span style={{ color: colors.white, fontWeight: 600 }}>{formatQty(displayQty(ing))}</span>
+                      <span style={{ color: colors.textMuted, fontSize: 11, marginLeft: 5 }}>{displayUnit(ing)}</span>
                     </td>
                   </tr>
                 ))}
@@ -231,6 +236,8 @@ function RecipePanel({ mealTotals }: { mealTotals: MealTotal[] }) {
 }
 
 export default function RecipeTotals({ mealTotals }: { mealTotals: MealTotal[] }) {
+  const [showGrams, setShowGrams] = useState(false)
+
   if (mealTotals.length === 0) {
     return <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay datos esta semana.</p>
   }
@@ -247,9 +254,22 @@ export default function RecipeTotals({ mealTotals }: { mealTotals: MealTotal[] }
           .recipe-panels { grid-template-columns: 1fr; }
         }
       `}</style>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
+        <button
+          onClick={() => setShowGrams(v => !v)}
+          style={{
+            padding: '5px 14px', borderRadius: 6, fontSize: 12, cursor: 'pointer',
+            border: `1px solid ${showGrams ? colors.orange : colors.grayLight}`,
+            background: showGrams ? colors.orange + '22' : 'transparent',
+            color: showGrams ? colors.orange : colors.textMuted,
+          }}
+        >
+          {showGrams ? 'Ver unidades originales' : 'Ver todo en g'}
+        </button>
+      </div>
       <div className="recipe-panels">
-        <RecipePanel mealTotals={mealTotals} />
-        <RecipePanel mealTotals={mealTotals} />
+        <RecipePanel mealTotals={mealTotals} showGrams={showGrams} />
+        <RecipePanel mealTotals={mealTotals} showGrams={showGrams} />
       </div>
     </>
   )
