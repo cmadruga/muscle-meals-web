@@ -42,7 +42,9 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      return NextResponse.redirect(`${origin}/cuenta`)
+      const next = searchParams.get('next') ?? '/cuenta'
+      const safePath = next.startsWith('/') ? next : '/cuenta'
+      return NextResponse.redirect(`${origin}${safePath}`)
     }
   }
 

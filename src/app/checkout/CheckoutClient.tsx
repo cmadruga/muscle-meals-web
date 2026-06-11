@@ -7,6 +7,7 @@ import { processCheckout, validateCart } from '@/app/actions/checkout'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
+import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
@@ -209,6 +210,7 @@ export default function CheckoutClient({
       })
 
       if (result.success && result.checkoutUrl) {
+        trackInitiateCheckout(total, items.reduce((n, i) => n + i.qty, 0))
         window.location.href = result.checkoutUrl
       } else {
         setError(result.error || 'Error al procesar el pago')

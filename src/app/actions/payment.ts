@@ -53,7 +53,7 @@ export async function createPaymentPreference(
           phone: { number: data.customerPhone },
         },
         back_urls: {
-          success: `${BASE_URL}/order-success?our_order_id=${data.orderId}`,
+          success: `${BASE_URL}/order-success?our_order_id=${data.orderId}&value=${data.items.reduce((s, i) => s + i.unit_price * i.quantity, 0)}`,
           failure: `${BASE_URL}/order-failed?our_order_id=${data.orderId}`,
           pending: `${BASE_URL}/order-pending?our_order_id=${data.orderId}`,
         },
