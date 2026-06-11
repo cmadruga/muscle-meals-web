@@ -5,16 +5,18 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { useCartStore } from '@/lib/store/cart'
 import { colors } from '@/lib/theme'
+import { trackPurchase } from '@/lib/pixel'
 
 function OrderSuccessContent() {
   const clearCart = useCartStore(state => state.clearCart)
   const searchParams = useSearchParams()
   const orderId = searchParams.get('our_order_id')
+  const value = Number(searchParams.get('value') ?? 0)
 
   useEffect(() => {
-    // El webhook ya marcó la orden como pagada — solo limpiamos el carrito
     clearCart()
-  }, [clearCart])
+    if (orderId && value > 0) trackPurchase(value, orderId)
+  }, [clearCart, orderId, value])
 
   return (
     <main style={{
