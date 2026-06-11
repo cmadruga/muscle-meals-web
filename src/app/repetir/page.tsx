@@ -1,7 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
-import { getOrdersByCustomerId } from '@/lib/db/orders'
 import RepetirClient from './RepetirClient'
 import type { CartItem } from '@/lib/store/cart'
 
@@ -23,15 +22,25 @@ export default async function RepetirPage() {
 
   if (!customer) redirect('/cuenta/login?next=/repetir')
 
-  const orders = await getOrdersByCustomerId(supabase, customer.id)
-  const lastOrder = orders.find(o => o.status !== 'extra' && o.status !== 'admin') ?? null
+  const { data: rawOrders } = await admin
+    .from('orders')
+    .select(`*, order_items(*, meals:meal_id(name), sizes:size_id(name))`)
+    .eq('customer_id', customer.id)
+    .not('status', 'in', '("extra","admin")')
+    .order('created_at', { ascending: false })
+    .limit(10)
 
-  if (!lastOrder || lastOrder.items.length === 0) {
+  const lastOrder = rawOrders?.[0] ?? null
+
+  type RawItem = { meal_id: string; size_id: string; qty: number; unit_price: number; meals: { name: string } | null; sizes: { name: string } | null }
+  const rawItems: RawItem[] = (lastOrder as any)?.order_items ?? []
+
+  if (!lastOrder || rawItems.length === 0) {
     return <RepetirClient items={null} orderDate={null} orderNumber={null} />
   }
 
   // Precios actuales para cada size_id del pedido
-  const sizeIds = [...new Set(lastOrder.items.map(i => i.size_id))]
+  const sizeIds = [...new Set(rawItems.map(i => i.size_id))]
   const { data: sizes } = await admin
     .from('sizes')
     .select('id, price')
@@ -39,13 +48,13 @@ export default async function RepetirPage() {
 
   const priceMap = new Map(sizes?.map(s => [s.id, s.price as number]) ?? [])
 
-  const items: CartItem[] = lastOrder.items
+  const items: CartItem[] = rawItems
     .filter(i => i.meal_id && i.size_id)
     .map(i => ({
       mealId: i.meal_id,
-      mealName: i.meal_name ?? 'Platillo',
+      mealName: i.meals?.name ?? 'Platillo',
       sizeId: i.size_id,
-      sizeName: i.size_name ?? '',
+      sizeName: i.sizes?.name ?? '',
       qty: i.qty,
       unitPrice: priceMap.get(i.size_id) ?? i.unit_price,
     }))
