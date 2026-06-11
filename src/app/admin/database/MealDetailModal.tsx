@@ -69,10 +69,10 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
   }, [onClose])
 
   // Calcular qty efectiva para ingrediente de receta principal
-  function effectiveQty(qty: number, type: string | null, ingredientId: string) {
-    if (type === 'pro') return (selectedSize.protein_qty[ingredientId] ?? selectedSize.protein_qty['default'] ?? 0)
-    if (type === 'carb') return (selectedSize.carb_qty[ingredientId] ?? selectedSize.carb_qty['default'] ?? 0)
-    if (type === 'veg') return selectedSize.veg_qty
+  function effectiveQty(qty: number, type: string | null, ingredientId: string, section?: string) {
+    if (type === 'pro' && section === 'pro') return (selectedSize.protein_qty[ingredientId] ?? selectedSize.protein_qty['default'] ?? 0)
+    if (type === 'carb' && section === 'carb') return (selectedSize.carb_qty[ingredientId] ?? selectedSize.carb_qty['default'] ?? 0)
+    if (type === 'veg' && section === 'veg') return selectedSize.veg_qty
     return qty
   }
 
@@ -92,7 +92,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
     for (const ri of mainRecipe.ingredients) {
       const ing = ingredientsById.get(ri.ingredient_id)
       if (!ing) continue
-      const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
+      const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id, ri.section)
       const grams = toGrams(qty, ri.unit as Unit, ing)
       totalCal  += grams * ing.calories / 100
       totalPro  += grams * ing.protein / 100
@@ -151,7 +151,7 @@ export default function MealDetailModal({ meal, recipesById, ingredientsById, se
                       {ings.map((ri, i) => {
                         const ing = ingredientsById.get(ri.ingredient_id)
                         if (!ing) return null
-                        const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id)
+                        const qty = effectiveQty(ri.qty, ing.type, ri.ingredient_id, ri.section)
                         const grams = toGrams(qty, ri.unit as Unit, ing)
                         const cal  = grams * ing.calories / 100
                         const pro  = grams * ing.protein / 100

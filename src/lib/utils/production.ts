@@ -13,6 +13,7 @@ export type MealIngredientRow = {
   section?: 'pro' | 'carb' | 'veg'
   ingredientType: string | null
   proveedor: string | null
+  grEquiv: number  // factor unit→grams (1 if already g, fallback 1:1)
 }
 
 export type MealTotal = {
@@ -83,7 +84,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
   // mealId → key → { qty, name, unit, isSubRecipe, ingredientId, section, ingredientType, proveedor }
   const mealAggregates = new Map<
     string,
-    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg'; ingredientType: string | null; proveedor: string | null }>
+    Map<string, { qty: number; name: string; unit: string; isSubRecipe: boolean; ingredientId: string; section?: 'pro' | 'carb' | 'veg'; ingredientType: string | null; proveedor: string | null; grEquiv: number }>
   >()
 
   const mealPortions = new Map<string, number>()
@@ -114,16 +115,17 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
       if (!ingredient) continue
 
       let qtyPerPortion: number
-      if (ingredient.type === 'pro') {
+      if (ingredient.type === 'pro' && recipeIng.section === 'pro') {
         qtyPerPortion = resolveQty(size.protein_qty, recipeIng.ingredient_id)
-      } else if (ingredient.type === 'carb') {
+      } else if (ingredient.type === 'carb' && recipeIng.section === 'carb') {
         qtyPerPortion = resolveQty(size.carb_qty, recipeIng.ingredient_id)
-      } else if (ingredient.type === 'veg') {
+      } else if (ingredient.type === 'veg' && recipeIng.section === 'veg') {
         qtyPerPortion = size.veg_qty
       } else {
         qtyPerPortion = recipeIng.qty
       }
 
+      const grEquiv = recipeIng.unit === 'g' ? 1 : (ingredient.unit_conversions?.find(c => c.unit === recipeIng.unit)?.gr_equiv ?? 1)
       const key = `main_${recipeIng.section ?? ''}_${recipeIng.ingredient_id}_${recipeIng.unit}`
       const existing = ingMap.get(key)
       if (existing) {
@@ -138,6 +140,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
           section: recipeIng.section,
           ingredientType: ingredient.type ?? null,
           proveedor: ingredient.proveedor ?? null,
+          grEquiv,
         })
       }
     }
@@ -150,6 +153,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         if (!ingredient) continue
 
         const qtyPerPortion = recipeIng.qty / subPortions
+        const grEquiv = recipeIng.unit === 'g' ? 1 : (ingredient.unit_conversions?.find(c => c.unit === recipeIng.unit)?.gr_equiv ?? 1)
         const key = `sub_${recipeIng.ingredient_id}_${recipeIng.unit}`
         const existing = ingMap.get(key)
         if (existing) {
@@ -163,6 +167,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
             ingredientId: recipeIng.ingredient_id,
             ingredientType: ingredient.type ?? null,
             proveedor: ingredient.proveedor ?? null,
+            grEquiv,
           })
         }
       }
@@ -187,6 +192,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
         section: val.section,
         ingredientType: val.ingredientType,
         proveedor: val.proveedor,
+        grEquiv: val.grEquiv,
       }
       if (val.isSubRecipe) {
         subRows.push(row)

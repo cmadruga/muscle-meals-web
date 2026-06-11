@@ -31,12 +31,11 @@ export function calculateMealMacros(
     const ingredient = ingredients.get(recipeIng.ingredient_id)
     if (!ingredient) continue
 
-    // Determinar cantidad según tipo de ingrediente
+    // Ajustar por size solo si el tipo del ingrediente coincide con su sección en la receta
     let qty = recipeIng.qty
-    if (ingredient.type === 'pro') qty = resolveQty(size.protein_qty, recipeIng.ingredient_id)
-    else if (ingredient.type === 'carb') qty = resolveQty(size.carb_qty, recipeIng.ingredient_id)
-    else if (ingredient.type === 'veg') qty = size.veg_qty
-    // Si type es null, usa la cantidad original de la receta
+    if (ingredient.type === 'pro' && recipeIng.section === 'pro') qty = resolveQty(size.protein_qty, recipeIng.ingredient_id)
+    else if (ingredient.type === 'carb' && recipeIng.section === 'carb') qty = resolveQty(size.carb_qty, recipeIng.ingredient_id)
+    else if (ingredient.type === 'veg' && recipeIng.section === 'veg') qty = size.veg_qty
 
     // Calcular macros proporcionales (ingredient tiene macros por 100g)
     const ratio = toGrams(qty, recipeIng.unit, ingredient) / 100
