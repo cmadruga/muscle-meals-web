@@ -38,15 +38,15 @@ export default function RepetirClient({
 
   const countOf = (mealId: string) => selected.filter(s => s.mealId === mealId).length
 
-  const toggleMeal = (opt: ActiveMealOption) => {
-    const c = countOf(opt.id)
-    if (c > 0) {
-      // remove one instance
-      const idx = selected.findLastIndex(s => s.mealId === opt.id)
-      setSelected(prev => prev.filter((_, i) => i !== idx))
-    } else if (selected.length < needed) {
+  const addMeal = (opt: ActiveMealOption) => {
+    if (selected.length < needed) {
       setSelected(prev => [...prev, { mealId: opt.id, mealName: opt.name }])
     }
+  }
+
+  const removeMeal = (mealId: string) => {
+    const idx = selected.findLastIndex(s => s.mealId === mealId)
+    if (idx >= 0) setSelected(prev => prev.filter((_, i) => i !== idx))
   }
 
   const handleRepetir = () => {
@@ -235,38 +235,31 @@ export default function RepetirClient({
                   {activeMealOptions.map(opt => {
                     const count = countOf(opt.id)
                     const isSelected = count > 0
-                    const isDisabled = !isSelected && selected.length >= needed
+                    const canAdd = selected.length < needed
                     return (
-                      <button
+                      <div
                         key={opt.id}
-                        onClick={() => toggleMeal(opt)}
-                        disabled={isDisabled}
+                        onClick={() => !isSelected && canAdd && addMeal(opt)}
                         style={{
                           position: 'relative',
                           background: isSelected ? colors.orange + '15' : colors.grayDark,
                           border: `2px solid ${isSelected ? colors.orange : colors.grayLight}`,
                           borderRadius: 10,
                           overflow: 'hidden',
-                          cursor: isDisabled ? 'not-allowed' : 'pointer',
-                          opacity: isDisabled ? 0.4 : 1,
-                          padding: 0,
-                          textAlign: 'left',
+                          cursor: !isSelected && canAdd ? 'pointer' : 'default',
+                          opacity: !isSelected && !canAdd ? 0.4 : 1,
                           transition: 'border-color 0.15s, background 0.15s',
                         }}
                       >
                         {/* Image */}
                         <div style={{
-                          width: '100%',
-                          aspectRatio: '4/3',
-                          background: colors.black,
-                          overflow: 'hidden',
-                          position: 'relative',
+                          width: '100%', aspectRatio: '4/3',
+                          background: colors.black, overflow: 'hidden', position: 'relative',
                         }}>
                           {opt.imageUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
-                              src={opt.imageUrl}
-                              alt={opt.name}
+                              src={opt.imageUrl} alt={opt.name}
                               style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                             />
                           ) : (
@@ -274,33 +267,51 @@ export default function RepetirClient({
                               width: '100%', height: '100%',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
                               fontSize: 28, color: colors.grayLight,
-                            }}>
-                              🍽️
-                            </div>
+                            }}>🍽️</div>
                           )}
 
-                          {/* Selected overlay */}
+                          {/* Counter overlay when selected */}
                           {isSelected && (
                             <div style={{
-                              position: 'absolute', inset: 0,
-                              background: colors.orange + '33',
+                              position: 'absolute', bottom: 0, left: 0, right: 0,
+                              background: 'rgba(0,0,0,0.65)',
                               display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            }}>
-                              <div style={{
-                                width: 28, height: 28, borderRadius: '50%',
-                                background: colors.orange,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                fontSize: 16, color: colors.white, fontWeight: 700,
-                              }}>
-                                {count > 1 ? count : '✓'}
-                              </div>
+                              gap: 12, padding: '6px 0',
+                            }}
+                              onClick={e => e.stopPropagation()}
+                            >
+                              <button
+                                onClick={e => { e.stopPropagation(); removeMeal(opt.id) }}
+                                style={{
+                                  width: 26, height: 26, borderRadius: '50%',
+                                  background: colors.orange, border: 'none',
+                                  color: colors.white, fontSize: 18, fontWeight: 700,
+                                  cursor: 'pointer', lineHeight: 1,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                              >−</button>
+                              <span style={{ color: colors.white, fontWeight: 700, fontSize: 16, minWidth: 16, textAlign: 'center' }}>
+                                {count}
+                              </span>
+                              <button
+                                onClick={e => { e.stopPropagation(); addMeal(opt) }}
+                                disabled={!canAdd}
+                                style={{
+                                  width: 26, height: 26, borderRadius: '50%',
+                                  background: canAdd ? colors.orange : colors.grayLight,
+                                  border: 'none', color: colors.white,
+                                  fontSize: 18, fontWeight: 700,
+                                  cursor: canAdd ? 'pointer' : 'not-allowed', lineHeight: 1,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                }}
+                              >+</button>
                             </div>
                           )}
                         </div>
 
                         {/* Name */}
                         <div style={{
-                          padding: '8px 8px',
+                          padding: '8px',
                           fontSize: 12,
                           fontWeight: isSelected ? 700 : 400,
                           color: isSelected ? colors.white : colors.textMuted,
@@ -309,7 +320,7 @@ export default function RepetirClient({
                         }}>
                           {opt.name}
                         </div>
-                      </button>
+                      </div>
                     )
                   })}
                 </div>
