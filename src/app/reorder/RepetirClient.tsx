@@ -123,10 +123,7 @@ export default function RepetirClient({
         ) : (
           <>
             <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 24 }}>
-              {formattedDate ? `Repite tu pedido del ${formattedDate}` : 'Tu último pedido'}
-              {orderNumber && (
-                <span style={{ color: colors.grayLight, marginLeft: 8, fontSize: 12 }}>{orderNumber}</span>
-              )}
+              Repite tu último pedido
             </p>
 
             {/* Active items */}
