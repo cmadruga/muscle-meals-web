@@ -24,6 +24,7 @@ export type SkippedSlot = {
 export type ActiveMealOption = {
   id: string
   name: string
+  imageUrl?: string
 }
 
 export default async function RepetirPage() {
@@ -81,26 +82,16 @@ export default async function RepetirPage() {
     { data: sizes },
   ] = await Promise.all([
     admin.from('meals').select('id').in('id', allMealIds).eq('active', true),
-    admin.from('meals').select('id, name').eq('active', true).order('name'),
+    admin.from('meals').select('id, name, img').eq('active', true).order('name'),
     admin.from('sizes').select('id, price').in('id', allSizeIds),
   ])
 
   const activeMealIdSet = new Set(activeMealsInOrder?.map(m => m.id) ?? [])
   const priceMap = new Map(sizes?.map(s => [s.id, s.price as number]) ?? [])
-  const activeMealOptions: ActiveMealOption[] = allActiveMeals?.map(m => ({ id: m.id, name: m.name })) ?? []
+  const activeMealOptions: ActiveMealOption[] = allActiveMeals?.map(m => ({ id: m.id, name: m.name, imageUrl: m.img ?? undefined })) ?? []
 
   const activeItems = rawItems.filter(i => activeMealIdSet.has(i.meal_id))
   const skippedItems = rawItems.filter(i => !activeMealIdSet.has(i.meal_id))
-
-  const skippedSlots: SkippedSlot[] = skippedItems.map((item, idx) => ({
-    key: `skipped-${idx}`,
-    originalMealName: item.meals?.name ?? 'Platillo',
-    sizeId: item.size_id,
-    sizeName: item.sizes?.name ?? '',
-    qty: item.qty,
-    unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
-    packageInstanceId: item.package_instance_id ?? undefined,
-  }))
 
   const toCartItem = (i: RawItem, extra?: Partial<CartItem>): CartItem => ({
     mealId: i.meal_id,
@@ -112,6 +103,7 @@ export default async function RepetirPage() {
     ...extra,
   })
 
+  // Build packages first so we can map original → new instanceId
   const packageMap = new Map<string, RawItem[]>()
   const individualRaw: RawItem[] = []
 
@@ -125,8 +117,12 @@ export default async function RepetirPage() {
     }
   }
 
-  const packages: PackageGroup[] = Array.from(packageMap.values()).map(group => {
+  // original DB id → new cart instanceId
+  const packageInstanceIdMap = new Map<string, string>()
+
+  const packages: PackageGroup[] = Array.from(packageMap.entries()).map(([originalId, group]) => {
     const instanceId = crypto.randomUUID()
+    packageInstanceIdMap.set(originalId, instanceId)
     return {
       instanceId,
       items: group.map(i => toCartItem(i, { packageInstanceId: instanceId, packageName: 'Arma tu paquete' })),
@@ -134,6 +130,29 @@ export default async function RepetirPage() {
   })
 
   const individuals: CartItem[] = individualRaw.map(i => toCartItem(i))
+
+  // For packages where ALL items were skipped (no active items), also assign a new shared instanceId
+  const skippedOnlyPackageMap = new Map<string, string>()
+  for (const item of skippedItems) {
+    if (item.package_instance_id && !packageInstanceIdMap.has(item.package_instance_id)) {
+      if (!skippedOnlyPackageMap.has(item.package_instance_id)) {
+        skippedOnlyPackageMap.set(item.package_instance_id, crypto.randomUUID())
+      }
+    }
+  }
+
+  const skippedSlots: SkippedSlot[] = skippedItems.map((item, idx) => ({
+    key: `skipped-${idx}`,
+    originalMealName: item.meals?.name ?? 'Platillo',
+    sizeId: item.size_id,
+    sizeName: item.sizes?.name ?? '',
+    qty: item.qty,
+    unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
+    // Use the same new instanceId as the active items from this package
+    packageInstanceId: item.package_instance_id
+      ? (packageInstanceIdMap.get(item.package_instance_id) ?? skippedOnlyPackageMap.get(item.package_instance_id))
+      : undefined,
+  }))
 
   return (
     <RepetirClient
