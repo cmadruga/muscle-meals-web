@@ -6,7 +6,7 @@ import type { Order, OrderItem, OrderWithItems, OrderWithCustomer, CreateOrderPa
 type RawItemJoin = OrderItem & { meals: { name: string } | null; sizes: { name: string } | null }
 type RawOrderWithItems = Order & { order_items: RawItemJoin[] }
 type RawOrderWithCustomer = Order & {
-  customers: { full_name: string; phone: string | null; address: string | null } | null
+  customers: { full_name: string; phone: string | null; address: string | null; user_id: string | null } | null
   pickup_spots: { name: string; address: string | null } | null
   order_items: RawItemJoin[]
 }
@@ -244,7 +244,7 @@ export async function getOrdersForWeek(
     .from('orders')
     .select(`
       *,
-      customers:customer_id (full_name, phone, address),
+      customers:customer_id (full_name, phone, address, user_id),
       pickup_spots:pickup_spot_id (name, address),
       order_items (
         *,
@@ -267,6 +267,7 @@ export async function getOrdersForWeek(
       customer_name: customers?.full_name ?? null,
       customer_phone: customers?.phone ?? null,
       customer_address: customers?.address ?? null,
+      customer_user_id: customers?.user_id ?? null,
       pickup_spot_name: pickup_spots?.name ?? null,
       pickup_spot_address: pickup_spots?.address ?? null,
       items: order_items.map(({ meals, sizes, ...item }) => ({

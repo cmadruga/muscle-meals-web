@@ -417,7 +417,23 @@ export default function OrdersTable({
                               <div style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>{date} · {time}</div>
                             </td>
                             <td style={{ ...tdStyle, color: colors.white, minWidth: 160 }}>
-                              <div style={{ fontWeight: 500 }}>{order.customer_name || '—'}</div>
+                              <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                {order.customer_name || '—'}
+                                {order.customer_user_id && order.customer_id && (
+                                  <a
+                                    href={`/admin/customers?id=${order.customer_id}`}
+                                    title="Ver perfil del cliente"
+                                    style={{
+                                      fontSize: 10, color: colors.orange,
+                                      border: `1px solid ${colors.orange}66`,
+                                      borderRadius: 10, padding: '1px 6px',
+                                      textDecoration: 'none', flexShrink: 0, fontWeight: 700,
+                                    }}
+                                  >
+                                    cuenta
+                                  </a>
+                                )}
+                              </div>
                               {order.customer_phone && (
                                 <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2 }}>
                                   {order.customer_phone}
