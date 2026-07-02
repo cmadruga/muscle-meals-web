@@ -1,11 +1,60 @@
 import { getCriticalPeriodConfig } from '@/lib/db/settings'
 import { isInCutoffWindow } from '@/lib/utils/delivery'
+import { getActivePickupSpots } from '@/lib/db/pickup-spots'
+import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { normalizePhone } from '@/lib/address-validation'
 import CartClient from './CartClient'
 
 export const dynamic = 'force-dynamic'
 
 export default async function CartPage() {
-  const criticalConfig = await getCriticalPeriodConfig()
+  const [criticalConfig, pickupSpots, supabase] = await Promise.all([
+    getCriticalPeriodConfig(),
+    getActivePickupSpots(),
+    createClient(),
+  ])
   const inCutoff = isInCutoffWindow(criticalConfig)
-  return <CartClient inCutoff={inCutoff} />
+
+  const { data: { user } } = await supabase.auth.getUser()
+
+  let prefill: { customerId: string; name: string; phone: string; address: string | null } | null = null
+  let membership: {
+    is_member: boolean
+    membership_weeks_left: number
+    membership_qty: number | null
+    membership_size_id: string | null
+  } | null = null
+
+  if (user) {
+    const { data: customer } = await createAdminClient()
+      .from('customers')
+      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
+      .eq('user_id', user.id)
+      .maybeSingle()
+
+    if (customer) {
+      prefill = {
+        customerId: customer.id,
+        name: customer.full_name ?? '',
+        phone: normalizePhone(customer.phone ?? ''),
+        address: customer.address ?? null,
+      }
+      membership = {
+        is_member: customer.is_member ?? false,
+        membership_weeks_left: customer.membership_weeks_left ?? 0,
+        membership_qty: customer.membership_qty ?? null,
+        membership_size_id: customer.membership_size_id ?? null,
+      }
+    }
+  }
+
+  return (
+    <CartClient
+      inCutoff={inCutoff}
+      prefill={prefill}
+      membership={membership}
+      pickupSpots={pickupSpots}
+    />
+  )
 }

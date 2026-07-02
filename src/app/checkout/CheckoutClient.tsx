@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
-import { processCheckout, validateCart } from '@/app/actions/checkout'
+import { processCheckout, processMembershipOrder, validateCart } from '@/app/actions/checkout'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
@@ -30,14 +30,23 @@ const SHIPPING_COSTS = {
   pickup: 0       // Gratis - recoger en local
 }
 
+type MembershipInfo = {
+  is_member: boolean
+  membership_weeks_left: number
+  membership_qty: number | null
+  membership_size_id: string | null
+}
+
 export default function CheckoutClient({
   pickupSpots,
   prefill,
   deliveryDateStr,
+  membership,
 }: {
   pickupSpots: PickupSpot[]
   prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
   deliveryDateStr?: string
+  membership?: MembershipInfo | null
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
@@ -90,9 +99,79 @@ export default function CheckoutClient({
   const subtotal = getTotal()
   const shippingCost = SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
-  
+
   // Validar pickup spot si es necesario
   const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
+
+  // Flow A — membresía exacta
+  const totalQty = items.reduce((n, i) => n + i.qty, 0)
+  const isMembershipMatch = Boolean(
+    membership?.is_member &&
+    (membership.membership_weeks_left ?? 0) > 0 &&
+    membership.membership_qty !== null &&
+    membership.membership_size_id !== null &&
+    totalQty === membership.membership_qty &&
+    items.every(i => i.sizeId === membership!.membership_size_id)
+  )
+
+  const handleMembershipCheckout = async () => {
+    if (customerPhone.replace(/\D/g, '').length > 10) {
+      setError('Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)')
+      return
+    }
+    if (!validatePhone(customerPhone)) {
+      setError('Teléfono inválido (debe ser 10 dígitos)')
+      return
+    }
+    if (!customerName.trim()) {
+      setError('Por favor ingresa tu nombre completo')
+      return
+    }
+    if (!addressValidated) {
+      setError('Por favor completa la dirección')
+      return
+    }
+
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
+      const fullAddress = shippingType === 'pickup'
+        ? null
+        : addressOption === 'saved'
+          ? savedAddress
+          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
+
+      const result = await processMembershipOrder({
+        customerId: prefill?.customerId,
+        customerName,
+        customerPhone: whatsappPhone,
+        customerAddress: fullAddress,
+        totalAmount: total,
+        shippingType,
+        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
+        shippingCost,
+        items: items.map(item => ({
+          mealId: item.mealId,
+          mealName: item.mealName,
+          sizeId: item.sizeId,
+          sizeName: item.sizeName,
+          qty: item.qty,
+          unitPrice: item.unitPrice,
+          packageInstanceId: item.packageInstanceId,
+        })),
+      })
+
+      if (result.error) throw new Error(result.error)
+
+      window.location.href = `/order-success?our_order_id=${result.orderId}&value=${total}`
+    } catch (err) {
+      console.error('Error membership checkout:', err)
+      setError(err instanceof Error ? err.message : 'Error al procesar la orden')
+      setIsProcessing(false)
+    }
+  }
 
   const handleCheckout = async () => {
     // Validar teléfono
@@ -331,12 +410,58 @@ export default function CheckoutClient({
           </div>
         )}
 
-        <PaymentButton
-          onClick={handleCheckout}
-          disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
-          isProcessing={isProcessing}
-          addressValidated={addressValidated}
-        />
+        {/* Membresía activa — Flow A */}
+        {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
+          <div style={{
+            padding: '14px 18px',
+            marginBottom: 16,
+            background: isMembershipMatch ? `${colors.orange}18` : `${colors.grayLight}`,
+            border: `2px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
+            borderRadius: 10,
+            fontSize: 13,
+          }}>
+            <div style={{ fontWeight: 700, color: isMembershipMatch ? colors.orange : colors.white, marginBottom: isMembershipMatch ? 4 : 0 }}>
+              Membresía activa · {membership.membership_weeks_left} {membership.membership_weeks_left === 1 ? 'semana' : 'semanas'} restantes
+            </div>
+            {isMembershipMatch
+              ? <div style={{ color: colors.textSecondary, fontSize: 12 }}>Tu pedido de esta semana está cubierto — sin cobro adicional</div>
+              : <div style={{ color: colors.textMuted, fontSize: 12 }}>Cubre {membership.membership_qty} platillos en tu tamaño de membresía. Tu carrito actual no coincide exactamente.</div>
+            }
+          </div>
+        )}
+
+        {isMembershipMatch ? (
+          <button
+            onClick={handleMembershipCheckout}
+            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
+            className={(!isProcessing && addressValidated) ? 'franchise-stroke' : undefined}
+            style={{
+              width: '100%',
+              padding: '18px 24px',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              background: colors.orange,
+              color: colors.white,
+              border: 'none',
+              borderRadius: 8,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase',
+              opacity: isProcessing ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            {isProcessing ? 'Procesando…' : 'Confirmar con membresía'}
+          </button>
+        ) : (
+          <PaymentButton
+            onClick={handleCheckout}
+            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
+            isProcessing={isProcessing}
+            addressValidated={addressValidated}
+          />
+        )}
       </div>
     </main>
     <LoginBanner />
