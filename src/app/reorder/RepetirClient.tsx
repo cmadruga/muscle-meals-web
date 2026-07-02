@@ -202,12 +202,12 @@ export default function RepetirClient({
                   display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                 }}>
                   <div>
-                    <span style={{ fontWeight: 'bold', color: '#f59e0b' }}>
-                      {needed === 1 ? 'Elige un reemplazo' : `Elige ${needed} reemplazos`}
-                    </span>
-                    <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 10 }}>
-                      {skippedSlots.map(s => s.originalMealName).join(', ')} no disponible{needed > 1 ? 's' : ''} esta semana
-                    </span>
+                    <div style={{ fontWeight: 'bold', color: '#f59e0b' }}>
+                      {needed} {needed === 1 ? 'meal no está disponible' : 'meals no están disponibles'} esta semana
+                    </div>
+                    <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+                      Elige un reemplazo para: {skippedSlots.map(s => s.originalMealName).join(', ')}
+                    </div>
                   </div>
                   <span style={{
                     padding: '4px 12px',

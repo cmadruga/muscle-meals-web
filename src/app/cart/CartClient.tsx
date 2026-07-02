@@ -10,20 +10,62 @@ import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
-import { validateCart } from '@/app/actions/checkout'
+import { validateCart, processMembershipOrder } from '@/app/actions/checkout'
+import { formatPhoneForWhatsApp } from '@/lib/address-validation'
+import type { PickupSpot } from '@/lib/db/pickup-spots'
+
+type MembershipInfo = {
+  is_member: boolean
+  membership_weeks_left: number
+  membership_qty: number | null
+  membership_size_id: string | null
+}
+
+type PrefillInfo = {
+  customerId: string
+  name: string
+  phone: string
+  address: string | null
+}
+
+const SHIPPING_COSTS = { standard: 4900, pickup: 0, priority: 0 }
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
   | { type: 'package'; instanceId: string; name: string }
 
-export default function CartClient({ inCutoff }: { inCutoff: boolean }) {
+export default function CartClient({
+  inCutoff,
+  prefill,
+  membership,
+  pickupSpots,
+  usedMembershipThisWeek,
+}: {
+  inCutoff: boolean
+  prefill: PrefillInfo | null
+  membership: MembershipInfo | null
+  pickupSpots: PickupSpot[]
+  usedMembershipThisWeek: boolean
+}) {
   const router = useRouter()
   const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [validating, setValidating] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false)
   const items = useCartStore(state => state.items)
+
+  const totalQty = items.reduce((n, i) => n + i.qty, 0)
+  const isMembershipMatch = Boolean(
+    !usedMembershipThisWeek &&
+    membership?.is_member &&
+    (membership.membership_weeks_left ?? 0) > 0 &&
+    membership.membership_qty !== null &&
+    membership.membership_size_id !== null &&
+    totalQty === membership.membership_qty &&
+    items.every(i => i.sizeId === membership!.membership_size_id)
+  )
 
   const handleCheckout = async () => {
     if (isEmpty) return
@@ -169,15 +211,53 @@ export default function CartClient({ inCutoff }: { inCutoff: boolean }) {
         ))}
       </div>
 
-      <CartSummary total={getTotal()} />
+      {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
+        <div style={{
+          padding: '16px 20px',
+          marginBottom: 16,
+          background: isMembershipMatch ? `${colors.orange}18` : colors.grayDark,
+          border: `2px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
+          borderRadius: 10,
+        }}>
+          {isMembershipMatch ? (
+            <div style={{ fontSize: 16, fontWeight: 700, color: colors.orange }}>
+              Tu pedido está cubierto por tu Membresía Muscle Meals
+            </div>
+          ) : usedMembershipThisWeek ? (
+            <div style={{ fontSize: 13, color: colors.textMuted }}>
+              Ya usaste tu membresía esta semana — paga normalmente para este pedido
+            </div>
+          ) : (
+            <div style={{ fontSize: 13, color: colors.textMuted }}>
+              Tu carrito actual no coincide con tu Membresía Muscle Meals, verifica tu pedido o paga normalmente
+            </div>
+          )}
+        </div>
+      )}
+
+      <CartSummary total={getTotal()} isMembershipMatch={isMembershipMatch} />
 
       <CartActions
         onCheckout={handleCheckout}
         validating={validating}
         validationError={validationError}
+        isMembershipMatch={isMembershipMatch}
+        onMembershipConfirm={() => setMembershipModalOpen(true)}
       />
       </div>
     </main>
+
+    {membershipModalOpen && prefill && membership && (
+      <MembershipConfirmModal
+        prefill={prefill}
+        membership={membership}
+        pickupSpots={pickupSpots}
+        items={items}
+        subtotal={getTotal()}
+        onClose={() => setMembershipModalOpen(false)}
+      />
+    )}
+
     <LoginBanner />
     </>
   )
@@ -420,20 +500,31 @@ function QuantityControls({ value, onChange }: {
   )
 }
 
-function CartSummary({ total }: { total: number }) {
+function CartSummary({ total, isMembershipMatch }: { total: number; isMembershipMatch: boolean }) {
   return (
     <div style={{
       padding: 20,
       background: colors.grayDark,
       border: `2px solid ${colors.orange}`,
       borderRadius: 12,
-      marginBottom: 24
+      marginBottom: 16,
     }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
-        <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-          ${(total / 100).toFixed(0)} MXN
-        </span>
+        {isMembershipMatch ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
+              ${(total / 100).toFixed(0)} MXN
+            </span>
+            <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+              $0 MXN
+            </span>
+          </div>
+        ) : (
+          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+            ${(total / 100).toFixed(0)} MXN
+          </span>
+        )}
       </div>
     </div>
   )
@@ -489,10 +580,12 @@ function DeliveryBanner({ inCutoff }: { inCutoff: boolean }) {
   )
 }
 
-function CartActions({ onCheckout, validating, validationError }: {
+function CartActions({ onCheckout, validating, validationError, isMembershipMatch, onMembershipConfirm }: {
   onCheckout: () => void
   validating: boolean
   validationError: string | null
+  isMembershipMatch: boolean
+  onMembershipConfirm: () => void
 }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
@@ -509,30 +602,209 @@ function CartActions({ onCheckout, validating, validationError }: {
           {validationError}
         </div>
       )}
-    <div style={{ display: 'flex', gap: 16 }}>
-      <button
-        onClick={onCheckout}
-        disabled={validating}
-        className="franchise-stroke"
-        style={{
-          flex: 2,
-          padding: '16px 24px',
-          cursor: validating ? 'not-allowed' : 'pointer',
-          opacity: validating ? 0.7 : 1,
-          background: colors.orange,
-          color: colors.white,
-          border: 'none',
-          borderRadius: 8,
-          fontFamily: 'Franchise, sans-serif',
-          fontSize: 22,
-          letterSpacing: 0,
-          lineHeight: 1,
-          textTransform: 'uppercase',
-        }}
-      >
-        {validating ? 'Verificando...' : 'Continuar al pago →'}
-      </button>
+      {isMembershipMatch ? (
+        <button
+          onClick={onMembershipConfirm}
+          className="franchise-stroke"
+          style={{
+            width: '100%',
+            padding: '16px 24px',
+            background: colors.orange,
+            color: colors.white,
+            border: 'none',
+            borderRadius: 8,
+            fontFamily: 'Franchise, sans-serif',
+            fontSize: 22,
+            letterSpacing: 0,
+            lineHeight: 1,
+            textTransform: 'uppercase',
+            cursor: 'pointer',
+          }}
+        >
+          Confirmar con membresía
+        </button>
+      ) : (
+        <button
+          onClick={onCheckout}
+          disabled={validating}
+          className="franchise-stroke"
+          style={{
+            width: '100%',
+            padding: '16px 24px',
+            cursor: validating ? 'not-allowed' : 'pointer',
+            opacity: validating ? 0.7 : 1,
+            background: colors.orange,
+            color: colors.white,
+            border: 'none',
+            borderRadius: 8,
+            fontFamily: 'Franchise, sans-serif',
+            fontSize: 22,
+            letterSpacing: 0,
+            lineHeight: 1,
+            textTransform: 'uppercase',
+          }}
+        >
+          {validating ? 'Verificando...' : 'Continuar al pago →'}
+        </button>
+      )}
     </div>
+  )
+}
+
+function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subtotal, onClose }: {
+  prefill: PrefillInfo
+  membership: MembershipInfo
+  pickupSpots: PickupSpot[]
+  items: CartItem[]
+  subtotal: number
+  onClose: () => void
+}) {
+  const [shippingType, setShippingType] = useState<'standard' | 'pickup' | 'priority'>(
+    prefill.address ? 'standard' : 'pickup'
+  )
+  const [selectedPickupSpot, setSelectedPickupSpot] = useState('')
+  const [processing, setProcessing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  const shippingCost = SHIPPING_COSTS[shippingType]
+  const total = subtotal + shippingCost
+
+  const canConfirm =
+    !processing &&
+    (shippingType === 'standard' ? !!prefill.address : shippingType === 'priority' ? true : selectedPickupSpot !== '')
+
+  const handleConfirm = async () => {
+    setProcessing(true)
+    setError(null)
+    try {
+      const result = await processMembershipOrder({
+        customerId: prefill.customerId,
+        customerName: prefill.name,
+        customerPhone: formatPhoneForWhatsApp(prefill.phone),
+        customerAddress: shippingType === 'pickup' ? null : prefill.address,
+        totalAmount: total,
+        shippingType,
+        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
+        shippingCost,
+        items: items.map(i => ({
+          mealId: i.mealId,
+          mealName: i.mealName,
+          sizeId: i.sizeId,
+          sizeName: i.sizeName,
+          qty: i.qty,
+          unitPrice: i.unitPrice,
+          packageInstanceId: i.packageInstanceId,
+        })),
+      })
+      if (result.error) throw new Error(result.error)
+      window.location.href = `/order-success?our_order_id=${result.orderId}&value=${total}`
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al confirmar')
+      setProcessing(false)
+    }
+  }
+
+  const optionStyle = (active: boolean): React.CSSProperties => ({
+    padding: '12px 14px',
+    background: active ? `${colors.orange}18` : colors.black,
+    border: `2px solid ${active ? colors.orange : colors.grayLight}`,
+    borderRadius: 8,
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: 10,
+  })
+
+  return (
+    <div
+      onClick={e => { if (e.target === e.currentTarget) onClose() }}
+      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+    >
+      <div style={{ background: colors.grayDark, border: `1px solid ${colors.orange}55`, borderRadius: 14, width: '100%', maxWidth: 420, padding: 24 }}>
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
+          <div style={{ fontSize: 22, fontWeight: 700, color: colors.white }}>Confirmar tipo de envío</div>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
+        </div>
+
+        {/* Envío */}
+        <div style={{ marginBottom: 16 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {prefill.address && (
+              <div onClick={() => setShippingType('standard')} style={optionStyle(shippingType === 'standard')}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'standard' ? colors.orange : colors.grayLight}`, background: shippingType === 'standard' ? colors.orange : 'transparent', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Envío estándar</div>
+                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario regular (Domingo 9AM - 4PM)</div>
+                  <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 1, lineHeight: 1.3 }}>{prefill.address}</div>
+                </div>
+              </div>
+            )}
+            {pickupSpots.length > 0 && (
+              <div onClick={() => setShippingType('pickup')} style={optionStyle(shippingType === 'pickup')}>
+                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'pickup' ? colors.orange : colors.grayLight}`, background: shippingType === 'pickup' ? colors.orange : 'transparent', flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Pickup</div>
+                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Recoge tu pedido en el horario del local</div>
+                </div>
+              </div>
+            )}
+            <div onClick={() => setShippingType('priority')} style={optionStyle(shippingType === 'priority')}>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'priority' ? colors.orange : colors.grayLight}`, background: shippingType === 'priority' ? colors.orange : 'transparent', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Prioritario</div>
+                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario y zona específica · $100-200 MXN por separado</div>
+              </div>
+            </div>
+          </div>
+
+          {shippingType === 'pickup' && (
+            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
+              {pickupSpots.map(spot => (
+                <div
+                  key={spot.id}
+                  onClick={() => setSelectedPickupSpot(spot.id)}
+                  style={{
+                    padding: '10px 12px',
+                    background: selectedPickupSpot === spot.id ? `${colors.orange}18` : colors.black,
+                    border: `1px solid ${selectedPickupSpot === spot.id ? colors.orange : colors.grayLight}`,
+                    borderRadius: 7,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontSize: 13, color: colors.white, fontWeight: 600 }}>{spot.name}</div>
+                  <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>{spot.address}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {error && <div style={{ color: colors.error, fontSize: 13, marginBottom: 12 }}>{error}</div>}
+
+        <button
+          onClick={handleConfirm}
+          disabled={!canConfirm}
+          className={canConfirm ? 'franchise-stroke' : undefined}
+          style={{
+            width: '100%',
+            padding: '14px 24px',
+            background: canConfirm ? colors.orange : colors.grayLight,
+            color: colors.white,
+            border: 'none',
+            borderRadius: 8,
+            fontFamily: 'Franchise, sans-serif',
+            fontSize: 23,
+            letterSpacing: 0,
+            lineHeight: 1,
+            textTransform: 'uppercase',
+            cursor: canConfirm ? 'pointer' : 'not-allowed',
+            opacity: processing ? 0.7 : 1,
+          }}
+        >
+          {processing ? 'Confirmando…' : 'Confirmar pedido'}
+        </button>
+      </div>
     </div>
   )
 }

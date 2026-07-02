@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { sendPaymentConfirmation, sendInternalOrderAlert } from '@/lib/whatsapp'
 import { getExtraStockForWeek } from '@/lib/db/extra-stock'
 import { getCriticalPeriodConfig } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
@@ -142,13 +143,13 @@ export async function processCheckout(
     }
     customerId = newCustomer.id
   } else {
-    // Logueado: actualizar su registro
+    // Logueado: actualizar su registro (nunca borrar dirección guardada)
     await supabase
       .from('customers')
       .update({
         full_name: data.customerName,
         phone: data.customerPhone || null,
-        address: data.customerAddress || null,
+        ...(data.customerAddress ? { address: data.customerAddress } : {}),
       })
       .eq('id', customerId)
   }
@@ -188,6 +189,131 @@ export async function processCheckout(
     console.error('Error creating order items:', itemsError)
     return { orderId: '', orderNumber: '', error: 'Error al crear los items de la orden' }
   }
+
+  return { orderId: order.id, orderNumber: order.order_number }
+}
+
+export async function processMembershipOrder(
+  data: ProcessCheckoutInput
+): Promise<{ orderId: string; orderNumber: string; error?: string }> {
+  if (!data.customerId) {
+    return { orderId: '', orderNumber: '', error: 'Se requiere cuenta para usar membresía' }
+  }
+
+  const supabase = createAdminClient()
+
+  // Re-verificar membresía server-side
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('id, phone, full_name, is_member, membership_weeks_left, membership_qty, membership_size_id')
+    .eq('id', data.customerId)
+    .single()
+
+  if (!customer || !customer.is_member || (customer.membership_weeks_left ?? 0) <= 0) {
+    return { orderId: '', orderNumber: '', error: 'Membresía no válida o sin semanas disponibles' }
+  }
+
+  // Verificar que no haya ya un pedido esta semana
+  const weekStart = getCurrentWeekMonday().toISOString()
+  const { data: thisWeekOrders } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('customer_id', data.customerId)
+    .eq('status', 'paid')
+    .gte('created_at', weekStart)
+    .limit(1)
+
+  if ((thisWeekOrders?.length ?? 0) > 0) {
+    return { orderId: '', orderNumber: '', error: 'Ya tienes un pedido esta semana — solo se permite uno por membresía' }
+  }
+
+  // Re-verificar que el carrito coincide exactamente
+  const totalQty = data.items.reduce((n, i) => n + i.qty, 0)
+  const allMatchSize = data.items.every(i => i.sizeId === customer.membership_size_id)
+  if (totalQty !== customer.membership_qty || !allMatchSize) {
+    return { orderId: '', orderNumber: '', error: 'El carrito no coincide con la membresía — verifica cantidad y tamaño' }
+  }
+
+  // Actualizar datos del cliente
+  await supabase
+    .from('customers')
+    .update({
+      full_name: data.customerName,
+      phone: data.customerPhone || null,
+      ...(data.customerAddress ? { address: data.customerAddress } : {}),
+    })
+    .eq('id', data.customerId)
+
+  // Crear orden con status='paid' directamente
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      customer_id: data.customerId,
+      total_amount: data.totalAmount,
+      status: 'paid',
+      shipping_type: data.shippingType,
+      pickup_spot_id: data.pickupSpotId || null,
+      shipping_cost: data.shippingCost,
+    })
+    .select('id, order_number')
+    .single()
+
+  if (orderError) {
+    console.error('Error creating membership order:', orderError)
+    return { orderId: '', orderNumber: '', error: 'Error al crear la orden' }
+  }
+
+  // Crear items
+  const { error: itemsError } = await supabase.from('order_items').insert(
+    data.items.map(item => ({
+      order_id: order.id,
+      meal_id: item.mealId,
+      size_id: item.sizeId,
+      qty: item.qty,
+      unit_price: item.unitPrice,
+      package_instance_id: item.packageInstanceId ?? null,
+    }))
+  )
+
+  if (itemsError) {
+    await supabase.from('orders').delete().eq('id', order.id)
+    console.error('Error creating membership order items:', itemsError)
+    return { orderId: '', orderNumber: '', error: 'Error al crear los items de la orden' }
+  }
+
+  // Decrementar semanas restantes
+  await supabase
+    .from('customers')
+    .update({ membership_weeks_left: customer.membership_weeks_left - 1 })
+    .eq('id', data.customerId)
+
+  // WhatsApp al cliente
+  if (customer.phone) {
+    await sendPaymentConfirmation(
+      customer.phone,
+      customer.full_name,
+      order.id,
+      data.totalAmount / 100,
+      totalQty
+    )
+  }
+
+  // Alerta interna
+  await sendInternalOrderAlert({
+    orderNumber: order.order_number,
+    status: 'paid',
+    customerName: customer.full_name,
+    customerPhone: customer.phone ?? '',
+    items: data.items.map(i => ({
+      mealName: i.mealName ?? '',
+      sizeName: i.sizeName ?? '',
+      qty: i.qty,
+      unitPrice: i.unitPrice / 100,
+    })),
+    shippingType: data.shippingType,
+    shippingCost: data.shippingCost / 100,
+    totalAmount: data.totalAmount / 100,
+  })
 
   return { orderId: order.id, orderNumber: order.order_number }
 }
