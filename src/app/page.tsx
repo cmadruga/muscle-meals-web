@@ -123,6 +123,155 @@ export default async function Home() {
         </div>
       </section>
 
+      {/* Cómo Pedir */}
+      <section id="como-pedir" style={{
+        padding: '72px 24px',
+        background: colors.grayDark,
+        borderTop: `4px solid ${colors.orange}`,
+      }}>
+        <style>{`
+          .cp-steps { display: flex; flex-direction: column; gap: 40px; }
+          .cp-step { display: grid; grid-template-columns: 72px 1fr 260px; gap: 28px; align-items: center; }
+          .cp-step-illus { border: 2px dashed ${colors.grayLight}; border-radius: 12px; height: 180px;
+            display: flex; align-items: center; justify-content: center;
+            color: ${colors.textDisabled}; font-size: 12px; font-family: sans-serif; flex-shrink: 0; }
+          .cp-step-num { font-family: Franchise, sans-serif; font-size: 88px; color: ${colors.orange}; line-height: 1; text-align: right; }
+          .cp-divider { display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+          @media (max-width: 700px) {
+            .cp-step { grid-template-columns: 56px 1fr; }
+            .cp-step-illus { display: none; }
+            .cp-step-num { font-size: 60px; }
+          }
+        `}</style>
+
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <h2 style={{
+            fontFamily: 'Franchise, sans-serif',
+            fontSize: 52,
+            textAlign: 'center',
+            color: colors.white,
+            textTransform: 'uppercase',
+            letterSpacing: 0,
+            marginBottom: 56,
+          }}>
+            ¿Cómo <span style={{ color: colors.orange }}>Pedir?</span>
+          </h2>
+
+          <div className="cp-steps">
+            {[
+              {
+                title: 'Elige tus platillos',
+                desc: 'Escoge del menú de la semana. Variedad nueva cada semana.',
+                icon: (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                  </svg>
+                ),
+              },
+              {
+                title: 'Elige tu tamaño',
+                desc: 'LOW, FIT o PLUS. O crea el tuyo según tus objetivos.',
+                icon: (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <circle cx="7" cy="12" r="2.5" fill={colors.orange} stroke="none"/>
+                    <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/>
+                  </svg>
+                ),
+              },
+              {
+                title: 'Combina y ahorra',
+                desc: 'Arma tu paquete mezclando los meals que quieras. Entre más piezas, mejor precio.',
+                icon: (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>
+                  </svg>
+                ),
+              },
+              {
+                title: 'Paga rápido',
+                desc: 'Elige tu método de pago favorito y realiza el pago en segundos.',
+                icon: (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/>
+                  </svg>
+                ),
+              },
+              {
+                title: 'Recibe tu pedido',
+                desc: 'Recoge en un punto cercano o recíbelo en casa los domingos, listo para comer.',
+                icon: (
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={colors.orange} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/>
+                    <circle cx="12" cy="10" r="3"/>
+                  </svg>
+                ),
+              },
+            ].map((step, i) => (
+              <div key={i} className="cp-step">
+                <div className="cp-step-num">{String(i + 1).padStart(2, '0')}</div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                    {step.icon}
+                    <h3 style={{
+                      fontFamily: 'Franchise, sans-serif',
+                      fontSize: 26,
+                      color: colors.white,
+                      textTransform: 'uppercase',
+                      letterSpacing: 0,
+                      margin: 0,
+                    }}>{step.title}</h3>
+                  </div>
+                  <p style={{
+                    color: colors.textSecondary,
+                    fontSize: 15,
+                    lineHeight: 1.6,
+                    margin: 0,
+                    maxWidth: 420,
+                  }}>{step.desc}</p>
+                </div>
+                <div className="cp-step-illus">ilustración</div>
+              </div>
+            ))}
+          </div>
+
+          {/* Divider line between steps */}
+          <div style={{ textAlign: 'center', marginTop: 56 }}>
+            <p style={{
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 30,
+              color: colors.orange,
+              letterSpacing: 0,
+              marginBottom: 28,
+            }}>
+              Sin cocinar, sin medir, sin excusas.
+            </p>
+            <Link
+              href="/menu"
+              className="franchise-stroke"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                padding: '10px 44px',
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: 28,
+                lineHeight: 1,
+                background: colors.orange,
+                color: colors.white,
+                borderRadius: 8,
+                textDecoration: 'none',
+                textTransform: 'uppercase',
+                letterSpacing: 0,
+              }}
+            >
+              Ordena Ahora
+            </Link>
+          </div>
+        </div>
+      </section>
+
       {/* Cómo Funciona */}
       {/* <section id="info" style={{
         padding: '60px 24px',

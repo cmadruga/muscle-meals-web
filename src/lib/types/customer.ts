@@ -9,6 +9,10 @@ export interface Customer {
   address: string | null
   user_id: string | null  // UUID de auth.users (vinculado vía Google OAuth)
   created_at: string
+  is_member: boolean
+  membership_weeks_left: number
+  membership_qty: number | null
+  membership_size_id: string | null
 }
 
 /**
