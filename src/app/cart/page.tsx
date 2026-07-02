@@ -1,5 +1,5 @@
 import { getCriticalPeriodConfig } from '@/lib/db/settings'
-import { isInCutoffWindow } from '@/lib/utils/delivery'
+import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -25,9 +25,11 @@ export default async function CartPage() {
     membership_qty: number | null
     membership_size_id: string | null
   } | null = null
+  let usedMembershipThisWeek = false
 
   if (user) {
-    const { data: customer } = await createAdminClient()
+    const admin = createAdminClient()
+    const { data: customer } = await admin
       .from('customers')
       .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
       .eq('user_id', user.id)
@@ -46,6 +48,18 @@ export default async function CartPage() {
         membership_qty: customer.membership_qty ?? null,
         membership_size_id: customer.membership_size_id ?? null,
       }
+
+      if (customer.is_member) {
+        const weekStart = getCurrentWeekMonday().toISOString()
+        const { data: thisWeekOrders } = await admin
+          .from('orders')
+          .select('id')
+          .eq('customer_id', customer.id)
+          .eq('status', 'paid')
+          .gte('created_at', weekStart)
+          .limit(1)
+        usedMembershipThisWeek = (thisWeekOrders?.length ?? 0) > 0
+      }
     }
   }
 
@@ -55,6 +69,7 @@ export default async function CartPage() {
       prefill={prefill}
       membership={membership}
       pickupSpots={pickupSpots}
+      usedMembershipThisWeek={usedMembershipThisWeek}
     />
   )
 }

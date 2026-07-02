@@ -213,6 +213,20 @@ export async function processMembershipOrder(
     return { orderId: '', orderNumber: '', error: 'Membresía no válida o sin semanas disponibles' }
   }
 
+  // Verificar que no haya ya un pedido esta semana
+  const weekStart = getCurrentWeekMonday().toISOString()
+  const { data: thisWeekOrders } = await supabase
+    .from('orders')
+    .select('id')
+    .eq('customer_id', data.customerId)
+    .eq('status', 'paid')
+    .gte('created_at', weekStart)
+    .limit(1)
+
+  if ((thisWeekOrders?.length ?? 0) > 0) {
+    return { orderId: '', orderNumber: '', error: 'Ya tienes un pedido esta semana — solo se permite uno por membresía' }
+  }
+
   // Re-verificar que el carrito coincide exactamente
   const totalQty = data.items.reduce((n, i) => n + i.qty, 0)
   const allMatchSize = data.items.every(i => i.sizeId === customer.membership_size_id)

@@ -39,11 +39,13 @@ export default function CartClient({
   prefill,
   membership,
   pickupSpots,
+  usedMembershipThisWeek,
 }: {
   inCutoff: boolean
   prefill: PrefillInfo | null
   membership: MembershipInfo | null
   pickupSpots: PickupSpot[]
+  usedMembershipThisWeek: boolean
 }) {
   const router = useRouter()
   const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
@@ -56,6 +58,7 @@ export default function CartClient({
 
   const totalQty = items.reduce((n, i) => n + i.qty, 0)
   const isMembershipMatch = Boolean(
+    !usedMembershipThisWeek &&
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
     membership.membership_qty !== null &&
@@ -219,6 +222,10 @@ export default function CartClient({
           {isMembershipMatch ? (
             <div style={{ fontSize: 16, fontWeight: 700, color: colors.orange }}>
               Tu pedido está cubierto por tu Membresía Muscle Meals
+            </div>
+          ) : usedMembershipThisWeek ? (
+            <div style={{ fontSize: 13, color: colors.textMuted }}>
+              Ya usaste tu membresía esta semana — paga normalmente para este pedido
             </div>
           ) : (
             <div style={{ fontSize: 13, color: colors.textMuted }}>
