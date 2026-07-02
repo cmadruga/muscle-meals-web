@@ -214,6 +214,59 @@ export async function sendInternalOrderAlert(data: {
 }
 
 /**
+ * Template de reordenar — envía el link de /reorder al cliente
+ * Header: imagen (requiere URL pública — configurar WHATSAPP_REORDER_IMAGE_URL en Vercel)
+ * Body {{1}}: primer nombre del cliente
+ */
+export async function sendReorderTemplate(
+  phoneNumber: string,
+  firstName: string,
+): Promise<boolean> {
+  try {
+    const response = await fetch(WHATSAPP_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        type: 'template',
+        to: phoneNumber,
+        template: {
+          name: 'reordenar',
+          language: { code: 'es_MX' },
+          components: [
+            {
+              type: 'header',
+              parameters: [{ type: 'image', image: { link: 'https://www.musclemeals.mx/media/reminder_template.jpeg' } }],
+            },
+            {
+              type: 'body',
+              parameters: [{ type: 'text', text: firstName }],
+            },
+          ],
+        },
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error('❌ Error reordenar template:', JSON.stringify(error, null, 2))
+      return false
+    }
+
+    const result = await response.json()
+    console.log('✅ Reordenar enviado a', phoneNumber, ':', result.messages?.[0]?.id)
+    return true
+  } catch (error) {
+    console.error('❌ Error enviando reordenar:', error)
+    return false
+  }
+}
+
+/**
  * Orden expirada sin pago
  */
 export async function sendOrderExpired(
