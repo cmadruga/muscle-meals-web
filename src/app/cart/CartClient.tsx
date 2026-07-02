@@ -28,7 +28,7 @@ type PrefillInfo = {
   address: string | null
 }
 
-const SHIPPING_COSTS = { standard: 4900, pickup: 0 }
+const SHIPPING_COSTS = { standard: 4900, pickup: 0, priority: 0 }
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
@@ -614,7 +614,7 @@ function CartActions({ onCheckout, validating, validationError, isMembershipMatc
             border: 'none',
             borderRadius: 8,
             fontFamily: 'Franchise, sans-serif',
-            fontSize: 23,
+            fontSize: 22,
             letterSpacing: 0,
             lineHeight: 1,
             textTransform: 'uppercase',
@@ -659,7 +659,7 @@ function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subto
   subtotal: number
   onClose: () => void
 }) {
-  const [shippingType, setShippingType] = useState<'standard' | 'pickup'>(
+  const [shippingType, setShippingType] = useState<'standard' | 'pickup' | 'priority'>(
     prefill.address ? 'standard' : 'pickup'
   )
   const [selectedPickupSpot, setSelectedPickupSpot] = useState('')
@@ -671,7 +671,7 @@ function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subto
 
   const canConfirm =
     !processing &&
-    (shippingType === 'standard' ? !!prefill.address : selectedPickupSpot !== '')
+    (shippingType === 'standard' ? !!prefill.address : shippingType === 'priority' ? true : selectedPickupSpot !== '')
 
   const handleConfirm = async () => {
     setProcessing(true)
@@ -723,27 +723,20 @@ function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subto
       <div style={{ background: colors.grayDark, border: `1px solid ${colors.orange}55`, borderRadius: 14, width: '100%', maxWidth: 420, padding: 24 }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: colors.white }}>Confirmar con membresía</div>
+          <div style={{ fontSize: 22, fontWeight: 700, color: colors.white }}>Confirmar tipo de envío</div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
-        </div>
-
-        {/* Info del cliente */}
-        <div style={{ background: colors.black, borderRadius: 8, padding: '12px 14px', marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6, textTransform: 'uppercase', letterSpacing: 0.5 }}>Datos del cliente</div>
-          <div style={{ fontSize: 14, color: colors.white, fontWeight: 600 }}>{prefill.name}</div>
-          <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 2 }}>{prefill.phone}</div>
         </div>
 
         {/* Envío */}
         <div style={{ marginBottom: 16 }}>
-          <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Tipo de envío</div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {prefill.address && (
               <div onClick={() => setShippingType('standard')} style={optionStyle(shippingType === 'standard')}>
                 <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'standard' ? colors.orange : colors.grayLight}`, background: shippingType === 'standard' ? colors.orange : 'transparent', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: colors.white, fontWeight: 600 }}>Envío estándar — $49 MXN</div>
-                  <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2, lineHeight: 1.3 }}>{prefill.address}</div>
+                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Envío estándar</div>
+                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario regular (Domingo 9AM - 4PM)</div>
+                  <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 1, lineHeight: 1.3 }}>{prefill.address}</div>
                 </div>
               </div>
             )}
@@ -751,10 +744,18 @@ function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subto
               <div onClick={() => setShippingType('pickup')} style={optionStyle(shippingType === 'pickup')}>
                 <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'pickup' ? colors.orange : colors.grayLight}`, background: shippingType === 'pickup' ? colors.orange : 'transparent', flexShrink: 0 }} />
                 <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 13, color: colors.white, fontWeight: 600 }}>Pickup — Gratis</div>
+                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Pickup</div>
+                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Recoge tu pedido en el horario del local</div>
                 </div>
               </div>
             )}
+            <div onClick={() => setShippingType('priority')} style={optionStyle(shippingType === 'priority')}>
+              <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'priority' ? colors.orange : colors.grayLight}`, background: shippingType === 'priority' ? colors.orange : 'transparent', flexShrink: 0 }} />
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Prioritario</div>
+                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario y zona específica · $100-200 MXN por separado</div>
+              </div>
+            </div>
           </div>
 
           {shippingType === 'pickup' && (
@@ -777,12 +778,6 @@ function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subto
               ))}
             </div>
           )}
-        </div>
-
-        {/* Total */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16, padding: '10px 0', borderTop: `1px solid ${colors.grayLight}` }}>
-          <span style={{ fontSize: 15, fontWeight: 700, color: colors.white }}>Total</span>
-          <span style={{ fontSize: 20, fontWeight: 700, color: colors.orange }}>${(total / 100).toFixed(0)} MXN</span>
         </div>
 
         {error && <div style={{ color: colors.error, fontSize: 13, marginBottom: 12 }}>{error}</div>}

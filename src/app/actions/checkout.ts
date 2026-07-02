@@ -143,13 +143,13 @@ export async function processCheckout(
     }
     customerId = newCustomer.id
   } else {
-    // Logueado: actualizar su registro
+    // Logueado: actualizar su registro (nunca borrar dirección guardada)
     await supabase
       .from('customers')
       .update({
         full_name: data.customerName,
         phone: data.customerPhone || null,
-        address: data.customerAddress || null,
+        ...(data.customerAddress ? { address: data.customerAddress } : {}),
       })
       .eq('id', customerId)
   }
@@ -237,7 +237,11 @@ export async function processMembershipOrder(
   // Actualizar datos del cliente
   await supabase
     .from('customers')
-    .update({ full_name: data.customerName, phone: data.customerPhone || null, address: data.customerAddress || null })
+    .update({
+      full_name: data.customerName,
+      phone: data.customerPhone || null,
+      ...(data.customerAddress ? { address: data.customerAddress } : {}),
+    })
     .eq('id', data.customerId)
 
   // Crear orden con status='paid' directamente
