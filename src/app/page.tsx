@@ -123,8 +123,8 @@ export default async function Home() {
         </div>
       </section>
 
-      {/* Cómo Pedir */}
-      <section id="como-pedir" style={{
+      {/* Cómo Pedir — hidden until ready */}
+      {false && <section id="como-pedir" style={{
         padding: '72px 24px',
         background: colors.grayDark,
         borderTop: `4px solid ${colors.orange}`,
@@ -270,7 +270,7 @@ export default async function Home() {
             </Link>
           </div>
         </div>
-      </section>
+      </section>}
 
       {/* Cómo Funciona */}
       {/* <section id="info" style={{
