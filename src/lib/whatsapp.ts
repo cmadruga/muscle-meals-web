@@ -240,7 +240,7 @@ export async function sendReorderTemplate(
           components: [
             {
               type: 'header',
-              parameters: [{ type: 'image', image: { link: 'https://www.musclemeals.mx/media/reminder_template.jpeg' } }],
+              parameters: [{ type: 'image', image: { link: 'https://tywblugmsqterdoztjoy.supabase.co/storage/v1/object/public/meal-images/reminder_template.jpeg' } }],
             },
             {
               type: 'body',
