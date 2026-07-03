@@ -10,25 +10,10 @@ import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
-import { validateCart, processMembershipOrder } from '@/app/actions/checkout'
-import { formatPhoneForWhatsApp } from '@/lib/address-validation'
+import { validateCart } from '@/app/actions/checkout'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
+import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
 
-type MembershipInfo = {
-  is_member: boolean
-  membership_weeks_left: number
-  membership_qty: number | null
-  membership_size_id: string | null
-}
-
-type PrefillInfo = {
-  customerId: string
-  name: string
-  phone: string
-  address: string | null
-}
-
-const SHIPPING_COSTS = { standard: 4900, pickup: 0, priority: 0 }
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
@@ -250,7 +235,6 @@ export default function CartClient({
     {membershipModalOpen && prefill && membership && (
       <MembershipConfirmModal
         prefill={prefill}
-        membership={membership}
         pickupSpots={pickupSpots}
         items={items}
         subtotal={getTotal()}
@@ -651,160 +635,3 @@ function CartActions({ onCheckout, validating, validationError, isMembershipMatc
   )
 }
 
-function MembershipConfirmModal({ prefill, membership, pickupSpots, items, subtotal, onClose }: {
-  prefill: PrefillInfo
-  membership: MembershipInfo
-  pickupSpots: PickupSpot[]
-  items: CartItem[]
-  subtotal: number
-  onClose: () => void
-}) {
-  const [shippingType, setShippingType] = useState<'standard' | 'pickup' | 'priority'>(
-    prefill.address ? 'standard' : 'pickup'
-  )
-  const [selectedPickupSpot, setSelectedPickupSpot] = useState('')
-  const [processing, setProcessing] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const shippingCost = SHIPPING_COSTS[shippingType]
-  const total = subtotal + shippingCost
-
-  const canConfirm =
-    !processing &&
-    (shippingType === 'standard' ? !!prefill.address : shippingType === 'priority' ? true : selectedPickupSpot !== '')
-
-  const handleConfirm = async () => {
-    setProcessing(true)
-    setError(null)
-    try {
-      const result = await processMembershipOrder({
-        customerId: prefill.customerId,
-        customerName: prefill.name,
-        customerPhone: formatPhoneForWhatsApp(prefill.phone),
-        customerAddress: shippingType === 'pickup' ? null : prefill.address,
-        totalAmount: total,
-        shippingType,
-        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
-        shippingCost,
-        items: items.map(i => ({
-          mealId: i.mealId,
-          mealName: i.mealName,
-          sizeId: i.sizeId,
-          sizeName: i.sizeName,
-          qty: i.qty,
-          unitPrice: i.unitPrice,
-          packageInstanceId: i.packageInstanceId,
-        })),
-      })
-      if (result.error) throw new Error(result.error)
-      window.location.href = `/order-success?our_order_id=${result.orderId}&value=${total}`
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al confirmar')
-      setProcessing(false)
-    }
-  }
-
-  const optionStyle = (active: boolean): React.CSSProperties => ({
-    padding: '12px 14px',
-    background: active ? `${colors.orange}18` : colors.black,
-    border: `2px solid ${active ? colors.orange : colors.grayLight}`,
-    borderRadius: 8,
-    cursor: 'pointer',
-    display: 'flex',
-    alignItems: 'center',
-    gap: 10,
-  })
-
-  return (
-    <div
-      onClick={e => { if (e.target === e.currentTarget) onClose() }}
-      style={{ position: 'fixed', inset: 0, zIndex: 1000, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
-    >
-      <div style={{ background: colors.grayDark, border: `1px solid ${colors.orange}55`, borderRadius: 14, width: '100%', maxWidth: 420, padding: 24 }}>
-        {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 20 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: colors.white }}>Confirmar tipo de envío</div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
-        </div>
-
-        {/* Envío */}
-        <div style={{ marginBottom: 16 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {prefill.address && (
-              <div onClick={() => setShippingType('standard')} style={optionStyle(shippingType === 'standard')}>
-                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'standard' ? colors.orange : colors.grayLight}`, background: shippingType === 'standard' ? colors.orange : 'transparent', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Envío estándar</div>
-                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario regular (Domingo 9AM - 4PM)</div>
-                  <div style={{ fontSize: 13, color: colors.textMuted, marginTop: 1, lineHeight: 1.3 }}>{prefill.address}</div>
-                </div>
-              </div>
-            )}
-            {pickupSpots.length > 0 && (
-              <div onClick={() => setShippingType('pickup')} style={optionStyle(shippingType === 'pickup')}>
-                <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'pickup' ? colors.orange : colors.grayLight}`, background: shippingType === 'pickup' ? colors.orange : 'transparent', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Pickup</div>
-                  <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Recoge tu pedido en el horario del local</div>
-                </div>
-              </div>
-            )}
-            <div onClick={() => setShippingType('priority')} style={optionStyle(shippingType === 'priority')}>
-              <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'priority' ? colors.orange : colors.grayLight}`, background: shippingType === 'priority' ? colors.orange : 'transparent', flexShrink: 0 }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Prioritario</div>
-                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario y zona específica · $100-200 MXN por separado</div>
-              </div>
-            </div>
-          </div>
-
-          {shippingType === 'pickup' && (
-            <div style={{ marginTop: 10, display: 'flex', flexDirection: 'column', gap: 6 }}>
-              {pickupSpots.map(spot => (
-                <div
-                  key={spot.id}
-                  onClick={() => setSelectedPickupSpot(spot.id)}
-                  style={{
-                    padding: '10px 12px',
-                    background: selectedPickupSpot === spot.id ? `${colors.orange}18` : colors.black,
-                    border: `1px solid ${selectedPickupSpot === spot.id ? colors.orange : colors.grayLight}`,
-                    borderRadius: 7,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <div style={{ fontSize: 13, color: colors.white, fontWeight: 600 }}>{spot.name}</div>
-                  <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 2 }}>{spot.address}</div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {error && <div style={{ color: colors.error, fontSize: 13, marginBottom: 12 }}>{error}</div>}
-
-        <button
-          onClick={handleConfirm}
-          disabled={!canConfirm}
-          className={canConfirm ? 'franchise-stroke' : undefined}
-          style={{
-            width: '100%',
-            padding: '14px 24px',
-            background: canConfirm ? colors.orange : colors.grayLight,
-            color: colors.white,
-            border: 'none',
-            borderRadius: 8,
-            fontFamily: 'Franchise, sans-serif',
-            fontSize: 23,
-            letterSpacing: 0,
-            lineHeight: 1,
-            textTransform: 'uppercase',
-            cursor: canConfirm ? 'pointer' : 'not-allowed',
-            opacity: processing ? 0.7 : 1,
-          }}
-        >
-          {processing ? 'Confirmando…' : 'Confirmar pedido'}
-        </button>
-      </div>
-    </div>
-  )
-}
