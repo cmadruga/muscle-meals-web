@@ -7,6 +7,8 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup, SkippedSlot, ActiveMealOption } from './page'
 import { colors } from '@/lib/theme'
 import Link from 'next/link'
+import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
+import type { PickupSpot } from '@/lib/db/pickup-spots'
 
 interface Props {
   packages: PackageGroup[]
@@ -15,16 +17,23 @@ interface Props {
   activeMealOptions: ActiveMealOption[]
   orderDate: string | null
   orderNumber: string | null
+  prefill: PrefillInfo
+  membership: MembershipInfo
+  pickupSpots: PickupSpot[]
+  usedMembershipThisWeek: boolean
 }
 
 type Selection = { mealId: string; mealName: string }
 
 export default function RepetirClient({
   packages, individuals, skippedSlots, activeMealOptions, orderDate, orderNumber,
+  prefill, membership, pickupSpots, usedMembershipThisWeek,
 }: Props) {
   const router = useRouter()
   const { addItem, clearCart } = useCartStore()
   const [selected, setSelected] = useState<Selection[]>([])
+  const [membershipModalOpen, setMembershipModalOpen] = useState(false)
+  const [membershipItems, setMembershipItems] = useState<CartItem[]>([])
 
   const needed = skippedSlots.length
   const remaining = needed - selected.length
@@ -42,36 +51,66 @@ export default function RepetirClient({
     if (idx >= 0) setSelected(prev => prev.filter((_, i) => i !== idx))
   }
 
-  const handleRepetir = () => {
-    clearCart()
-    packages.forEach(pkg => pkg.items.forEach(item => addItem(item)))
-    individuals.forEach(item => addItem(item))
-    skippedSlots.forEach((slot, idx) => {
-      const rep = selected[idx]
-      if (!rep) return
-      addItem({
-        mealId: rep.mealId,
-        mealName: rep.mealName,
-        sizeId: slot.sizeId,
-        sizeName: slot.sizeName,
-        qty: slot.qty,
-        unitPrice: slot.unitPrice,
-        ...(slot.packageInstanceId
-          ? { packageInstanceId: slot.packageInstanceId, packageName: 'Arma tu paquete' }
-          : {}),
-      })
-    })
-    router.push('/checkout')
-  }
-
+  // Qty and price totals
   const activeQty = packages.reduce((n, p) => n + p.items.reduce((s, i) => s + i.qty, 0), 0) +
     individuals.reduce((n, i) => n + i.qty, 0)
+  const totalQtySkipped = skippedSlots.reduce((n, s) => n + s.qty, 0)
+  const totalQtyReorder = activeQty + totalQtySkipped
+
   const replacedQty = skippedSlots.slice(0, selected.length).reduce((n, s) => n + s.qty, 0)
 
   const activePrice = packages.reduce((n, p) => n + p.items.reduce((s, i) => s + i.unitPrice * i.qty, 0), 0) +
     individuals.reduce((n, i) => n + i.unitPrice * i.qty, 0)
   const replacedPrice = skippedSlots.slice(0, selected.length).reduce((n, s) => n + s.unitPrice * s.qty, 0)
   const totalPrice = activePrice + replacedPrice
+
+  // Membership match: all items same size and total qty matches
+  const allSizeIdsReorder = [
+    ...packages.flatMap(p => p.items.map(i => i.sizeId)),
+    ...individuals.map(i => i.sizeId),
+    ...skippedSlots.map(s => s.sizeId),
+  ]
+  const isMembershipMatch = Boolean(
+    !usedMembershipThisWeek &&
+    membership.is_member &&
+    (membership.membership_weeks_left ?? 0) > 0 &&
+    membership.membership_qty !== null &&
+    membership.membership_size_id !== null &&
+    totalQtyReorder === membership.membership_qty &&
+    allSizeIdsReorder.length > 0 &&
+    allSizeIdsReorder.every(sid => sid === membership.membership_size_id)
+  )
+
+  const buildItems = (): CartItem[] => {
+    const result: CartItem[] = []
+    packages.forEach(pkg => pkg.items.forEach(item => result.push(item)))
+    individuals.forEach(item => result.push(item))
+    skippedSlots.forEach((slot, idx) => {
+      const rep = selected[idx]
+      if (!rep) return
+      result.push({
+        mealId: rep.mealId,
+        mealName: rep.mealName,
+        sizeId: slot.sizeId,
+        sizeName: slot.sizeName,
+        qty: slot.qty,
+        unitPrice: slot.unitPrice,
+        ...(slot.packageInstanceId ? { packageInstanceId: slot.packageInstanceId, packageName: 'Arma tu paquete' } : {}),
+      })
+    })
+    return result
+  }
+
+  const handleRepetir = () => {
+    clearCart()
+    buildItems().forEach(item => addItem(item))
+    router.push('/checkout')
+  }
+
+  const handleMembershipOpen = () => {
+    setMembershipItems(buildItems())
+    setMembershipModalOpen(true)
+  }
 
   return (
     <main style={{
@@ -194,7 +233,6 @@ export default function RepetirClient({
                 overflow: 'hidden',
                 background: colors.grayDark,
               }}>
-                {/* Header */}
                 <div style={{
                   padding: 16,
                   background: '#f59e0b18',
@@ -222,7 +260,6 @@ export default function RepetirClient({
                   </span>
                 </div>
 
-                {/* Meal grid */}
                 <div style={{
                   padding: 16,
                   display: 'grid',
@@ -311,7 +348,32 @@ export default function RepetirClient({
               </div>
             )}
 
-            {/* Total — same as CartSummary */}
+            {/* Membership banner */}
+            {membership.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
+              <div style={{
+                padding: '16px 20px',
+                marginBottom: 16,
+                background: isMembershipMatch ? `${colors.orange}18` : colors.grayDark,
+                border: `2px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
+                borderRadius: 10,
+              }}>
+                {isMembershipMatch ? (
+                  <div style={{ fontSize: 16, fontWeight: 700, color: colors.orange }}>
+                    Tu pedido está cubierto por tu Membresía Muscle Meals
+                  </div>
+                ) : usedMembershipThisWeek ? (
+                  <div style={{ fontSize: 13, color: colors.textMuted }}>
+                    Ya usaste tu membresía esta semana — paga normalmente para este pedido
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: colors.textMuted }}>
+                    Tu carrito actual no coincide con tu Membresía Muscle Meals, verifica tu pedido o paga normalmente
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Total */}
             <div style={{
               padding: 20,
               background: colors.grayDark,
@@ -321,37 +383,82 @@ export default function RepetirClient({
             }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
-                <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-                  ${(totalPrice / 100).toFixed(0)} MXN
-                </span>
+                {isMembershipMatch ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
+                      ${(totalPrice / 100).toFixed(0)} MXN
+                    </span>
+                    <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+                      $0 MXN
+                    </span>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+                    ${(totalPrice / 100).toFixed(0)} MXN
+                  </span>
+                )}
               </div>
             </div>
 
-            {/* Button — same as CartActions */}
-            <button
-              onClick={handleRepetir}
-              disabled={!canProceed}
-              className={canProceed ? 'franchise-stroke' : undefined}
-              style={{
-                width: '100%',
-                padding: '16px 24px',
-                background: canProceed ? colors.orange : colors.grayDark,
-                color: canProceed ? colors.white : colors.textMuted,
-                border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
-                borderRadius: 8,
-                fontFamily: 'Franchise, sans-serif',
-                fontSize: canProceed ? 22 : 16,
-                letterSpacing: 0,
-                lineHeight: 1,
-                textTransform: 'uppercase',
-                cursor: canProceed ? 'pointer' : 'not-allowed',
-              }}
-            >
-              {remaining > 0 ? `Elige ${remaining} más para continuar` : 'Volver a pedir →'}
-            </button>
+            {/* Action button */}
+            {isMembershipMatch ? (
+              <button
+                onClick={handleMembershipOpen}
+                disabled={!canProceed}
+                className={canProceed ? 'franchise-stroke' : undefined}
+                style={{
+                  width: '100%',
+                  padding: '16px 24px',
+                  background: canProceed ? colors.orange : colors.grayDark,
+                  color: canProceed ? colors.white : colors.textMuted,
+                  border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
+                  borderRadius: 8,
+                  fontFamily: 'Franchise, sans-serif',
+                  fontSize: canProceed ? 22 : 16,
+                  letterSpacing: 0,
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
+                  cursor: canProceed ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {remaining > 0 ? `Elige ${remaining} más para continuar` : 'Confirmar con membresía'}
+              </button>
+            ) : (
+              <button
+                onClick={handleRepetir}
+                disabled={!canProceed}
+                className={canProceed ? 'franchise-stroke' : undefined}
+                style={{
+                  width: '100%',
+                  padding: '16px 24px',
+                  background: canProceed ? colors.orange : colors.grayDark,
+                  color: canProceed ? colors.white : colors.textMuted,
+                  border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
+                  borderRadius: 8,
+                  fontFamily: 'Franchise, sans-serif',
+                  fontSize: canProceed ? 22 : 16,
+                  letterSpacing: 0,
+                  lineHeight: 1,
+                  textTransform: 'uppercase',
+                  cursor: canProceed ? 'pointer' : 'not-allowed',
+                }}
+              >
+                {remaining > 0 ? `Elige ${remaining} más para continuar` : 'Volver a pedir →'}
+              </button>
+            )}
           </>
         )}
       </div>
+
+      {membershipModalOpen && (
+        <MembershipConfirmModal
+          prefill={prefill}
+          pickupSpots={pickupSpots}
+          items={membershipItems}
+          subtotal={totalPrice}
+          onClose={() => setMembershipModalOpen(false)}
+        />
+      )}
     </main>
   )
 }

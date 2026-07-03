@@ -3,6 +3,9 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import RepetirClient from './RepetirClient'
 import type { CartItem } from '@/lib/store/cart'
+import { getActivePickupSpots } from '@/lib/db/pickup-spots'
+import { getCurrentWeekMonday } from '@/lib/utils/delivery'
+import { normalizePhone } from '@/lib/address-validation'
 
 export const dynamic = 'force-dynamic'
 
@@ -35,13 +38,42 @@ export default async function RepetirPage() {
 
   const admin = createAdminClient()
 
-  const { data: customer } = await admin
-    .from('customers')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: customer }, pickupSpots] = await Promise.all([
+    admin.from('customers')
+      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
+      .eq('user_id', user.id)
+      .maybeSingle(),
+    getActivePickupSpots(),
+  ])
 
   if (!customer) redirect('/cuenta/login?next=/reorder')
+
+  const prefill = {
+    customerId: customer.id,
+    name: customer.full_name ?? '',
+    phone: normalizePhone(customer.phone ?? ''),
+    address: customer.address ?? null,
+  }
+
+  const membership = {
+    is_member: customer.is_member ?? false,
+    membership_weeks_left: customer.membership_weeks_left ?? 0,
+    membership_qty: customer.membership_qty ?? null,
+    membership_size_id: customer.membership_size_id ?? null,
+  }
+
+  let usedMembershipThisWeek = false
+  if (customer.is_member) {
+    const weekStart = getCurrentWeekMonday().toISOString()
+    const { data: thisWeekOrders } = await admin
+      .from('orders')
+      .select('id')
+      .eq('customer_id', customer.id)
+      .eq('status', 'paid')
+      .gte('created_at', weekStart)
+      .limit(1)
+    usedMembershipThisWeek = (thisWeekOrders?.length ?? 0) > 0
+  }
 
   const { data: rawOrders } = await admin
     .from('orders')
@@ -69,6 +101,7 @@ export default async function RepetirPage() {
       <RepetirClient
         packages={[]} individuals={[]} skippedSlots={[]} activeMealOptions={[]}
         orderDate={null} orderNumber={null}
+        prefill={prefill} membership={membership} pickupSpots={pickupSpots} usedMembershipThisWeek={usedMembershipThisWeek}
       />
     )
   }
@@ -162,6 +195,10 @@ export default async function RepetirPage() {
       activeMealOptions={activeMealOptions}
       orderDate={lastOrder.created_at}
       orderNumber={lastOrder.order_number}
+      prefill={prefill}
+      membership={membership}
+      pickupSpots={pickupSpots}
+      usedMembershipThisWeek={usedMembershipThisWeek}
     />
   )
 }
