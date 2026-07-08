@@ -52,6 +52,7 @@ export default async function RepetirPage() {
     customerId: customer.id,
     name: customer.full_name ?? '',
     phone: normalizePhone(customer.phone ?? ''),
+    rawPhone: customer.phone ?? '',
     address: customer.address ?? null,
   }
 

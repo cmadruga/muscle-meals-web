@@ -19,3 +19,22 @@ export async function updateMembership(
 
   if (error) throw new Error(error.message)
 }
+
+export async function updateCustomerContact(
+  customerId: string,
+  data: { full_name?: string | null; phone: string | null; address: string | null }
+): Promise<void> {
+  const admin = createAdminClient()
+  const update: Record<string, string | null> = {
+    phone: data.phone || null,
+    address: data.address || null,
+  }
+  if (data.full_name !== undefined) update.full_name = data.full_name || null
+
+  const { error } = await admin
+    .from('customers')
+    .update(update)
+    .eq('id', customerId)
+
+  if (error) throw new Error(error.message)
+}

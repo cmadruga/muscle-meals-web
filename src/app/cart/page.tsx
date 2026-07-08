@@ -18,7 +18,7 @@ export default async function CartPage() {
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  let prefill: { customerId: string; name: string; phone: string; address: string | null } | null = null
+  let prefill: { customerId: string; name: string; phone: string; rawPhone: string; address: string | null } | null = null
   let membership: {
     is_member: boolean
     membership_weeks_left: number
@@ -40,6 +40,7 @@ export default async function CartPage() {
         customerId: customer.id,
         name: customer.full_name ?? '',
         phone: normalizePhone(customer.phone ?? ''),
+        rawPhone: customer.phone ?? '',
         address: customer.address ?? null,
       }
       membership = {

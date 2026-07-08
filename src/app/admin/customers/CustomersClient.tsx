@@ -4,7 +4,7 @@ import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { colors } from '@/lib/theme'
 import { sendReorderBroadcast } from '@/app/actions/whatsapp'
-import { updateMembership } from '@/app/actions/membership'
+import { updateMembership, updateCustomerContact } from '@/app/actions/membership'
 import type { CustomerRow, CustomerOrder, SizeOption } from './page'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -40,6 +40,9 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
   const [weeksLeft, setWeeksLeft] = useState(customer.membership_weeks_left)
   const [qty, setQty] = useState(customer.membership_qty ?? 5)
   const [sizeId, setSizeId] = useState(customer.membership_size_id ?? '')
+  const [fullName, setFullName] = useState(customer.full_name ?? '')
+  const [phone, setPhone] = useState(customer.phone ?? '')
+  const [address, setAddress] = useState(customer.address ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -47,12 +50,19 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
     setSaving(true)
     setError(null)
     try {
-      await updateMembership(customer.id, {
-        is_member: isMember,
-        membership_weeks_left: isMember ? weeksLeft : 0,
-        membership_qty: isMember ? qty : null,
-        membership_size_id: isMember && sizeId ? sizeId : null,
-      })
+      await Promise.all([
+        updateMembership(customer.id, {
+          is_member: isMember,
+          membership_weeks_left: isMember ? weeksLeft : 0,
+          membership_qty: isMember ? qty : null,
+          membership_size_id: isMember && sizeId ? sizeId : null,
+        }),
+        updateCustomerContact(customer.id, {
+          full_name: fullName.trim() || null,
+          phone: phone.trim() || null,
+          address: address.trim() || null,
+        }),
+      ])
       onClose()
       onSaved()
     } catch {
@@ -88,7 +98,20 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 0 }}>×</button>
         </div>
 
-        {/* Toggle */}
+        {/* Contacto */}
+        {field('Nombre completo',
+          <input type="text" value={fullName} onChange={e => setFullName(e.target.value)} placeholder="Nombre Apellido" style={inputStyle} />
+        )}
+        {field('Teléfono (formato libre, ej: +12103508243)',
+          <input type="tel" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+521..." style={inputStyle} />
+        )}
+        {field('Dirección',
+          <textarea value={address} onChange={e => setAddress(e.target.value)} rows={2} placeholder="Calle, núm, colonia..." style={{ ...inputStyle, resize: 'vertical' }} />
+        )}
+
+        <div style={{ height: 1, background: '#ffffff15', margin: '4px 0 16px' }} />
+
+        {/* Toggle membresía */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
           <span style={{ fontSize: 14, color: colors.white, fontWeight: 600 }}>Membresía activa</span>
           <div
@@ -341,14 +364,14 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
               title="Ver pedidos"
               style={{ background: colors.grayLight, border: 'none', borderRadius: 6, color: colors.white, fontSize: 13, fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
             >
-              Detalles
+              Pedidos
             </button>
             <button
               onClick={onConfigClick}
               title="Configurar membresía"
-              style={{ background: colors.grayLight, border: 'none', borderRadius: 6, color: colors.white, fontSize: 13, fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              style={{ background: colors.grayLight, border: 'none', borderRadius: 6, color: colors.white, fontSize: 25, fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
             >
-              Config
+              ⚙
             </button>
           </div>
           <div style={{ fontSize: 12, color: colors.textMuted }}>

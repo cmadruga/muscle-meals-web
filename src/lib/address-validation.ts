@@ -154,21 +154,24 @@ export function validatePhone(phone: string): boolean {
 }
 
 /**
- * Normaliza un teléfono mexicano a 10 dígitos limpio.
- * Maneja: +521XXXXXXXXXX, 521XXXXXXXXXX, 52XXXXXXXXXX, XXXXXXXXXX
+ * Normaliza un número de teléfono a 10 dígitos limpio (sin código de país).
+ * Maneja: +521XXXXXXXXXX (MX mobile), +52XXXXXXXXXX (MX), +1XXXXXXXXXX (US/CA), XXXXXXXXXX
  */
 export function normalizePhone(phone: string): string {
   const digits = phone.replace(/\D/g, '')
-  if (digits.length === 13 && digits.startsWith('521')) return digits.slice(3)
-  if (digits.length === 12 && digits.startsWith('52')) return digits.slice(2)
+  if (digits.length === 13 && digits.startsWith('521')) return digits.slice(3) // MX mobile
+  if (digits.length === 12 && digits.startsWith('52')) return digits.slice(2)  // MX
+  if (digits.length === 11 && digits.startsWith('1')) return digits.slice(1)   // US/CA
   return digits
 }
 
 /**
- * Formatea número de teléfono mexicano a formato internacional para WhatsApp
- * 8112345678 -> +5218112345678
+ * Formatea número a formato E.164 para WhatsApp según código de país.
+ * MX: 8112345678 -> +5218112345678
+ * US: 2103508243 -> +12103508243
  */
-export function formatPhoneForWhatsApp(phone: string): string {
+export function formatPhoneForWhatsApp(phone: string, countryCode: '+52' | '+1' = '+52'): string {
   const cleaned = phone.replace(/\D/g, '')
+  if (countryCode === '+1') return `+1${cleaned}`
   return `+521${cleaned}`
 }

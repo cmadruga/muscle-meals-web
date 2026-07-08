@@ -10,7 +10,8 @@ import type { PickupSpot } from '@/lib/db/pickup-spots'
 export type PrefillInfo = {
   customerId: string
   name: string
-  phone: string
+  phone: string     // normalized 10 digits for display
+  rawPhone: string  // E.164 from DB, used directly for WhatsApp
   address: string | null
 }
 
@@ -133,7 +134,7 @@ export function MembershipConfirmModal({ prefill, pickupSpots, items, subtotal, 
       const result = await processMembershipOrder({
         customerId: prefill.customerId,
         customerName: prefill.name,
-        customerPhone: formatPhoneForWhatsApp(prefill.phone),
+        customerPhone: prefill.rawPhone || formatPhoneForWhatsApp(prefill.phone),
         customerAddress: resolvedAddress,
         totalAmount: total,
         shippingType,
