@@ -148,10 +148,10 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
   const [sessionSizes, setSessionSizes] = useState<Size[]>([])
   // const [portionMode, setPortionMode] = useState<'crudo' | 'cocido'>('crudo')
 
-  // Sin sesión: limitar ingredientes del panel a los que usan los platillos activos
+  // Solo mostrar ingredientes que usan los platillos activos del menú
   const activeMealIngIds = new Set(meals.flatMap(m => m.ingredients.map(i => i.id)))
-  const panelProIngredients = isAuthenticated ? proIngredients : proIngredients.filter(i => activeMealIngIds.has(i.id))
-  const panelCarbIngredients = isAuthenticated ? carbIngredients : carbIngredients.filter(i => activeMealIngIds.has(i.id))
+  const panelProIngredients = proIngredients.filter(i => activeMealIngIds.has(i.id))
+  const panelCarbIngredients = carbIngredients.filter(i => activeMealIngIds.has(i.id))
 
   // Convertir meals a formato MealBasic para sugerencias
   const suggestedMeals = meals.map(m => ({
@@ -572,15 +572,41 @@ export default function PackageClient({ meals, sizes, customerSizes = [], editIn
               const carbSections = buildSections(carbIngsFromMeals, selectedSize.carb_qty)
               const vegNames = [...vegNameSet]
 
+              // Detect unconfigured ingredients (0g) in custom sizes
+              const unconfigured: string[] = []
+              if (selectedSize.customer_id) {
+                for (const ing of proIngsFromMeals) {
+                  if (!selectedSize.protein_qty[ing.id]) unconfigured.push(ing.public_name ?? ing.name)
+                }
+                for (const ing of carbIngsFromMeals) {
+                  if (!selectedSize.carb_qty[ing.id]) unconfigured.push(ing.public_name ?? ing.name)
+                }
+              }
+
               return (
-                <div style={{ display: 'flex', gap: 8 }}>
-                  {renderCard('Proteína', '#ef4444', proSections)}
-                  {renderCard('Carbo', '#eab308', carbSections)}
-                  <div style={{ flex: 1, background: colors.black, borderRadius: 8, padding: '12px 8px', textAlign: 'center', border: `1px solid ${colors.grayLight}` }}>
-                    <div style={{ fontSize: 14, fontWeight: 700, color: colors.white, marginBottom: 4 }}>Verdura</div>
-                    {vegNames.length > 0 && <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>({vegNames.join(', ')})</div>}
-                    <div style={{ fontSize: 22, fontWeight: 'bold', color: colors.orange }}>{selectedSize.veg_qty}g</div>
+                <div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {renderCard('Proteína', '#ef4444', proSections)}
+                    {renderCard('Carbo', '#eab308', carbSections)}
+                    <div style={{ flex: 1, background: colors.black, borderRadius: 8, padding: '12px 8px', textAlign: 'center', border: `1px solid ${colors.grayLight}` }}>
+                      <div style={{ fontSize: 14, fontWeight: 700, color: colors.white, marginBottom: 4 }}>Verdura</div>
+                      {vegNames.length > 0 && <div style={{ fontSize: 11, color: colors.textMuted, marginBottom: 6 }}>({vegNames.join(', ')})</div>}
+                      <div style={{ fontSize: 22, fontWeight: 'bold', color: colors.orange }}>{selectedSize.veg_qty}g</div>
+                    </div>
                   </div>
+                  {unconfigured.length > 0 && (
+                    <div style={{ marginTop: 10, background: '#92400e33', border: '1px solid #f59e0b88', borderRadius: 8, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>⚠️</span>
+                      <div>
+                        <div style={{ fontSize: 13, fontWeight: 700, color: '#fbbf24', marginBottom: 3 }}>
+                          Tu tamaño no tiene cantidad configurada para: {unconfigured.join(', ')}
+                        </div>
+                        <div style={{ fontSize: 12, color: '#fcd34d' }}>
+                          Se usará el valor default del tamaño para esos ingredientes. Puedes actualizar tu tamaño desde el botón Editar.
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               )
             })()}
