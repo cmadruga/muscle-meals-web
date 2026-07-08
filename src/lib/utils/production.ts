@@ -31,6 +31,7 @@ export type ShoppingItem = {
   unit: string
   totalQty: number
   proveedor: string | null
+  grEquiv: number  // how many grams = 1 of this unit (1 if already g)
 }
 
 export type PincheSizeRow = {
@@ -225,7 +226,7 @@ export function computeMealTotals(data: WeeklyProductionData): MealTotal[] {
 }
 
 export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
-  const aggregate = new Map<string, { ingredientId: string; name: string; unit: string; totalQty: number; proveedor: string | null }>()
+  const aggregate = new Map<string, { ingredientId: string; name: string; unit: string; totalQty: number; proveedor: string | null; grEquiv: number }>()
 
   for (const meal of mealTotals) {
     for (const ing of meal.ingredients) {
@@ -240,6 +241,7 @@ export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
           unit: ing.unit,
           totalQty: ing.totalQty,
           proveedor: ing.proveedor,
+          grEquiv: ing.grEquiv,
         })
       }
     }
@@ -253,6 +255,7 @@ export function computeShoppingList(mealTotals: MealTotal[]): ShoppingItem[] {
       unit: val.unit,
       totalQty: Math.round(val.totalQty * 10) / 10,
       proveedor: val.proveedor,
+      grEquiv: val.grEquiv,
     })
   }
 
