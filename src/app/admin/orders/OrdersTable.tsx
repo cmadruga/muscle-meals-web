@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import type { OrderWithCustomer, OrderStatus, OrderItem } from '@/lib/types'
 import type { MatrixRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
-import { saveOrderNote, changeOrderStatus } from '@/app/actions/orders'
+import { saveOrderNote, changeOrderStatus, deleteOrder } from '@/app/actions/orders'
 import AssignExtraModal from './AssignExtraModal'
 import EditOrderModal from './EditOrderModal'
 import type { CustomerBasic } from '@/lib/db/customers'
@@ -263,6 +264,8 @@ export default function OrdersTable({
   const [assigningOrder, setAssigningOrder] = useState<OrderWithCustomer | null>(null)
   const [editingOrder, setEditingOrder] = useState<OrderWithCustomer | null>(null)
   const [openNoteId, setOpenNoteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
   const [localStatuses, setLocalStatuses] = useState<Record<string, OrderStatus>>(() =>
     Object.fromEntries(orders.map(o => [o.id, o.status]))
   )
@@ -549,6 +552,23 @@ export default function OrdersTable({
                                     Asignar
                                   </button>
                                 )}
+                                <button
+                                  disabled={deleting}
+                                  onClick={async () => {
+                                    if (!window.confirm(`¿Eliminar pedido ${order.order_number}? Esta acción no se puede deshacer.`)) return
+                                    setDeleting(true)
+                                    await deleteOrder(order.id)
+                                    setDeleting(false)
+                                    router.refresh()
+                                  }}
+                                  style={{
+                                    padding: '5px 12px', borderRadius: 6, border: '1px solid #ef444433',
+                                    background: 'transparent', color: '#ef4444', cursor: deleting ? 'not-allowed' : 'pointer',
+                                    fontSize: 12, fontWeight: 600, opacity: deleting ? 0.5 : 1,
+                                  }}
+                                >
+                                  Eliminar
+                                </button>
                               </div>
                             </td>
                           </tr>
