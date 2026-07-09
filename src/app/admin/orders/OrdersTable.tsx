@@ -1,10 +1,11 @@
 'use client'
 
 import React, { useState, useRef } from 'react'
+import { useRouter } from 'next/navigation'
 import type { OrderWithCustomer, OrderStatus, OrderItem } from '@/lib/types'
 import type { MatrixRow } from '@/lib/utils/production'
 import { colors } from '@/lib/theme'
-import { saveOrderNote, changeOrderStatus } from '@/app/actions/orders'
+import { saveOrderNote, changeOrderStatus, deleteOrder } from '@/app/actions/orders'
 import AssignExtraModal from './AssignExtraModal'
 import EditOrderModal from './EditOrderModal'
 import type { CustomerBasic } from '@/lib/db/customers'
@@ -263,6 +264,27 @@ export default function OrdersTable({
   const [assigningOrder, setAssigningOrder] = useState<OrderWithCustomer | null>(null)
   const [editingOrder, setEditingOrder] = useState<OrderWithCustomer | null>(null)
   const [openNoteId, setOpenNoteId] = useState<string | null>(null)
+  const [deleting, setDeleting] = useState(false)
+  const router = useRouter()
+
+  const rutaStorageKey = `ruta_checked_${weekStr}`
+  const [rutaChecked, setRutaChecked] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const saved = localStorage.getItem(`ruta_checked_${weekStr}`)
+      if (saved) return new Set(JSON.parse(saved) as string[])
+    } catch {}
+    return new Set()
+  })
+  const toggleRuta = (id: string) => {
+    setRutaChecked(prev => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      try { localStorage.setItem(rutaStorageKey, JSON.stringify([...next])) } catch {}
+      return next
+    })
+  }
   const [localStatuses, setLocalStatuses] = useState<Record<string, OrderStatus>>(() =>
     Object.fromEntries(orders.map(o => [o.id, o.status]))
   )
@@ -447,17 +469,11 @@ export default function OrdersTable({
                               {formatAmount(order.total_amount)}
                             </td>
                             <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
-                              <div>{SHIPPING_LABELS[order.shipping_type] || order.shipping_type}
-                                {order.shipping_cost > 0 && (
-                                  <span style={{ color: colors.textMuted, fontSize: 12 }}>
-                                    {' '}({formatAmount(order.shipping_cost)})
-                                  </span>
-                                )}
-                              </div>
-                              {subtitle && (
-                                <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 2, maxWidth: 180, whiteSpace: 'normal' }}>
-                                  {subtitle}
-                                </div>
+                              {SHIPPING_LABELS[order.shipping_type] || order.shipping_type}
+                              {order.shipping_cost > 0 && (
+                                <span style={{ color: colors.textMuted, fontSize: 12 }}>
+                                  {' '}({formatAmount(order.shipping_cost)})
+                                </span>
                               )}
                             </td>
                             <td style={{ ...tdStyle, whiteSpace: 'nowrap' }}>
@@ -549,6 +565,23 @@ export default function OrdersTable({
                                     Asignar
                                   </button>
                                 )}
+                                <button
+                                  disabled={deleting}
+                                  onClick={async () => {
+                                    if (!window.confirm(`¿Eliminar pedido ${order.order_number}? Esta acción no se puede deshacer.`)) return
+                                    setDeleting(true)
+                                    await deleteOrder(order.id)
+                                    setDeleting(false)
+                                    router.refresh()
+                                  }}
+                                  style={{
+                                    padding: '5px 12px', borderRadius: 6, border: '1px solid #ef444433',
+                                    background: 'transparent', color: '#ef4444', cursor: deleting ? 'not-allowed' : 'pointer',
+                                    fontSize: 12, fontWeight: 600, opacity: deleting ? 0.5 : 1,
+                                  }}
+                                >
+                                  Eliminar
+                                </button>
                               </div>
                             </td>
                           </tr>
@@ -634,41 +667,72 @@ export default function OrdersTable({
           return <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay órdenes pagadas esta semana.</p>
         }
 
+        const unchecked = rutaOrders.filter(o => !rutaChecked.has(o.id))
+        const checked   = rutaOrders.filter(o =>  rutaChecked.has(o.id))
+
+        const renderRutaRow = (order: OrderWithCustomer, isChecked: boolean) => (
+          <tr key={order.id} style={{ borderBottom: '1px solid #2a2a2a', opacity: isChecked ? 0.35 : 1 }}>
+            <td style={{ ...tdStyle, width: 36 }}>
+              <input
+                type="checkbox"
+                checked={isChecked}
+                onChange={() => toggleRuta(order.id)}
+                style={{ cursor: 'pointer', width: 16, height: 16, accentColor: colors.orange }}
+              />
+            </td>
+            <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
+              {order.order_number}
+            </td>
+            <td style={{ ...tdStyle, color: isChecked ? colors.textMuted : colors.white, fontWeight: 500, whiteSpace: 'nowrap', textDecoration: isChecked ? 'line-through' : undefined }}>
+              {order.customer_name || '—'}
+            </td>
+            <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
+              {order.customer_phone || '—'}
+            </td>
+            <td style={{ ...tdStyle, color: colors.textSecondary, minWidth: 180 }}>
+              {order.shipping_type === 'pickup'
+                ? <span style={{ color: colors.textMuted, fontStyle: 'italic' }}>{order.pickup_spot_name || 'Pickup'}</span>
+                : (order.customer_address || '—')}
+            </td>
+            <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
+              {SHIPPING_LABELS[order.shipping_type] || order.shipping_type}
+            </td>
+            <td style={{ ...tdStyle, minWidth: 180 }}>
+              <NoteInput orderId={order.id} value={notes[order.id] ?? ''} onChange={setNote} />
+            </td>
+          </tr>
+        )
+
         return (
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
                 <tr>
+                  <th style={{ ...thStyle, width: 36 }}>
+                    <input
+                      type="checkbox"
+                      checked={rutaOrders.length > 0 && rutaOrders.every(o => rutaChecked.has(o.id))}
+                      onChange={() => {
+                        const allChecked = rutaOrders.every(o => rutaChecked.has(o.id))
+                        setRutaChecked(prev => {
+                          const next = new Set(prev)
+                          if (allChecked) rutaOrders.forEach(o => next.delete(o.id))
+                          else rutaOrders.forEach(o => next.add(o.id))
+                          try { localStorage.setItem(rutaStorageKey, JSON.stringify([...next])) } catch {}
+                          return next
+                        })
+                      }}
+                      style={{ cursor: 'pointer', width: 16, height: 16, accentColor: colors.orange }}
+                    />
+                  </th>
                   {['#', 'Nombre', 'Teléfono', 'Dirección', 'Envío', 'Nota'].map(h => (
                     <th key={h} style={thStyle}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {rutaOrders.map(order => (
-                  <tr key={order.id}>
-                    <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
-                      {order.order_number}
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.white, fontWeight: 500, whiteSpace: 'nowrap' }}>
-                      {order.customer_name || '—'}
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
-                      {order.customer_phone || '—'}
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.textSecondary, minWidth: 180 }}>
-                      {order.shipping_type === 'pickup'
-                        ? <span style={{ color: colors.textMuted, fontStyle: 'italic' }}>{order.pickup_spot_name || 'Pickup'}</span>
-                        : (order.customer_address || '—')}
-                    </td>
-                    <td style={{ ...tdStyle, color: colors.textSecondary, whiteSpace: 'nowrap' }}>
-                      {SHIPPING_LABELS[order.shipping_type] || order.shipping_type}
-                    </td>
-                    <td style={{ ...tdStyle, minWidth: 180 }}>
-                      <NoteInput orderId={order.id} value={notes[order.id] ?? ''} onChange={setNote} />
-                    </td>
-                  </tr>
-                ))}
+                {unchecked.map(o => renderRutaRow(o, false))}
+                {checked.map(o => renderRutaRow(o, true))}
               </tbody>
             </table>
           </div>

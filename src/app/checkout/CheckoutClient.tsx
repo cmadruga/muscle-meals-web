@@ -61,6 +61,7 @@ export default function CheckoutClient({
   const [customerName, setCustomerName] = useState(prefill?.name ?? '')
   const customerEmail = prefill?.email ?? ''
   const [customerPhone, setCustomerPhone] = useState(prefill?.phone ?? '')
+  const [countryCode, setCountryCode] = useState<'+52' | '+1'>('+52')
   
   // Dirección guardada vs nueva
   const savedAddress = prefill?.address ?? null
@@ -115,10 +116,6 @@ export default function CheckoutClient({
   )
 
   const handleMembershipCheckout = async () => {
-    if (customerPhone.replace(/\D/g, '').length > 10) {
-      setError('Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)')
-      return
-    }
     if (!validatePhone(customerPhone)) {
       setError('Teléfono inválido (debe ser 10 dígitos)')
       return
@@ -136,7 +133,7 @@ export default function CheckoutClient({
     setError(null)
 
     try {
-      const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
+      const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
       const fullAddress = shippingType === 'pickup'
         ? null
         : addressOption === 'saved'
@@ -221,7 +218,7 @@ export default function CheckoutClient({
       }
 
       // 1. Crear o actualizar cliente
-      const whatsappPhone = formatPhoneForWhatsApp(customerPhone)
+      const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
       const fullAddress = shippingType === 'pickup'
         ? null
         : addressOption === 'saved'
@@ -378,6 +375,7 @@ export default function CheckoutClient({
         <CustomerForm
           name={customerName}
           phone={customerPhone}
+          countryCode={countryCode}
           calle={calle}
           numeroExterior={numeroExterior}
           numeroInterior={numeroInterior}
@@ -385,6 +383,7 @@ export default function CheckoutClient({
           codigoPostal={codigoPostal}
           onNameChange={setCustomerName}
           onPhoneChange={setCustomerPhone}
+          onCountryCodeChange={setCountryCode}
           onCalleChange={setCalle}
           onNumeroExteriorChange={setNumeroExterior}
           onNumeroInteriorChange={setNumeroInterior}
@@ -653,6 +652,7 @@ function IndividualItemSummary({ item, showBorder }: {
 function CustomerForm({
   name,
   phone,
+  countryCode,
   calle,
   numeroExterior,
   numeroInterior,
@@ -660,6 +660,7 @@ function CustomerForm({
   codigoPostal,
   onNameChange,
   onPhoneChange,
+  onCountryCodeChange,
   onCalleChange,
   onNumeroExteriorChange,
   onNumeroInteriorChange,
@@ -675,6 +676,7 @@ function CustomerForm({
 }: {
   name: string
   phone: string
+  countryCode: '+52' | '+1'
   calle: string
   numeroExterior: string
   numeroInterior: string
@@ -682,6 +684,7 @@ function CustomerForm({
   codigoPostal: string
   onNameChange: (value: string) => void
   onPhoneChange: (value: string) => void
+  onCountryCodeChange: (v: '+52' | '+1') => void
   onCalleChange: (value: string) => void
   onNumeroExteriorChange: (value: string) => void
   onNumeroInteriorChange: (value: string) => void
@@ -749,31 +752,32 @@ function CustomerForm({
           <label style={labelStyle}>
             WhatsApp (10 dígitos) *
           </label>
-          <input
-            type="tel"
-            value={phone}
-            onChange={(e) => {
-              const raw = e.target.value
-              // Permitir que el usuario escriba libremente — validamos abajo
-              const digits = raw.replace(/\D/g, '')
-              if (digits.length <= 13) onPhoneChange(raw)
-            }}
-            placeholder="10 dígitos"
-            disabled={disabled}
-            style={{
-              ...inputStyle,
-              ...(phone.replace(/\D/g, '').length > 10 ? { border: `2px solid ${colors.error}` } : {})
-            }}
-          />
-          {phone.replace(/\D/g, '').length > 10 ? (
-            <p style={{ fontSize: 12, color: colors.error, marginTop: 4, marginBottom: 0 }}>
-              Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)
-            </p>
-          ) : (
-            <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
-              Recibirás confirmación de pago por WhatsApp
-            </p>
-          )}
+          <div style={{ display: 'flex', gap: 8 }}>
+            <select
+              value={countryCode}
+              onChange={e => onCountryCodeChange(e.target.value as '+52' | '+1')}
+              disabled={disabled}
+              style={{ ...inputStyle, width: 'auto', flexShrink: 0, paddingLeft: 10, paddingRight: 10 }}
+            >
+              <option value="+52">🇲🇽 +52</option>
+              <option value="+1">🇺🇸 +1</option>
+            </select>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => {
+                const raw = e.target.value
+                const digits = raw.replace(/\D/g, '')
+                if (digits.length <= 10) onPhoneChange(raw)
+              }}
+              placeholder="10 dígitos"
+              disabled={disabled}
+              style={{ ...inputStyle, flex: 1 }}
+            />
+          </div>
+          <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
+            Recibirás confirmación de pago por WhatsApp
+          </p>
         </div>
 
         {showAddress && (<>

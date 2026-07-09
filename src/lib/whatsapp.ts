@@ -222,6 +222,11 @@ export async function sendReorderTemplate(
   phoneNumber: string,
   firstName: string,
 ): Promise<boolean> {
+  // Normalize to E.164: if no + prefix, assume Mexican mobile
+  const to = phoneNumber.startsWith('+')
+    ? phoneNumber
+    : `+521${phoneNumber.replace(/\D/g, '')}`
+
   try {
     const response = await fetch(WHATSAPP_API_URL, {
       method: 'POST',
@@ -233,14 +238,14 @@ export async function sendReorderTemplate(
         messaging_product: 'whatsapp',
         recipient_type: 'individual',
         type: 'template',
-        to: phoneNumber,
+        to,
         template: {
           name: 'reordenar',
           language: { code: 'es_MX' },
           components: [
             {
               type: 'header',
-              parameters: [{ type: 'image', image: { link: 'https://tywblugmsqterdoztjoy.supabase.co/storage/v1/object/public/meal-images/reminder_template.jpeg' } }],
+              parameters: [{ type: 'image', image: { link: 'https://tywblugmsqterdoztjoy.supabase.co/storage/v1/object/public/meal-images/reminder_template_newmeals.jpeg' } }],
             },
             {
               type: 'body',

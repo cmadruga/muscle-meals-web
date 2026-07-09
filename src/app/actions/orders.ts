@@ -306,6 +306,16 @@ export async function getOrderSummary(orderId: string): Promise<OrderSummary | n
   }
 }
 
+export async function deleteOrder(orderId: string): Promise<{ error?: string }> {
+  const supabase = createAdminClient()
+  const { error: itemsError } = await supabase.from('order_items').delete().eq('order_id', orderId)
+  if (itemsError) return { error: itemsError.message }
+  const { error } = await supabase.from('orders').delete().eq('id', orderId)
+  if (error) return { error: error.message }
+  revalidatePath('/admin/orders')
+  return {}
+}
+
 export async function changeOrderStatus(orderId: string, status: OrderStatus): Promise<void> {
   const supabase = createAdminClient()
 

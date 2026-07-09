@@ -1,6 +1,7 @@
 import { getCriticalPeriodConfig } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
+import { getActiveMeals } from '@/lib/db/meals'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
@@ -9,16 +10,17 @@ import CartClient from './CartClient'
 export const dynamic = 'force-dynamic'
 
 export default async function CartPage() {
-  const [criticalConfig, pickupSpots, supabase] = await Promise.all([
+  const [criticalConfig, pickupSpots, supabase, activeMeals] = await Promise.all([
     getCriticalPeriodConfig(),
     getActivePickupSpots(),
     createClient(),
+    getActiveMeals(),
   ])
   const inCutoff = isInCutoffWindow(criticalConfig)
 
   const { data: { user } } = await supabase.auth.getUser()
 
-  let prefill: { customerId: string; name: string; phone: string; address: string | null } | null = null
+  let prefill: { customerId: string; name: string; phone: string; rawPhone: string; address: string | null } | null = null
   let membership: {
     is_member: boolean
     membership_weeks_left: number
@@ -40,6 +42,7 @@ export default async function CartPage() {
         customerId: customer.id,
         name: customer.full_name ?? '',
         phone: normalizePhone(customer.phone ?? ''),
+        rawPhone: customer.phone ?? '',
         address: customer.address ?? null,
       }
       membership = {
@@ -70,6 +73,7 @@ export default async function CartPage() {
       membership={membership}
       pickupSpots={pickupSpots}
       usedMembershipThisWeek={usedMembershipThisWeek}
+      activeMeals={activeMeals}
     />
   )
 }

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -13,7 +13,7 @@ import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { validateCart } from '@/app/actions/checkout'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
-
+import type { Meal } from '@/lib/types'
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
@@ -25,17 +25,20 @@ export default function CartClient({
   membership,
   pickupSpots,
   usedMembershipThisWeek,
+  activeMeals,
 }: {
   inCutoff: boolean
   prefill: PrefillInfo | null
   membership: MembershipInfo | null
   pickupSpots: PickupSpot[]
   usedMembershipThisWeek: boolean
+  activeMeals: Meal[]
 }) {
   const router = useRouter()
   const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const [editingPkg, setEditingPkg] = useState<PackageGroup | null>(null)
   const [validating, setValidating] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [membershipModalOpen, setMembershipModalOpen] = useState(false)
@@ -181,7 +184,7 @@ export default function CartClient({
           <PackageCard
             key={pkg.packageInstanceId}
             package={pkg}
-            onEdit={() => router.push(`/package?edit=${pkg.packageInstanceId}`)}
+            onEdit={() => setEditingPkg(pkg)}
             onRemove={() => setPendingDelete({ type: 'package', instanceId: pkg.packageInstanceId, name: `${pkg.packageName} · ${pkg.sizeName}` })}
           />
         ))}
@@ -231,6 +234,14 @@ export default function CartClient({
       />
       </div>
     </main>
+
+    {editingPkg && (
+      <PackageEditModal
+        pkg={editingPkg}
+        activeMeals={activeMeals}
+        onClose={() => setEditingPkg(null)}
+      />
+    )}
 
     {membershipModalOpen && prefill && membership && (
       <MembershipConfirmModal
@@ -560,6 +571,268 @@ function DeliveryBanner({ inCutoff }: { inCutoff: boolean }) {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function PackageEditModal({ pkg, activeMeals, onClose }: {
+  pkg: PackageGroup
+  activeMeals: Meal[]
+  onClose: () => void
+}) {
+  const { addItem, removePackage } = useCartStore()
+
+  // One section per unique size in the package
+  const sizeSections = useMemo(() => {
+    const map = new Map<string, { sizeId: string; sizeName: string; unitPrice: number }>()
+    for (const item of pkg.items) {
+      if (!map.has(item.sizeId)) {
+        map.set(item.sizeId, { sizeId: item.sizeId, sizeName: item.sizeName, unitPrice: item.unitPrice })
+      }
+    }
+    return [...map.values()]
+  }, [pkg.items])
+
+  // qty keyed by `${mealId}__${sizeId}`
+  const [qty, setQty] = useState<Record<string, number>>(() => {
+    const init: Record<string, number> = {}
+    for (const item of pkg.items) {
+      const k = `${item.mealId}__${item.sizeId}`
+      init[k] = (init[k] ?? 0) + item.qty
+    }
+    return init
+  })
+
+  // collapsed state per sizeId — only first section open by default
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    sizeSections.forEach((s, i) => { if (i > 0) init[s.sizeId] = true })
+    return init
+  })
+
+  const isMixed = pkg.isMixedSizes
+  const minMeals = 5
+  const totalMeals = Object.values(qty).reduce((s, n) => s + n, 0)
+  const belowMin = totalMeals < minMeals
+
+  const change = (mealId: string, sizeId: string, delta: number) => {
+    const k = `${mealId}__${sizeId}`
+    setQty(prev => ({ ...prev, [k]: Math.max(0, (prev[k] ?? 0) + delta) }))
+  }
+
+  const sectionTotal = (sizeId: string) =>
+    activeMeals.reduce((s, m) => s + (qty[`${m.id}__${sizeId}`] ?? 0), 0)
+
+  const handleSave = () => {
+    removePackage(pkg.packageInstanceId)
+    const newInstanceId = `pkg_${crypto.randomUUID()}`
+    for (const section of sizeSections) {
+      for (const meal of activeMeals) {
+        const q = qty[`${meal.id}__${section.sizeId}`] ?? 0
+        if (q > 0) {
+          addItem({
+            mealId: meal.id,
+            mealName: meal.name,
+            sizeId: section.sizeId,
+            sizeName: section.sizeName,
+            qty: q,
+            unitPrice: section.unitPrice,
+            packageName: pkg.packageName,
+            packageInstanceId: newInstanceId,
+          })
+        }
+      }
+    }
+    onClose()
+  }
+
+  const renderMealRow = (meal: Meal, sizeId: string) => {
+    const k = `${meal.id}__${sizeId}`
+    const q = qty[k] ?? 0
+    return (
+      <div
+        key={k}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 12,
+          padding: '10px 12px',
+          borderRadius: 10,
+          background: q > 0 ? `${colors.orange}18` : colors.black,
+          border: `1px solid ${q > 0 ? colors.orange : colors.grayLight}`,
+          transition: 'border-color 0.15s, background 0.15s',
+        }}
+      >
+        {meal.img ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={meal.img} alt={meal.name} style={{ width: 40, height: 40, objectFit: 'cover', borderRadius: 6, flexShrink: 0 }} />
+        ) : (
+          <div style={{ width: 40, height: 40, borderRadius: 6, background: colors.grayLight, flexShrink: 0 }} />
+        )}
+        <span style={{ flex: 1, fontSize: 14, color: colors.white, fontWeight: q > 0 ? 600 : 400 }}>
+          {meal.name}
+        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <button
+            onClick={() => change(meal.id, sizeId, -1)}
+            disabled={q === 0}
+            style={{
+              width: 28, height: 28, borderRadius: 6, border: `1px solid ${colors.grayLight}`,
+              background: colors.grayLight, color: colors.white, cursor: q === 0 ? 'not-allowed' : 'pointer',
+              fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              opacity: q === 0 ? 0.3 : 1,
+            }}
+          >−</button>
+          <span style={{ minWidth: 20, textAlign: 'center', fontWeight: 700, color: q > 0 ? colors.orange : colors.textMuted, fontSize: 15 }}>
+            {q}
+          </span>
+          <button
+            onClick={() => change(meal.id, sizeId, 1)}
+            style={{
+              width: 28, height: 28, borderRadius: 6, border: `1px solid ${colors.grayLight}`,
+              background: colors.grayLight, color: colors.white, cursor: 'pointer',
+              fontSize: 16, display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}
+          >+</button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div
+      onClick={onClose}
+      style={{
+        position: 'fixed', inset: 0, zIndex: 1100,
+        background: 'rgba(0,0,0,0.75)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        padding: 24,
+      }}
+    >
+      <div
+        onClick={e => e.stopPropagation()}
+        style={{
+          background: colors.grayDark,
+          border: `2px solid ${colors.orange}`,
+          borderRadius: 16,
+          padding: 24,
+          maxWidth: 440,
+          width: '100%',
+          maxHeight: '85vh',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {/* Header */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexShrink: 0 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: colors.white, textTransform: 'uppercase', letterSpacing: 1 }}>
+              <span style={{ color: colors.orange }}>Editar</span> {pkg.packageName}
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: belowMin ? '#ef4444' : colors.textMuted }}>
+              {totalMeals} comida{totalMeals !== 1 ? 's' : ''} · mínimo {minMeals}
+              {belowMin && <span style={{ marginLeft: 6, fontWeight: 700 }}>⚠ faltan {minMeals - totalMeals}</span>}
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            style={{ background: 'transparent', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4, flexShrink: 0, marginLeft: 12 }}
+          >
+            ✕
+          </button>
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: colors.grayLight, margin: '12px 0', flexShrink: 0 }} />
+
+        {/* Size sections */}
+        <div style={{ overflowY: 'auto', flex: 1, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {sizeSections.map(section => {
+            const isCollapsed = isMixed && !!collapsed[section.sizeId]
+            const secTotal = sectionTotal(section.sizeId)
+            return (
+              <div
+                key={section.sizeId}
+                style={{
+                  border: `1px solid ${colors.grayLight}`,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Section header — shown for mixed packages as collapse trigger, or plain label for single */}
+                {isMixed ? (
+                  <button
+                    onClick={() => setCollapsed(prev => ({ ...prev, [section.sizeId]: !prev[section.sizeId] }))}
+                    style={{
+                      width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                      padding: '10px 14px',
+                      background: isCollapsed ? colors.black : '#1a1a1a',
+                      border: 'none', cursor: 'pointer',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: colors.orange }}>
+                        {section.sizeName}
+                      </span>
+                      <span style={{ fontSize: 12, color: colors.textMuted }}>
+                        · {secTotal} comida{secTotal !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <span style={{
+                      fontSize: 11, color: colors.textMuted,
+                      display: 'inline-block',
+                      transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.15s',
+                    }}>
+                      ▾
+                    </span>
+                  </button>
+                ) : (
+                  <div style={{ padding: '8px 14px', background: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: colors.orange }}>
+                      Talla
+                    </span>
+                    <span style={{ fontSize: 12, color: colors.white, fontWeight: 600 }}>{section.sizeName}</span>
+                  </div>
+                )}
+
+                {/* Meal list */}
+                {!isCollapsed && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, background: colors.black }}>
+                    {activeMeals.map(meal => renderMealRow(meal, section.sizeId))}
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+
+        {/* Actions */}
+        <div style={{ display: 'flex', gap: 10, flexShrink: 0 }}>
+          <button
+            onClick={onClose}
+            style={{
+              flex: 1, padding: '12px 0',
+              background: 'transparent', border: `1px solid ${colors.grayLight}`,
+              borderRadius: 8, color: colors.white, cursor: 'pointer', fontSize: 15,
+            }}
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={belowMin}
+            style={{
+              flex: 2, padding: '12px 0',
+              background: belowMin ? colors.grayLight : colors.orange,
+              border: 'none', borderRadius: 8, color: colors.white,
+              cursor: belowMin ? 'not-allowed' : 'pointer',
+              fontSize: 15, fontWeight: 700,
+              opacity: belowMin ? 0.5 : 1,
+            }}
+          >
+            Guardar cambios
+          </button>
+        </div>
+      </div>
     </div>
   )
 }
