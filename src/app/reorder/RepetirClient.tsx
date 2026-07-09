@@ -161,7 +161,7 @@ export default function RepetirClient({
                     display: 'flex', justifyContent: 'space-between', alignItems: 'center',
                   }}>
                     <span style={{ fontWeight: 'bold', color: colors.orange }}>
-                      Arma tu paquete · x{pkg.items.length}{packages.length > 1 ? ` (${pi + 1})` : ''}
+                      Arma tu paquete · x{pkg.items.length}
                     </span>
                     <span style={{ fontWeight: 'bold', color: colors.white }}>
                       ${(pkg.items.reduce((s, i) => s + i.unitPrice * i.qty, 0) / 100).toFixed(0)} MXN
