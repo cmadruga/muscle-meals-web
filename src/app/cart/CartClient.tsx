@@ -603,8 +603,12 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
     return init
   })
 
-  // collapsed state per sizeId — all expanded by default
-  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  // collapsed state per sizeId — only first section open by default
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => {
+    const init: Record<string, boolean> = {}
+    sizeSections.forEach((s, i) => { if (i > 0) init[s.sizeId] = true })
+    return init
+  })
 
   const isMixed = pkg.isMixedSizes
   const minMeals = 5
@@ -718,62 +722,81 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
         }}
       >
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, flexShrink: 0 }}>
-          <h2 style={{ margin: 0, fontSize: 18, fontWeight: 700, color: colors.white }}>
-            Editar {pkg.packageName}
-          </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 4, flexShrink: 0 }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: colors.white, textTransform: 'uppercase', letterSpacing: 1 }}>
+              <span style={{ color: colors.orange }}>Editar</span> {pkg.packageName}
+            </h2>
+            <p style={{ margin: '4px 0 0', fontSize: 13, color: belowMin ? '#ef4444' : colors.textMuted }}>
+              {totalMeals} comida{totalMeals !== 1 ? 's' : ''} · mínimo {minMeals}
+              {belowMin && <span style={{ marginLeft: 6, fontWeight: 700 }}>⚠ faltan {minMeals - totalMeals}</span>}
+            </p>
+          </div>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4 }}
+            style={{ background: 'transparent', border: 'none', color: colors.textMuted, cursor: 'pointer', fontSize: 20, lineHeight: 1, padding: 4, flexShrink: 0, marginLeft: 12 }}
           >
             ✕
           </button>
         </div>
-        <p style={{ margin: '0 0 16px', fontSize: 13, flexShrink: 0, color: belowMin ? '#ef4444' : colors.textMuted }}>
-          {totalMeals} comida{totalMeals !== 1 ? 's' : ''} seleccionada{totalMeals !== 1 ? 's' : ''}
-          {belowMin && ` (mínimo ${minMeals})`}
-        </p>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: colors.grayLight, margin: '12px 0', flexShrink: 0 }} />
 
         {/* Size sections */}
-        <div style={{ overflowY: 'auto', flex: 1, marginBottom: 16 }}>
+        <div style={{ overflowY: 'auto', flex: 1, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {sizeSections.map(section => {
             const isCollapsed = isMixed && !!collapsed[section.sizeId]
             const secTotal = sectionTotal(section.sizeId)
             return (
-              <div key={section.sizeId} style={{ marginBottom: isMixed ? 12 : 0 }}>
-                {/* Section header — only shown for mixed packages */}
-                {isMixed && (
+              <div
+                key={section.sizeId}
+                style={{
+                  border: `1px solid ${colors.grayLight}`,
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                }}
+              >
+                {/* Section header — shown for mixed packages as collapse trigger, or plain label for single */}
+                {isMixed ? (
                   <button
                     onClick={() => setCollapsed(prev => ({ ...prev, [section.sizeId]: !prev[section.sizeId] }))}
                     style={{
                       width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                      padding: '8px 12px', marginBottom: isCollapsed ? 0 : 8,
-                      background: colors.black, border: `1px solid ${colors.grayLight}`,
-                      borderRadius: isCollapsed ? 8 : '8px 8px 0 0',
-                      cursor: 'pointer', color: colors.white,
+                      padding: '10px 14px',
+                      background: isCollapsed ? colors.black : '#1a1a1a',
+                      border: 'none', cursor: 'pointer',
                     }}
                   >
-                    <span style={{ fontSize: 13, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                      Talla: {section.sizeName}
-                      <span style={{ color: colors.orange, marginLeft: 8, fontWeight: 400 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <span style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: colors.orange }}>
+                        {section.sizeName}
+                      </span>
+                      <span style={{ fontSize: 12, color: colors.textMuted }}>
                         · {secTotal} comida{secTotal !== 1 ? 's' : ''}
                       </span>
-                    </span>
-                    <span style={{ fontSize: 12, color: colors.textMuted, transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)', display: 'inline-block', transition: 'transform 0.15s' }}>
+                    </div>
+                    <span style={{
+                      fontSize: 11, color: colors.textMuted,
+                      display: 'inline-block',
+                      transform: isCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.15s',
+                    }}>
                       ▾
                     </span>
                   </button>
+                ) : (
+                  <div style={{ padding: '8px 14px', background: '#1a1a1a', display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: colors.orange }}>
+                      Talla
+                    </span>
+                    <span style={{ fontSize: 12, color: colors.white, fontWeight: 600 }}>{section.sizeName}</span>
+                  </div>
                 )}
 
                 {/* Meal list */}
                 {!isCollapsed && (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    {/* Single-size subtitle */}
-                    {!isMixed && (
-                      <p style={{ margin: '0 0 8px', fontSize: 13, color: colors.textMuted }}>
-                        Talla: {section.sizeName}
-                      </p>
-                    )}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: 8, background: colors.black }}>
                     {activeMeals.map(meal => renderMealRow(meal, section.sizeId))}
                   </div>
                 )}
