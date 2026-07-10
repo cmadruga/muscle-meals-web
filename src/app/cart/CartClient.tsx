@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -582,6 +582,13 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
 }) {
   const { addItem, removePackage } = useCartStore()
 
+  // Lock body scroll while modal is open
+  useEffect(() => {
+    const prev = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => { document.body.style.overflow = prev }
+  }, [])
+
   // One section per unique size in the package
   const sizeSections = useMemo(() => {
     const map = new Map<string, { sizeId: string; sizeName: string; unitPrice: number }>()
@@ -703,8 +710,9 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
       style={{
         position: 'fixed', inset: 0, zIndex: 1100,
         background: 'rgba(0,0,0,0.75)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        padding: 24,
+        overflowY: 'auto',
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+        padding: '24px 24px 48px',
       }}
     >
       <div
@@ -716,9 +724,8 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
           padding: 24,
           maxWidth: 440,
           width: '100%',
-          maxHeight: '85vh',
-          display: 'flex',
-          flexDirection: 'column',
+          marginTop: 'auto',
+          marginBottom: 'auto',
         }}
       >
         {/* Header */}
@@ -744,7 +751,7 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
         <div style={{ height: 1, background: colors.grayLight, margin: '12px 0', flexShrink: 0 }} />
 
         {/* Size sections */}
-        <div style={{ overflowY: 'auto', flex: 1, marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+        <div style={{ marginBottom: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {sizeSections.map(section => {
             const isCollapsed = isMixed && !!collapsed[section.sizeId]
             const secTotal = sectionTotal(section.sizeId)
