@@ -1,3 +1,4 @@
+import { unstable_noStore as noStore } from 'next/cache'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { type CriticalPeriodConfig, DEFAULT_CRITICAL_PERIOD } from '@/lib/utils/delivery'
 
@@ -59,4 +60,31 @@ export async function setCriticalPeriodConfig(config: CriticalPeriodConfig): Pro
   await createAdminClient()
     .from('site_settings')
     .upsert({ key: 'critical_period', value: config, updated_at: new Date().toISOString() })
+}
+
+/**
+ * Lee el costo de envío estándar en centavos. Default: 4900 ($49 MXN).
+ */
+export async function getShippingStandard(): Promise<number> {
+  noStore()
+  try {
+    const { data, error } = await createAdminClient()
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'shipping_standard')
+      .single()
+    if (error || !data) return 4900
+    return typeof data.value === 'number' ? data.value : 4900
+  } catch {
+    return 4900
+  }
+}
+
+/**
+ * Guarda el costo de envío estándar en centavos.
+ */
+export async function setShippingStandard(cents: number): Promise<void> {
+  await createAdminClient()
+    .from('site_settings')
+    .upsert({ key: 'shipping_standard', value: cents, updated_at: new Date().toISOString() })
 }

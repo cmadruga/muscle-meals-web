@@ -4,14 +4,20 @@ import { useState } from 'react'
 import { colors } from '@/lib/theme'
 import SalesToggle from './SalesToggle'
 import CriticalPeriodConfigPanel from './CriticalPeriodConfig'
+import PreciosPanel from './PreciosPanel'
 import type { CriticalPeriodConfig } from '@/lib/utils/delivery'
+import type { Size } from '@/lib/types'
 
 export default function SettingsDrawer({
   salesEnabled,
   criticalPeriodConfig,
+  mainSizes,
+  shippingStandard,
 }: {
   salesEnabled: boolean
   criticalPeriodConfig: CriticalPeriodConfig
+  mainSizes: Size[]
+  shippingStandard: number
 }) {
   const [open, setOpen] = useState(false)
 
@@ -25,7 +31,7 @@ export default function SettingsDrawer({
           border: `1px solid ${colors.grayLight}`,
           background: colors.grayDark, color: colors.textMuted,
           fontSize: 14, fontWeight: 600, transition: 'all 0.15s',
-          whiteSpace: 'nowrap',
+          whiteSpace: 'nowrap', fontFamily: 'inherit',
         }}
       >
         <span style={{ fontSize: 16 }}>⚙</span>
@@ -64,6 +70,7 @@ export default function SettingsDrawer({
                 style={{
                   background: 'none', border: 'none', cursor: 'pointer',
                   color: colors.textMuted, fontSize: 22, lineHeight: 1, padding: 4,
+                  fontFamily: 'inherit',
                 }}
               >
                 ✕
@@ -88,7 +95,7 @@ export default function SettingsDrawer({
               <div style={{ height: 1, background: colors.grayLight, marginBottom: 32 }} />
 
               {/* Período crítico */}
-              <section>
+              <section style={{ marginBottom: 32 }}>
                 <p style={{
                   margin: '0 0 12px', fontSize: 11, fontWeight: 700,
                   textTransform: 'uppercase', letterSpacing: '0.08em',
@@ -97,6 +104,13 @@ export default function SettingsDrawer({
                   Período crítico
                 </p>
                 <CriticalPeriodConfigPanel initial={criticalPeriodConfig} />
+              </section>
+
+              <div style={{ height: 1, background: colors.grayLight, marginBottom: 32 }} />
+
+              {/* Precios */}
+              <section>
+                <PreciosPanel mainSizes={mainSizes} shippingStandard={shippingStandard} />
               </section>
 
             </div>

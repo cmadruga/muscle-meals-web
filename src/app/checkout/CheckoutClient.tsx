@@ -24,12 +24,6 @@ import {
 // Tipos de envío
 type ShippingType = 'standard' | 'priority' | 'pickup'
 
-const SHIPPING_COSTS = {
-  standard: 4900, // $49 MXN en centavos
-  priority: 0,    // A cotizar ($100-200 según zona/horario)
-  pickup: 0       // Gratis - recoger en local
-}
-
 type MembershipInfo = {
   is_member: boolean
   membership_weeks_left: number
@@ -42,11 +36,13 @@ export default function CheckoutClient({
   prefill,
   deliveryDateStr,
   membership,
+  shippingStandard = 4900,
 }: {
   pickupSpots: PickupSpot[]
   prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
   deliveryDateStr?: string
   membership?: MembershipInfo | null
+  shippingStandard?: number
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
@@ -98,6 +94,7 @@ export default function CheckoutClient({
   
   // Calcular total
   const subtotal = getTotal()
+  const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
   const shippingCost = SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
 
@@ -370,6 +367,7 @@ export default function CheckoutClient({
           onPickupSpotChange={setSelectedPickupSpot}
           pickupSpots={pickupSpots}
           disabled={isProcessing}
+          shippingStandard={shippingStandard}
         />
 
         <CustomerForm
@@ -968,13 +966,14 @@ function CustomerForm({
   )
 }
 
-function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled }: {
+function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, shippingStandard = 4900 }: {
   selectedType: 'standard' | 'priority' | 'pickup'
   onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
   selectedPickupSpot: string
   onPickupSpotChange: (spotId: string) => void
   pickupSpots: PickupSpot[]
   disabled: boolean
+  shippingStandard?: number
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
@@ -1039,7 +1038,7 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                   Envío Estándar
                 </span>
                 <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: colors.white }}>
-                  - $49 MXN
+                  - ${(shippingStandard / 100).toFixed(0)} MXN
                 </span>
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>

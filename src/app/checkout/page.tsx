@@ -1,14 +1,18 @@
+export const dynamic = 'force-dynamic'
+
 import CheckoutClient from './CheckoutClient'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
+import { getShippingStandard } from '@/lib/db/settings'
 
 export default async function CheckoutPage() {
-  const [pickupSpots, supabase] = await Promise.all([
+  const [pickupSpots, supabase, shippingStandard] = await Promise.all([
     getActivePickupSpots(),
     createClient(),
+    getShippingStandard(),
   ])
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -57,6 +61,7 @@ export default async function CheckoutPage() {
       prefill={prefill}
       deliveryDateStr={formatDeliveryDate(deliveryDate)}
       membership={membership}
+      shippingStandard={shippingStandard}
     />
   )
 }
