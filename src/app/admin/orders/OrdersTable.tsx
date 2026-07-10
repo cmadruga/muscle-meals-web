@@ -267,6 +267,8 @@ export default function OrdersTable({
   const [deleting, setDeleting] = useState(false)
   const router = useRouter()
 
+  const [rutaShippingFilter, setRutaShippingFilter] = useState<'standard' | 'pickup' | 'priority' | null>('standard')
+
   const rutaStorageKey = `ruta_checked_${weekStr}`
   const [rutaChecked, setRutaChecked] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
@@ -659,11 +661,21 @@ export default function OrdersTable({
 
       {/* Tab: Ruta */}
       {activeTab === 'ruta' && (() => {
-        const rutaOrders = [...orders]
+        const allRutaOrders = [...orders]
           .filter(o => o.status === 'paid' || o.status === 'admin')
           .sort((a, b) => a.order_number.localeCompare(b.order_number))
 
-        if (rutaOrders.length === 0) {
+        const rutaOrders = rutaShippingFilter
+          ? allRutaOrders.filter(o => o.shipping_type === rutaShippingFilter)
+          : allRutaOrders
+
+        const shippingFilters: { key: 'standard' | 'pickup' | 'priority'; label: string }[] = [
+          { key: 'standard', label: 'Estándar' },
+          { key: 'pickup',   label: 'Pickup' },
+          { key: 'priority', label: 'Prioritario' },
+        ]
+
+        if (allRutaOrders.length === 0) {
           return <p style={{ color: colors.textMuted, fontSize: 14 }}>No hay órdenes pagadas esta semana.</p>
         }
 
@@ -704,6 +716,30 @@ export default function OrdersTable({
         )
 
         return (
+          <div>
+            {/* Filtros de tipo de envío */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+              {shippingFilters.map(f => {
+                const isActive = rutaShippingFilter === f.key
+                const count = allRutaOrders.filter(o => o.shipping_type === f.key).length
+                return (
+                  <button
+                    key={f.key}
+                    onClick={() => setRutaShippingFilter(isActive ? null : f.key)}
+                    style={{
+                      padding: '5px 14px', borderRadius: 20, fontSize: 13, fontWeight: 700,
+                      cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
+                      background: isActive ? colors.orange : 'transparent',
+                      color: isActive ? colors.white : colors.textMuted,
+                      border: `2px solid ${isActive ? colors.orange : colors.grayLight}`,
+                    }}
+                  >
+                    {f.label} {count > 0 && <span style={{ opacity: 0.75 }}>·{count}</span>}
+                  </button>
+                )
+              })}
+            </div>
+
           <div style={{ overflowX: 'auto' }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
               <thead>
@@ -735,6 +771,7 @@ export default function OrdersTable({
                 {checked.map(o => renderRutaRow(o, true))}
               </tbody>
             </table>
+          </div>
           </div>
         )
       })()}
