@@ -31,9 +31,13 @@ function processItems(items: ShoppingItem[]): ProcessedGroup[] {
 
   for (const g of map.values()) {
     g.baseQty = Math.round(g.baseQty * 10) / 10
+    // If grams is not already a unit, add it so the user can always switch to grams
+    if (!g.units.find(u => u.unit === 'g')) {
+      g.units.push({ unit: 'g', grEquiv: 1 })
+    }
     g.units.sort((a, b) => {
-      if (a.unit === 'g') return -1
-      if (b.unit === 'g') return 1
+      if (a.unit === 'g') return 1   // g goes last (primary unit stays first)
+      if (b.unit === 'g') return -1
       return a.unit.localeCompare(b.unit)
     })
   }
@@ -45,7 +49,8 @@ function defaultUnits(groups: ProcessedGroup[]): Record<string, string> {
   const init: Record<string, string> = {}
   for (const g of groups) {
     if (g.units.length === 0) continue
-    init[g.ingredientId] = g.units.find(u => u.unit === 'g')?.unit ?? g.units[0].unit
+    // Default to first non-g unit (the ingredient's native unit); fall back to g
+    init[g.ingredientId] = g.units.find(u => u.unit !== 'g')?.unit ?? 'g'
   }
   return init
 }
