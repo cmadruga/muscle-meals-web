@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import { colors } from '@/lib/theme'
-import { sendReorderBroadcast } from '@/app/actions/whatsapp'
+import { sendReorderBroadcast, listTemplateImages, uploadTemplateImage } from '@/app/actions/whatsapp'
 import { updateMembership, updateCustomerContact } from '@/app/actions/membership'
 import type { CustomerRow, CustomerOrder, SizeOption } from './page'
 
@@ -388,7 +388,27 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
 
 // ─── WhatsApp Modal ───────────────────────────────────────────────────────────
 
+type TemplateImage = { name: string; url: string }
+
+const TEMPLATES = [
+  { id: 'reordenar', label: 'Reordenar', description: 'Invita al cliente a repetir su pedido', hasImage: true },
+]
+
 function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: () => void }) {
+  // Step 1 state
+  const [step, setStep] = useState<1 | 2>(1)
+  const [selectedTemplate, setSelectedTemplate] = useState('reordenar')
+  const [images, setImages] = useState<TemplateImage[]>([])
+  const [imagesLoading, setImagesLoading] = useState(true)
+  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null)
+  const [addingNew, setAddingNew] = useState(false)
+  const [uploadName, setUploadName] = useState('')
+  const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Step 2 state
   const [search, setSearch] = useState('')
   const [sending, setSending] = useState(false)
   const [result, setResult] = useState<string | null>(null)
@@ -403,6 +423,39 @@ function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: ()
     )
   })
 
+  // Load images on mount
+  useEffect(() => {
+    listTemplateImages().then(list => {
+      setImages(list)
+      if (list.length > 0) setSelectedImageUrl(list[0].url)
+      setImagesLoading(false)
+    })
+  }, [])
+
+  const currentTemplate = TEMPLATES.find(t => t.id === selectedTemplate)!
+
+  const handleUpload = async () => {
+    if (!uploadFile || !uploadName.trim()) return
+    setUploading(true)
+    setUploadError(null)
+    const fd = new FormData()
+    fd.append('file', uploadFile)
+    const res = await uploadTemplateImage(uploadName.trim(), fd)
+    if (res.error) {
+      setUploadError(res.error)
+    } else if (res.url) {
+      const newImg = { name: uploadName.trim(), url: res.url }
+      setImages(prev => [...prev, newImg])
+      setSelectedImageUrl(res.url)
+      setAddingNew(false)
+      setUploadName('')
+      setUploadFile(null)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
+    setUploading(false)
+  }
+
+  // Step 2 logic
   const q = search.toLowerCase()
   const visible = q
     ? sorted.filter(c => c.full_name.toLowerCase().includes(q) || (c.phone ?? '').includes(q))
@@ -438,11 +491,12 @@ function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: ()
       .filter(c => selected.has(c.id) && c.phone)
       .map(c => ({ phone: c.phone!, firstName: c.full_name.split(' ')[0] }))
     if (recipients.length === 0) return
+    if (currentTemplate.hasImage && !selectedImageUrl) return
 
     setSending(true)
     setResult(null)
     try {
-      const { sent, failed } = await sendReorderBroadcast(recipients)
+      const { sent, failed } = await sendReorderBroadcast(recipients, selectedImageUrl!)
       setResult(failed === 0
         ? `✅ ${sent} mensajes enviados correctamente`
         : `✅ ${sent} enviados · ❌ ${failed} fallaron`)
@@ -453,53 +507,147 @@ function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: ()
     }
   }
 
+  const canProceed = !currentTemplate.hasImage || (selectedImageUrl !== null && !addingNew)
+
   return (
     <div onClick={e => { if (e.target === e.currentTarget) onClose() }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: 24 }}>
-      <div style={{ background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 12, width: '100%', maxWidth: 440, maxHeight: '85vh', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${colors.grayLight}33`, flexShrink: 0 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 700, color: colors.white }}>Enviar WhatsApp</div>
-              <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Template: reordenar · {selected.size} seleccionados</div>
+      <div style={{ background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 12, width: '100%', maxWidth: 480, maxHeight: '90vh', display: 'flex', flexDirection: 'column' }}>
+
+        {/* Header */}
+        <div style={{ padding: '20px 24px 16px', borderBottom: `1px solid ${colors.grayLight}33`, flexShrink: 0, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+          <div>
+            <div style={{ fontSize: 16, fontWeight: 700, color: colors.white }}>Enviar WhatsApp</div>
+            <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
+              Paso {step} de 2 — {step === 1 ? 'Seleccionar template e imagen' : `${selected.size} destinatarios`}
             </div>
-            <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
           </div>
-          <input
-            placeholder="Buscar por nombre o teléfono…"
-            value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '7px 12px', marginBottom: 12, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 7, color: colors.white, fontSize: 13, boxSizing: 'border-box' }}
-          />
-          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
-            <input ref={selectAllRef} type="checkbox" onChange={handleSelectAll} style={{ width: 15, height: 15, accentColor: colors.orange, cursor: 'pointer' }} />
-            <span style={{ fontSize: 13, color: colors.textSecondary }}>Seleccionar todos · {visibleSelectable.length} con teléfono</span>
-          </label>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
         </div>
 
-        <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px' }}>
-          {visible.map((c, idx) => {
-            const canSelect = !!c.phone
-            return (
-              <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: idx < visible.length - 1 ? `1px solid ${colors.grayLight}22` : 'none', cursor: canSelect ? 'pointer' : 'default', opacity: canSelect ? 1 : 0.4 }}>
-                <input type="checkbox" checked={selected.has(c.id)} onChange={() => canSelect && toggle(c.id)} disabled={!canSelect} style={{ width: 15, height: 15, accentColor: colors.orange, cursor: canSelect ? 'pointer' : 'not-allowed', flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontSize: 14, color: colors.white }}>{c.full_name}</div>
-                  {c.phone && <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 1 }}>{c.phone}</div>}
-                </div>
-                {!canSelect && <span style={{ fontSize: 11, color: colors.textMuted, flexShrink: 0 }}>sin tel.</span>}
+        {/* Step 1 */}
+        {step === 1 && (
+          <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
+            {/* Template selector */}
+            <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Template</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 24 }}>
+              {TEMPLATES.map(t => (
+                <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: `1px solid ${selectedTemplate === t.id ? colors.orange : colors.grayLight}`, background: selectedTemplate === t.id ? colors.orange + '11' : 'transparent', cursor: 'pointer' }}>
+                  <input type="radio" name="template" value={t.id} checked={selectedTemplate === t.id} onChange={() => setSelectedTemplate(t.id)} style={{ accentColor: colors.orange, width: 15, height: 15 }} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.white }}>{t.label}</div>
+                    <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{t.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+
+            {/* Image picker */}
+            {currentTemplate.hasImage && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Imagen del template</div>
+                {imagesLoading ? (
+                  <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 16 }}>Cargando imágenes…</div>
+                ) : (
+                  <>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8, marginBottom: addingNew ? 16 : 0 }}>
+                      {images.map(img => (
+                        <button key={img.url} onClick={() => { setSelectedImageUrl(img.url); setAddingNew(false) }} style={{ padding: 0, border: `2px solid ${selectedImageUrl === img.url && !addingNew ? colors.orange : colors.grayLight}`, borderRadius: 8, cursor: 'pointer', background: 'transparent', overflow: 'hidden', aspectRatio: '1', position: 'relative' }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={img.url} alt={img.name} style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />
+                          {selectedImageUrl === img.url && !addingNew && (
+                            <div style={{ position: 'absolute', top: 4, right: 4, background: colors.orange, borderRadius: '50%', width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, color: '#fff', fontWeight: 700 }}>✓</div>
+                          )}
+                          <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, background: 'rgba(0,0,0,0.6)', padding: '3px 6px', fontSize: 10, color: '#fff', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>{img.name}</div>
+                        </button>
+                      ))}
+                      {/* New card */}
+                      <button onClick={() => { setAddingNew(true); setSelectedImageUrl(null); setUploadError(null) }} style={{ border: `2px dashed ${addingNew ? colors.orange : colors.grayLight}`, borderRadius: 8, cursor: 'pointer', background: addingNew ? colors.orange + '11' : 'transparent', aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, color: addingNew ? colors.orange : colors.textMuted }}>
+                        <span style={{ fontSize: 22, lineHeight: 1 }}>+</span>
+                        <span style={{ fontSize: 11, fontWeight: 600 }}>Nueva</span>
+                      </button>
+                    </div>
+
+                    {/* Upload form — only shown when "Nueva" is selected */}
+                    {addingNew && (
+                      <div style={{ padding: 14, background: colors.black + '88', border: `1px solid ${colors.grayLight}33`, borderRadius: 10 }}>
+                        <input
+                          placeholder="Nombre (ej: reorder-julio-2026)"
+                          value={uploadName}
+                          onChange={e => setUploadName(e.target.value)}
+                          style={{ width: '100%', padding: '7px 12px', marginBottom: 8, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 7, color: colors.white, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }}
+                        />
+                        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                          <input ref={fileInputRef} type="file" accept="image/*" onChange={e => setUploadFile(e.target.files?.[0] ?? null)} style={{ flex: 1, fontSize: 12, color: colors.textMuted }} />
+                          <button onClick={handleUpload} disabled={!uploadFile || !uploadName.trim() || uploading} style={{ padding: '7px 14px', background: colors.orange, color: '#fff', border: 'none', borderRadius: 7, fontSize: 13, fontWeight: 600, cursor: 'pointer', opacity: (!uploadFile || !uploadName.trim() || uploading) ? 0.5 : 1, whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
+                            {uploading ? 'Subiendo…' : 'Guardar'}
+                          </button>
+                        </div>
+                        {uploadError && <div style={{ fontSize: 12, color: '#ef4444', marginTop: 6 }}>{uploadError}</div>}
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            )}
+          </div>
+        )}
+
+        {/* Step 2 */}
+        {step === 2 && (
+          <>
+            <div style={{ padding: '12px 24px 12px', borderBottom: `1px solid ${colors.grayLight}33`, flexShrink: 0 }}>
+              <input
+                placeholder="Buscar por nombre o teléfono…"
+                value={search} onChange={e => setSearch(e.target.value)}
+                style={{ width: '100%', padding: '7px 12px', marginBottom: 12, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 7, color: colors.white, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }}
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
+                <input ref={selectAllRef} type="checkbox" onChange={handleSelectAll} style={{ width: 15, height: 15, accentColor: colors.orange, cursor: 'pointer' }} />
+                <span style={{ fontSize: 13, color: colors.textSecondary }}>Seleccionar todos · {visibleSelectable.length} con teléfono</span>
               </label>
-            )
-          })}
-        </div>
+            </div>
+            <div style={{ flex: 1, overflowY: 'auto', padding: '4px 24px' }}>
+              {visible.map((c, idx) => {
+                const canSelect = !!c.phone
+                return (
+                  <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 0', borderBottom: idx < visible.length - 1 ? `1px solid ${colors.grayLight}22` : 'none', cursor: canSelect ? 'pointer' : 'default', opacity: canSelect ? 1 : 0.4 }}>
+                    <input type="checkbox" checked={selected.has(c.id)} onChange={() => canSelect && toggle(c.id)} disabled={!canSelect} style={{ width: 15, height: 15, accentColor: colors.orange, cursor: canSelect ? 'pointer' : 'not-allowed', flexShrink: 0 }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 14, color: colors.white }}>{c.full_name}</div>
+                      {c.phone && <div style={{ fontSize: 11, color: colors.textMuted, marginTop: 1 }}>{c.phone}</div>}
+                    </div>
+                    {!canSelect && <span style={{ fontSize: 11, color: colors.textMuted, flexShrink: 0 }}>sin tel.</span>}
+                  </label>
+                )
+              })}
+            </div>
+          </>
+        )}
 
+        {/* Footer */}
         <div style={{ padding: '14px 24px', borderTop: `1px solid ${colors.grayLight}33`, flexShrink: 0 }}>
-          {result && (
+          {step === 2 && result && (
             <div style={{ padding: '8px 12px', marginBottom: 12, background: result.startsWith('✅') ? '#10b98118' : '#ef444418', border: `1px solid ${result.startsWith('✅') ? '#10b98144' : '#ef444444'}`, borderRadius: 8, fontSize: 13, color: colors.white }}>
               {result}
             </div>
           )}
-          <button onClick={handleSend} disabled={selected.size === 0 || sending} style={{ width: '100%', padding: '11px 20px', background: selected.size === 0 ? colors.grayLight : colors.orange, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: selected.size === 0 || sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.7 : 1 }}>
-            {sending ? 'Enviando…' : `Enviar a ${selected.size} ${selected.size === 1 ? 'cliente' : 'clientes'} →`}
-          </button>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {step === 2 && (
+              <button onClick={() => { setResult(null); setStep(1) }} style={{ padding: '11px 16px', background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.grayLight}`, borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                ← Atrás
+              </button>
+            )}
+            {step === 1 && (
+              <button onClick={() => setStep(2)} disabled={!canProceed} style={{ flex: 1, padding: '11px 20px', background: canProceed ? colors.orange : colors.grayLight, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: canProceed ? 'pointer' : 'not-allowed', fontFamily: 'inherit' }}>
+                Siguiente →
+              </button>
+            )}
+            {step === 2 && (
+              <button onClick={handleSend} disabled={selected.size === 0 || sending} style={{ flex: 1, padding: '11px 20px', background: selected.size === 0 ? colors.grayLight : colors.orange, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: selected.size === 0 || sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.7 : 1, fontFamily: 'inherit' }}>
+                {sending ? 'Enviando…' : `Enviar a ${selected.size} ${selected.size === 1 ? 'cliente' : 'clientes'} →`}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
