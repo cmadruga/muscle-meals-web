@@ -221,6 +221,7 @@ export async function sendInternalOrderAlert(data: {
 export async function sendReorderTemplate(
   phoneNumber: string,
   firstName: string,
+  imageUrl: string,
 ): Promise<boolean> {
   // Normalize to E.164: if no + prefix, assume Mexican mobile
   const to = phoneNumber.startsWith('+')
@@ -245,7 +246,7 @@ export async function sendReorderTemplate(
           components: [
             {
               type: 'header',
-              parameters: [{ type: 'image', image: { link: 'https://tywblugmsqterdoztjoy.supabase.co/storage/v1/object/public/meal-images/reminder_template_newmeals.jpeg' } }],
+              parameters: [{ type: 'image', image: { link: imageUrl } }],
             },
             {
               type: 'body',
