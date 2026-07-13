@@ -222,6 +222,32 @@ function OrderDetail({ items, total }: { items: CustomerOrder['items']; total: n
   )
 }
 
+// ─── Order Row ────────────────────────────────────────────────────────────────
+
+function OrderRow({ order, openOrder, setOpenOrder }: {
+  order: CustomerOrder
+  openOrder: string | null
+  setOpenOrder: (id: string | null) => void
+}) {
+  const isOpen = openOrder === order.id
+  const sc = STATUS_COLORS[order.status] ?? colors.textMuted
+  return (
+    <div style={{ background: colors.grayDark, borderRadius: 10, overflow: 'hidden', border: `1px solid ${isOpen ? colors.orange + '55' : colors.grayLight}` }}>
+      <div onClick={() => setOpenOrder(isOpen ? null : order.id)} style={{ padding: '13px 16px', display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', cursor: 'pointer' }}>
+        <span style={{ fontSize: 14, fontWeight: 700, color: colors.white, minWidth: 80 }}>{order.order_number}</span>
+        <span style={{ fontSize: 12, color: colors.textMuted }}>{fmtDate(order.created_at)}</span>
+        <div style={{ flex: 1 }} />
+        <span style={{ fontSize: 14, fontWeight: 600, color: colors.white }}>{fmtAmt(order.total_amount)}</span>
+        <span style={{ fontSize: 12, fontWeight: 600, color: sc, background: sc + '22', border: `1px solid ${sc}55`, borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>
+          {STATUS_LABELS[order.status] ?? order.status}
+        </span>
+        <span style={{ color: colors.textMuted, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
+      </div>
+      {isOpen && <OrderDetail items={order.items} total={order.total_amount} />}
+    </div>
+  )
+}
+
 // ─── Orders Drawer ────────────────────────────────────────────────────────────
 
 function OrdersDrawer({ customer, onClose }: { customer: CustomerRow; onClose: () => void }) {
@@ -249,7 +275,7 @@ function OrdersDrawer({ customer, onClose }: { customer: CustomerRow; onClose: (
             <div style={{ fontSize: 16, fontWeight: 700, color: colors.white }}>{customer.full_name}</div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px', marginTop: 4 }}>
               {Object.entries(
-                customer.orders.reduce<Record<string, number>>((acc, o) => {
+                [...customer.orders, ...customer.guestOrders].reduce<Record<string, number>>((acc, o) => {
                   acc[o.status] = (acc[o.status] ?? 0) + 1
                   return acc
                 }, {})
@@ -268,46 +294,18 @@ function OrdersDrawer({ customer, onClose }: { customer: CustomerRow; onClose: (
 
         {/* Orders */}
         <div style={{ padding: '16px 24px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {customer.orders.length === 0 ? (
+          {customer.orders.length === 0 && customer.guestOrders.length === 0 && (
             <p style={{ color: colors.textMuted, textAlign: 'center', padding: '32px 0' }}>Sin pedidos.</p>
-          ) : (
-            customer.orders.map((order, idx) => {
-              const isOpen = openOrder === order.id
-              const sc = STATUS_COLORS[order.status] ?? colors.textMuted
-              return (
-                <div key={order.id} style={{
-                  background: colors.grayDark,
-                  borderRadius: 10,
-                  overflow: 'hidden',
-                  border: `1px solid ${isOpen ? colors.orange + '55' : colors.grayLight}`,
-                }}>
-                  <div
-                    onClick={() => setOpenOrder(isOpen ? null : order.id)}
-                    style={{
-                      padding: '13px 16px',
-                      display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap',
-                      cursor: 'pointer',
-                    }}
-                  >
-                    <span style={{ fontSize: 14, fontWeight: 700, color: colors.white, minWidth: 80 }}>
-                      {order.order_number}
-                    </span>
-                    <span style={{ fontSize: 12, color: colors.textMuted }}>
-                      {fmtDate(order.created_at)}
-                    </span>
-                    <div style={{ flex: 1 }} />
-                    <span style={{ fontSize: 14, fontWeight: 600, color: colors.white }}>
-                      {fmtAmt(order.total_amount)}
-                    </span>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: sc, background: sc + '22', border: `1px solid ${sc}55`, borderRadius: 20, padding: '3px 10px', whiteSpace: 'nowrap' }}>
-                      {STATUS_LABELS[order.status] ?? order.status}
-                    </span>
-                    <span style={{ color: colors.textMuted, fontSize: 12 }}>{isOpen ? '▲' : '▼'}</span>
-                  </div>
-                  {isOpen && <OrderDetail items={order.items} total={order.total_amount} />}
-                </div>
-              )
-            })
+          )}
+          {customer.orders.map((order) => <OrderRow key={order.id} order={order} openOrder={openOrder} setOpenOrder={setOpenOrder} />)}
+
+          {customer.guestOrders.length > 0 && (
+            <>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.07em', margin: '8px 0 4px' }}>
+                Sin cuenta · {customer.guestOrders.length} {customer.guestOrders.length === 1 ? 'pedido' : 'pedidos'}
+              </div>
+              {customer.guestOrders.map((order) => <OrderRow key={order.id} order={order} openOrder={openOrder} setOpenOrder={setOpenOrder} />)}
+            </>
           )}
         </div>
       </div>
@@ -324,6 +322,10 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
   onConfigClick: () => void
   onDetailClick: () => void
 }) {
+  const isGuest = customer.user_id === null
+  const paidOrders = customer.orders.filter(o => o.status === 'paid').length
+  const guestPaid = customer.guestOrders.filter(o => o.status === 'paid').length
+
   return (
     <div
       ref={isHighlight ? highlightRef : null}
@@ -334,13 +336,18 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: colors.white }}>{customer.full_name}</div>
-            {customer.is_member && (
+            {isGuest && (
+              <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', background: '#94a3b818', border: '1px solid #94a3b844', borderRadius: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}>
+                Sin cuenta
+              </span>
+            )}
+            {!isGuest && customer.is_member && (
               <span style={{ fontSize: 11, fontWeight: 700, color: colors.orange, background: colors.orange + '18', border: `1px solid ${colors.orange}44`, borderRadius: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}>
                 Miembro · {customer.membership_weeks_left} sem
               </span>
             )}
           </div>
-          <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8 }}>{customer.email}</div>
+          {!isGuest && <div style={{ fontSize: 13, color: colors.textMuted, marginBottom: 8 }}>{customer.email}</div>}
           <div>
             {customer.phone ? (
               <a href={`https://wa.me/${customer.phone.replace(/\D/g, '')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#10b981', textDecoration: 'none' }}>
@@ -366,19 +373,24 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
             >
               Pedidos
             </button>
-            <button
-              onClick={onConfigClick}
-              title="Configurar membresía"
-              style={{ background: colors.grayLight, border: 'none', borderRadius: 6, color: colors.white, fontSize: 25, fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
-            >
-              ⚙
-            </button>
+            {!isGuest && (
+              <button
+                onClick={onConfigClick}
+                title="Configurar membresía"
+                style={{ background: colors.grayLight, border: 'none', borderRadius: 6, color: colors.white, fontSize: 25, fontWeight: 600, padding: '5px 12px', cursor: 'pointer' }}
+              >
+                ⚙
+              </button>
+            )}
           </div>
           <div style={{ fontSize: 12, color: colors.textMuted }}>
-            {customer.orders.filter(o => o.status === 'paid').length} {customer.orders.filter(o => o.status === 'paid').length === 1 ? 'pedido' : 'pedidos'}
+            {paidOrders + guestPaid} {(paidOrders + guestPaid) === 1 ? 'pedido' : 'pedidos'}
+            {guestPaid > 0 && (
+              <span style={{ fontSize: 11, color: '#94a3b8', marginLeft: 6 }}>({guestPaid} sin cuenta)</span>
+            )}
           </div>
           <div style={{ fontSize: 11, color: colors.textMuted }}>
-            Cliente desde {fmtDate(customer.created_at)}
+            {isGuest ? 'Último pedido' : 'Cliente desde'} {fmtDate(customer.created_at)}
           </div>
         </div>
       </div>
@@ -656,13 +668,15 @@ function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: ()
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
 
-export default function CustomersClient({ customers, sizes, highlightId }: {
+export default function CustomersClient({ customers, guestCustomers, sizes, highlightId }: {
   customers: CustomerRow[]
+  guestCustomers: CustomerRow[]
   sizes: SizeOption[]
   highlightId: string | null
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
+  const [tab, setTab] = useState<'cuenta' | 'invitado'>('cuenta')
   const [waModalOpen, setWaModalOpen] = useState(false)
   const [configCustomer, setConfigCustomer] = useState<CustomerRow | null>(null)
   const [detailCustomer, setDetailCustomer] = useState<CustomerRow | null>(null)
@@ -672,6 +686,13 @@ export default function CustomersClient({ customers, sizes, highlightId }: {
     [...customers].sort((a, b) => lastOrderTs(b) - lastOrderTs(a)),
     [customers]
   )
+
+  const sortedGuests = useMemo(() =>
+    [...guestCustomers].sort((a, b) => lastOrderTs(b) - lastOrderTs(a)),
+    [guestCustomers]
+  )
+
+  const allForModal = useMemo(() => [...sorted, ...sortedGuests], [sorted, sortedGuests])
 
   useEffect(() => {
     if (highlightId && highlightRef.current) {
@@ -683,40 +704,78 @@ export default function CustomersClient({ customers, sizes, highlightId }: {
   const filtered = q
     ? sorted.filter(c => c.full_name.toLowerCase().includes(q) || c.email.toLowerCase().includes(q) || (c.phone ?? '').includes(q))
     : sorted
+  const filteredGuests = q
+    ? sortedGuests.filter(c => c.full_name.toLowerCase().includes(q) || (c.phone ?? '').includes(q))
+    : sortedGuests
+
+  const tabBtn = (id: 'cuenta' | 'invitado', label: string, count: number) => (
+    <button
+      onClick={() => setTab(id)}
+      style={{
+        padding: '7px 16px', borderRadius: 8, cursor: 'pointer', fontSize: 13, fontWeight: 600,
+        border: 'none',
+        background: tab === id ? colors.orange : colors.grayLight,
+        color: colors.white,
+        fontFamily: 'inherit',
+      }}
+    >
+      {label} <span style={{ opacity: 0.75, fontWeight: 400 }}>{count}</span>
+    </button>
+  )
 
   return (
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, display: 'flex', alignItems: 'baseline', gap: 12 }}>
-          <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.white, margin: 0 }}>Clientes</h1>
-          <span style={{ fontSize: 13, color: colors.textMuted }}>{customers.length} cuentas</span>
-        </div>
-        <button onClick={() => setWaModalOpen(true)} style={{ padding: '9px 20px', background: colors.orange, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+        <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.white, margin: 0 }}>Clientes</h1>
+        <button onClick={() => setWaModalOpen(true)} style={{ marginLeft: 'auto', padding: '9px 20px', background: colors.orange, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
           Enviar WhatsApp
         </button>
       </div>
 
-      <input
-        placeholder="Buscar por nombre, email o teléfono…"
-        value={search} onChange={e => setSearch(e.target.value)}
-        style={{ width: '100%', maxWidth: 400, padding: '8px 14px', marginBottom: 20, background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, color: colors.white, fontSize: 14, boxSizing: 'border-box' }}
-      />
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {filtered.length === 0 && <p style={{ color: colors.textMuted }}>Sin resultados.</p>}
-        {filtered.map(c => (
-          <CustomerCard
-            key={c.id}
-            customer={c}
-            isHighlight={c.id === highlightId}
-            highlightRef={c.id === highlightId ? highlightRef : { current: null }}
-            onConfigClick={() => setConfigCustomer(c)}
-            onDetailClick={() => setDetailCustomer(c)}
-          />
-        ))}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
+        {tabBtn('cuenta', 'Con cuenta', sorted.length)}
+        {tabBtn('invitado', 'Invitados', sortedGuests.length)}
+        <input
+          placeholder="Buscar…"
+          value={search} onChange={e => setSearch(e.target.value)}
+          style={{ marginLeft: 'auto', width: 200, padding: '7px 12px', background: colors.grayDark, border: `1px solid ${colors.grayLight}`, borderRadius: 8, color: colors.white, fontSize: 13, boxSizing: 'border-box' }}
+        />
       </div>
 
-      {waModalOpen && <WhatsAppModal sorted={sorted} onClose={() => setWaModalOpen(false)} />}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {tab === 'cuenta' && (
+          <>
+            {filtered.length === 0 && <p style={{ color: colors.textMuted }}>Sin resultados.</p>}
+            {filtered.map(c => (
+              <CustomerCard
+                key={c.id}
+                customer={c}
+                isHighlight={c.id === highlightId}
+                highlightRef={c.id === highlightId ? highlightRef : { current: null }}
+                onConfigClick={() => setConfigCustomer(c)}
+                onDetailClick={() => setDetailCustomer(c)}
+              />
+            ))}
+          </>
+        )}
+        {tab === 'invitado' && (
+          <>
+            {filteredGuests.length === 0 && <p style={{ color: colors.textMuted }}>Sin resultados.</p>}
+            {filteredGuests.map(c => (
+              <CustomerCard
+                key={c.id}
+                customer={c}
+                isHighlight={false}
+                highlightRef={{ current: null }}
+                onConfigClick={() => {}}
+                onDetailClick={() => setDetailCustomer(c)}
+              />
+            ))}
+          </>
+        )}
+      </div>
+
+      {waModalOpen && <WhatsAppModal sorted={allForModal} onClose={() => setWaModalOpen(false)} />}
 
       {detailCustomer && (
         <OrdersDrawer customer={detailCustomer} onClose={() => setDetailCustomer(null)} />
