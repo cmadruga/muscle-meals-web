@@ -35,6 +35,7 @@ export type CustomerRow = {
   membership_qty: number | null
   membership_size_id: string | null
   orders: CustomerOrder[]
+  guestOrders: CustomerOrder[]  // orders made before creating account
 }
 
 export default async function CustomersPage({
@@ -51,7 +52,7 @@ export default async function CustomersPage({
 
   const admin = createAdminClient()
 
-  const [{ data: raw }, { data: sizesRaw }] = await Promise.all([
+  const [{ data: raw }, { data: sizesRaw }, { data: guestRaw }] = await Promise.all([
     admin
       .from('customers')
       .select(`
@@ -68,22 +69,23 @@ export default async function CustomersPage({
       .from('sizes')
       .select('id, name, is_main, customer_id')
       .order('name'),
+    admin
+      .from('customers')
+      .select(`
+        id, full_name, phone, address, created_at,
+        orders(
+          id, order_number, created_at, total_amount, status,
+          order_items(id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name))
+        )
+      `)
+      .is('user_id', null)
+      .not('phone', 'is', null)
+      .order('created_at', { ascending: false }),
   ])
 
-  const customers: CustomerRow[] = (raw ?? []).map((c: any) => ({
-    id: c.id,
-    full_name: c.full_name,
-    email: c.email,
-    phone: c.phone,
-    address: c.address,
-    user_id: c.user_id,
-    created_at: c.created_at,
-    is_member: c.is_member ?? false,
-    membership_weeks_left: c.membership_weeks_left ?? 0,
-    membership_qty: c.membership_qty ?? null,
-    membership_size_id: c.membership_size_id ?? null,
-    orders: (c.orders ?? [])
-      .sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+  function mapOrders(raw: any[]): CustomerOrder[] {
+    return raw
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
       .map((o: any) => ({
         id: o.id,
         order_number: o.order_number,
@@ -97,10 +99,91 @@ export default async function CustomersPage({
           size_name: i.sizes?.name ?? '',
           package_instance_id: i.package_instance_id ?? null,
         })),
-      })),
+      }))
+  }
+
+  const customers: CustomerRow[] = (raw ?? []).map((c: any) => ({
+    id: c.id,
+    full_name: c.full_name,
+    email: c.email,
+    phone: c.phone,
+    address: c.address,
+    user_id: c.user_id,
+    created_at: c.created_at,
+    is_member: c.is_member ?? false,
+    membership_weeks_left: c.membership_weeks_left ?? 0,
+    membership_qty: c.membership_qty ?? null,
+    membership_size_id: c.membership_size_id ?? null,
+    orders: mapOrders(c.orders ?? []),
+    guestOrders: [],  // filled below after guestRaw is processed
   }))
+
+  // Convert any Mexican phone variant to E.164 (+521XXXXXXXXXX)
+  const toE164 = (p: string | null): string | null => {
+    if (!p) return null
+    const d = p.replace(/\D/g, '')
+    if (d.length === 10) return `+521${d}`
+    if (d.length === 12 && d.startsWith('52')) return `+521${d.slice(2)}`
+    if (d.length === 13 && d.startsWith('521')) return `+${d}`
+    return p
+  }
+
+  // Normalize to last 10 digits for dedup matching
+  const normalizePhone = (p: string) => { const d = p.replace(/\D/g, ''); return d.slice(-10) }
+
+  // Apply E.164 to all account customers
+  for (const c of customers) { c.phone = toE164(c.phone) }
+
+  // Phones of customers who already have an account — exclude these from guests
+  const accountPhones = new Set(customers.map(c => c.phone ? normalizePhone(c.phone) : '').filter(Boolean))
+
+  // Collect pre-account orders for customers who later created an account
+  const preAccountOrders = new Map<string, any[]>()
+  const guestMap = new Map<string, any[]>()
+
+  for (const row of guestRaw ?? []) {
+    if (!row.phone) continue
+    const key = normalizePhone(row.phone)
+    if (accountPhones.has(key)) {
+      if (!preAccountOrders.has(key)) preAccountOrders.set(key, [])
+      preAccountOrders.get(key)!.push(...(row.orders ?? []))
+    } else {
+      if (!guestMap.has(key)) guestMap.set(key, [])
+      guestMap.get(key)!.push(row)
+    }
+  }
+
+  // Attach pre-account orders to their account customer
+  for (const c of customers) {
+    if (!c.phone) continue
+    const key = normalizePhone(c.phone)
+    c.guestOrders = mapOrders(preAccountOrders.get(key) ?? [])
+  }
+
+  const guestCustomers: CustomerRow[] = []
+  for (const [phoneKey, rows] of guestMap) {
+    rows.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+    const latest = rows[0]
+    const allOrders = mapOrders(rows.flatMap((r: any) => r.orders ?? []))
+    if (allOrders.length === 0) continue  // skip guests with no orders at all
+    guestCustomers.push({
+      id: `guest_${phoneKey}`,
+      full_name: latest.full_name,
+      email: '',
+      phone: toE164(latest.phone),
+      address: latest.address ?? null,
+      user_id: null,
+      created_at: allOrders[0]?.created_at ?? latest.created_at,
+      is_member: false,
+      membership_weeks_left: 0,
+      membership_qty: null,
+      membership_size_id: null,
+      orders: allOrders,
+      guestOrders: [],
+    })
+  }
 
   const sizes: SizeOption[] = (sizesRaw ?? []).map((s: any) => ({ id: s.id, name: s.name, is_main: s.is_main ?? false, customer_id: s.customer_id ?? null }))
 
-  return <CustomersClient customers={customers} sizes={sizes} highlightId={highlightId} />
+  return <CustomersClient customers={customers} guestCustomers={guestCustomers} sizes={sizes} highlightId={highlightId} />
 }
