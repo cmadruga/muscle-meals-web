@@ -335,5 +335,9 @@ export async function processMembershipOrder(
     totalAmount: data.totalAmount / 100,
   })
 
+  // Deducir stock extra (periodo crítico) — membresía no pasa por webhook de Conekta
+  const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
+  await deductExtraStockForOrder(order.id)
+
   return { orderId: order.id, orderNumber: order.order_number }
 }
