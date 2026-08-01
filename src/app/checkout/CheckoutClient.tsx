@@ -581,33 +581,42 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
       </div>
 
-      {/* Package items */}
-      {pkg.items.map((item) => (
-        <div
-          key={`${item.mealId}-${item.sizeId}`}
-          style={{
-            padding: '10px 16px 10px 24px',
-            borderBottom: `1px solid ${colors.grayDark}`,
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            gap: 12,
-          }}
-        >
-          <div>
-            <span style={{ fontSize: 14, color: colors.white }}>{item.mealName}</span>
-            <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+      {/* Package items — merged by mealId+sizeId */}
+      {(() => {
+        const merged = new Map<string, typeof pkg.items[0] & { qty: number }>()
+        for (const item of pkg.items) {
+          const k = `${item.mealId}-${item.sizeId}`
+          const existing = merged.get(k)
+          if (existing) existing.qty += item.qty
+          else merged.set(k, { ...item })
+        }
+        return Array.from(merged.values()).map(item => (
+          <div
+            key={`${item.mealId}-${item.sizeId}`}
+            style={{
+              padding: '10px 16px 10px 24px',
+              borderBottom: `1px solid ${colors.grayDark}`,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              gap: 12,
+            }}
+          >
+            <div>
+              <span style={{ fontSize: 14, color: colors.white }}>{item.mealName}</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <span style={{ fontSize: 12, color: colors.textMuted }}>
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+              </span>
+            </div>
           </div>
-          <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            <span style={{ fontSize: 12, color: colors.textMuted }}>
-              ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
-            </span>
-            <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-              ${(item.unitPrice * item.qty / 100).toFixed(0)}
-            </span>
-          </div>
-        </div>
-      ))}
+        ))
+      })()}
     </div>
   )
 }

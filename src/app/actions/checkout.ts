@@ -32,11 +32,12 @@ export async function validateCart(
   const mealIds = [...new Set(items.map(i => i.mealId))]
 
   const [{ data: sizes }, { data: meals }] = await Promise.all([
-    supabase.from('sizes').select('id').in('id', sizeIds),
+    supabase.from('sizes').select('id, customer_id').in('id', sizeIds),
     supabase.from('meals').select('id, active').in('id', mealIds),
   ])
 
-  const validSizeIds = new Set((sizes ?? []).map((s: { id: string }) => s.id))
+  const validSizeIds = new Set((sizes ?? []).map((s: any) => s.id))
+  const customSizeIds = new Set((sizes ?? []).filter((s: any) => s.customer_id !== null).map((s: any) => s.id))
   const activeMealIds = new Set(
     (meals ?? []).filter((m: { id: string; active: boolean }) => m.active).map(m => m.id)
   )
@@ -58,9 +59,20 @@ export async function validateCart(
     }
   }
 
-  // Stock check in critical period (computed server-side)
+  // Critical period checks (computed server-side)
   const criticalConfig = await getCriticalPeriodConfig()
   if (isInCutoffWindow(criticalConfig)) {
+    // Block custom sizes — only main sizes (LOW/FIT/PLUS) allowed
+    for (const item of items) {
+      if (customSizeIds.has(item.sizeId)) {
+        errors.push({
+          mealId: item.mealId,
+          sizeId: item.sizeId,
+          message: `"${item.sizeName ?? 'Tamaño personalizado'}" no está disponible durante el período de entrega. Cámbialo a LOW, FIT o PLUS en tu carrito.`,
+        })
+      }
+    }
+
     const weekMonday = getCurrentWeekMonday()
     const stock = await getExtraStockForWeek(weekMonday)
     const stockMap = new Map(stock.map(s => [s.meal_id, s.qty]))
@@ -103,9 +115,19 @@ export type ProcessCheckoutInput = {
 export async function processCheckout(
   data: ProcessCheckoutInput
 ): Promise<{ orderId: string; orderNumber: string; error?: string }> {
-  // Safety-net: re-validate stock server-side (critical period computed here, not trusted from client)
+  const supabase = createAdminClient()
+
+  // Safety-net: re-validate critical period rules server-side
   const criticalConfig = await getCriticalPeriodConfig()
   if (isInCutoffWindow(criticalConfig)) {
+    // Block custom sizes
+    const orderSizeIds = [...new Set(data.items.map(i => i.sizeId))]
+    const { data: customSizes } = await supabase
+      .from('sizes').select('id').in('id', orderSizeIds).not('customer_id', 'is', null)
+    if ((customSizes ?? []).length > 0) {
+      return { orderId: '', orderNumber: '', error: 'Tamaños personalizados no disponibles durante el período de entrega. Actualiza tu carrito.' }
+    }
+
     const weekMonday = getCurrentWeekMonday()
     const stock = await getExtraStockForWeek(weekMonday)
     const stockMap = new Map(stock.map(s => [s.meal_id, s.qty]))
@@ -120,8 +142,6 @@ export async function processCheckout(
       }
     }
   }
-
-  const supabase = createAdminClient()
 
   let customerId = data.customerId ?? null
 
@@ -314,6 +334,10 @@ export async function processMembershipOrder(
     shippingCost: data.shippingCost / 100,
     totalAmount: data.totalAmount / 100,
   })
+
+  // Deducir stock extra (periodo crítico) — membresía no pasa por webhook de Conekta
+  const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
+  await deductExtraStockForOrder(order.id)
 
   return { orderId: order.id, orderNumber: order.order_number }
 }

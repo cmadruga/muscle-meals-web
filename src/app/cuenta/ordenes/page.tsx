@@ -2,6 +2,8 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import OrdenesClient from './OrdenesClient'
+import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { isInCutoffWindow } from '@/lib/utils/delivery'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,11 +15,12 @@ export default async function MisOrdenesPage() {
 
   const admin = createAdminClient()
 
-  const { data: customer } = await admin
-    .from('customers')
-    .select('id')
-    .eq('user_id', user.id)
-    .maybeSingle()
+  const [{ data: customer }, criticalConfig] = await Promise.all([
+    admin.from('customers').select('id').eq('user_id', user.id).maybeSingle(),
+    getCriticalPeriodConfig(),
+  ])
+
+  const inCriticalPeriod = isInCutoffWindow(criticalConfig)
 
   const orders = customer
     ? (await admin
@@ -36,9 +39,17 @@ export default async function MisOrdenesPage() {
         .in('order_id', orderIds)).data ?? []
     : []
 
-  // Supabase infers joined columns as arrays; cast to the shape we actually receive
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const items = rawItems as any[]
 
-  return <OrdenesClient orders={orders} items={items} />
+  // During critical period, identify which size IDs are custom (customer_id IS NOT NULL)
+  let customSizeIds: string[] = []
+  if (inCriticalPeriod && items.length > 0) {
+    const allSizeIds = [...new Set(items.map((i: any) => i.size_id as string))]
+    const { data: customSizes } = await admin
+      .from('sizes').select('id').in('id', allSizeIds).not('customer_id', 'is', null)
+    customSizeIds = (customSizes ?? []).map((s: any) => s.id)
+  }
+
+  return <OrdenesClient orders={orders} items={items} inCriticalPeriod={inCriticalPeriod} customSizeIds={customSizeIds} />
 }

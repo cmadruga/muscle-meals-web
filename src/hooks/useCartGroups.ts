@@ -33,7 +33,9 @@ export function useCartGroups() {
     })
     
     return Object.entries(grouped).map(([packageInstanceId, packageItems]) => {
-      const uniqueSizes = [...new Map(packageItems.map(i => [i.sizeId, i.sizeName])).values()]
+      const sizeNameMap: Record<string, string> = {}
+      packageItems.forEach(i => { sizeNameMap[i.sizeId] = i.sizeName })
+      const uniqueSizes = Object.values(sizeNameMap)
       const isMixedSizes = uniqueSizes.length > 1
       return {
         packageInstanceId,
