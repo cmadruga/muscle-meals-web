@@ -18,6 +18,23 @@ export default async function CartPage() {
   ])
   const inCutoff = isInCutoffWindow(criticalConfig)
 
+  const admin0 = createAdminClient()
+  const { data: mainSizesRaw } = await admin0
+    .from('sizes')
+    .select('id, name, price, protein_qty, carb_qty, veg_qty')
+    .eq('is_main', true)
+    .is('customer_id', null)
+    .order('price')
+  const extractQty = (val: any): number => {
+    if (typeof val === 'number') return val
+    if (val && typeof val === 'object') return Number(Object.values(val)[0] ?? 0)
+    return 0
+  }
+  const mainSizes = (Array.isArray(mainSizesRaw) ? mainSizesRaw : []).map((s: any) => ({
+    sizeId: String(s.id), name: String(s.name), price: Number(s.price || 0),
+    protein_qty: extractQty(s.protein_qty), carb_qty: extractQty(s.carb_qty), veg_qty: Number(s.veg_qty || 0),
+  }))
+
   const { data: { user } } = await supabase.auth.getUser()
 
   let prefill: { customerId: string; name: string; phone: string; rawPhone: string; address: string | null } | null = null
@@ -69,6 +86,7 @@ export default async function CartPage() {
   return (
     <CartClient
       inCutoff={inCutoff}
+      mainSizes={mainSizes}
       prefill={prefill}
       membership={membership}
       pickupSpots={pickupSpots}

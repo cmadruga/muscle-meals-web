@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import RepetirClient from './RepetirClient'
 import type { CartItem } from '@/lib/store/cart'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
-import { getCurrentWeekMonday } from '@/lib/utils/delivery'
+import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { normalizePhone } from '@/lib/address-validation'
 
 export const dynamic = 'force-dynamic'
@@ -22,6 +23,41 @@ export type SkippedSlot = {
   qty: number
   unitPrice: number
   packageInstanceId?: string
+}
+
+export type MainSize = {
+  sizeId: string
+  name: string
+  price: number
+  protein_qty: number
+  carb_qty: number
+  veg_qty: number
+}
+
+export type SizeGroupSlot = {
+  mealId?: string  // undefined for skipped slots (meal to be replaced)
+  mealName: string
+  qty: number
+  isSkipped: boolean
+  packageInstanceId?: string
+}
+
+export type SizeBlockedGroup = {
+  originalSizeId: string
+  originalSizeName: string
+  slots: SizeGroupSlot[]
+  totalQty: number
+}
+
+export type DisplayItem = {
+  mealName: string
+  sizeName: string
+  qty: number
+  unitPrice: number
+}
+
+export type DisplayPackage = {
+  items: DisplayItem[]
 }
 
 export type ActiveMealOption = {
@@ -100,7 +136,8 @@ export default async function RepetirPage() {
   if (!lastOrder || rawItems.length === 0) {
     return (
       <RepetirClient
-        packages={[]} individuals={[]} skippedSlots={[]} activeMealOptions={[]}
+        packages={[]} individuals={[]} displayPackages={[]} displayIndividuals={[]}
+        skippedSlots={[]} sizeBlockedGroups={[]} mainSizes={[]} activeMealOptions={[]}
         orderDate={null} orderNumber={null}
         prefill={prefill} membership={membership} pickupSpots={pickupSpots} usedMembershipThisWeek={usedMembershipThisWeek}
       />
@@ -114,17 +151,38 @@ export default async function RepetirPage() {
     { data: activeMealsInOrder },
     { data: allActiveMeals },
     { data: sizes },
+    { data: mainSizesRaw },
+    criticalConfig,
   ] = await Promise.all([
     admin.from('meals').select('id').in('id', allMealIds).eq('active', true),
     admin.from('meals').select('id, name, img').eq('active', true).order('name'),
-    admin.from('sizes').select('id, price').in('id', allSizeIds),
+    admin.from('sizes').select('id, price, customer_id').in('id', allSizeIds),
+    admin.from('sizes').select('id, name, price, protein_qty, carb_qty, veg_qty').eq('is_main', true).is('customer_id', null).order('price'),
+    getCriticalPeriodConfig(),
   ])
 
+  const inCriticalPeriod = isInCutoffWindow(criticalConfig)
   const activeMealIdSet = new Set(activeMealsInOrder?.map(m => m.id) ?? [])
-  const priceMap = new Map(sizes?.map(s => [s.id, s.price as number]) ?? [])
+  const customSizeIdSet = new Set(
+    inCriticalPeriod
+      ? (sizes ?? []).filter((s: any) => s.customer_id !== null).map((s: any) => s.id)
+      : []
+  )
+  const priceMap = new Map(sizes?.map((s: any) => [s.id, s.price as number]) ?? [])
+  const extractQty = (val: any): number => {
+    if (typeof val === 'number') return val
+    if (val && typeof val === 'object') return Number(Object.values(val)[0] ?? 0)
+    return 0
+  }
+  const mainSizes: MainSize[] = (Array.isArray(mainSizesRaw) ? mainSizesRaw : []).map((s: any) => ({
+    sizeId: String(s.id), name: String(s.name), price: Number(s.price || 0),
+    protein_qty: extractQty(s.protein_qty), carb_qty: extractQty(s.carb_qty), veg_qty: Number(s.veg_qty || 0),
+  }))
   const activeMealOptions: ActiveMealOption[] = allActiveMeals?.map(m => ({ id: m.id, name: m.name, imageUrl: m.img ?? undefined })) ?? []
 
-  const activeItems = rawItems.filter(i => activeMealIdSet.has(i.meal_id))
+  // Three categories: active (cart as-is), sizeBlocked (active meal, blocked custom size), skipped (inactive meal)
+  const activeItems = rawItems.filter(i => activeMealIdSet.has(i.meal_id) && !customSizeIdSet.has(i.size_id))
+  const sizeBlockedItems = rawItems.filter(i => activeMealIdSet.has(i.meal_id) && customSizeIdSet.has(i.size_id))
   const skippedItems = rawItems.filter(i => !activeMealIdSet.has(i.meal_id))
 
   const toCartItem = (i: RawItem, extra?: Partial<CartItem>): CartItem => ({
@@ -154,26 +212,80 @@ export default async function RepetirPage() {
   // original DB id → new cart instanceId
   const packageInstanceIdMap = new Map<string, string>()
 
-  const packages: PackageGroup[] = Array.from(packageMap.entries()).map(([originalId, group]) => {
+  const packages: PackageGroup[] = []
+  packageMap.forEach((group, originalId) => {
     const instanceId = crypto.randomUUID()
     packageInstanceIdMap.set(originalId, instanceId)
-    return {
+    packages.push({
       instanceId,
       items: group.map(i => toCartItem(i, { packageInstanceId: instanceId, packageName: 'Arma tu paquete' })),
-    }
+    })
   })
 
   const individuals: CartItem[] = individualRaw.map(i => toCartItem(i))
 
-  // For packages where ALL items were skipped (no active items), also assign a new shared instanceId
-  const skippedOnlyPackageMap = new Map<string, string>()
-  for (const item of skippedItems) {
-    if (item.package_instance_id && !packageInstanceIdMap.has(item.package_instance_id)) {
-      if (!skippedOnlyPackageMap.has(item.package_instance_id)) {
-        skippedOnlyPackageMap.set(item.package_instance_id, crypto.randomUUID())
-      }
+  // Unified helper: reuse active-package IDs, or assign new shared IDs for non-active packages
+  const extraPackageMap = new Map<string, string>()
+  const getPkgId = (originalId: string | null | undefined): string | undefined => {
+    if (!originalId) return undefined
+    if (packageInstanceIdMap.has(originalId)) return packageInstanceIdMap.get(originalId)
+    if (!extraPackageMap.has(originalId)) extraPackageMap.set(originalId, crypto.randomUUID())
+    return extraPackageMap.get(originalId)
+  }
+
+  // Display: ALL items from the last order (active + sizeBlocked) shown as a read-only summary
+  const displayPkgMap = new Map<string, DisplayItem[]>()
+  const displayIndividuals: DisplayItem[] = []
+  for (const item of [...activeItems, ...sizeBlockedItems]) {
+    const di: DisplayItem = {
+      mealName: item.meals?.name ?? 'Platillo',
+      sizeName: item.sizes?.name ?? '',
+      qty: item.qty,
+      unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
+    }
+    if (item.package_instance_id) {
+      const g = displayPkgMap.get(item.package_instance_id) ?? []
+      g.push(di)
+      displayPkgMap.set(item.package_instance_id, g)
+    } else {
+      displayIndividuals.push(di)
     }
   }
+  const displayPackages: DisplayPackage[] = []
+  displayPkgMap.forEach(items => displayPackages.push({ items }))
+
+  // Size groups: group custom-size items by original sizeId (includes skipped meals with custom sizes)
+  const sizeGroupMap = new Map<string, { name: string; slots: SizeGroupSlot[] }>()
+  const addToGroup = (sizeId: string, sizeName: string, slot: SizeGroupSlot) => {
+    if (!sizeGroupMap.has(sizeId)) sizeGroupMap.set(sizeId, { name: sizeName, slots: [] })
+    sizeGroupMap.get(sizeId)!.slots.push(slot)
+  }
+  for (const item of sizeBlockedItems) {
+    addToGroup(item.size_id, item.sizes?.name ?? 'Personalizado', {
+      mealId: item.meal_id,
+      mealName: item.meals?.name ?? 'Platillo',
+      qty: item.qty,
+      isSkipped: false,
+      packageInstanceId: getPkgId(item.package_instance_id),
+    })
+  }
+  for (const item of skippedItems) {
+    if (customSizeIdSet.has(item.size_id)) {
+      addToGroup(item.size_id, item.sizes?.name ?? 'Personalizado', {
+        mealName: item.meals?.name ?? 'Platillo',
+        qty: item.qty,
+        isSkipped: true,
+        packageInstanceId: getPkgId(item.package_instance_id),
+      })
+    }
+  }
+  const sizeBlockedGroups: SizeBlockedGroup[] = []
+  sizeGroupMap.forEach(({ name, slots }, sizeId) => sizeBlockedGroups.push({
+    originalSizeId: sizeId,
+    originalSizeName: name,
+    slots,
+    totalQty: slots.reduce((n, s) => n + s.qty, 0),
+  }))
 
   const skippedSlots: SkippedSlot[] = skippedItems.map((item, idx) => ({
     key: `skipped-${idx}`,
@@ -182,17 +294,18 @@ export default async function RepetirPage() {
     sizeName: item.sizes?.name ?? '',
     qty: item.qty,
     unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
-    // Use the same new instanceId as the active items from this package
-    packageInstanceId: item.package_instance_id
-      ? (packageInstanceIdMap.get(item.package_instance_id) ?? skippedOnlyPackageMap.get(item.package_instance_id))
-      : undefined,
+    packageInstanceId: getPkgId(item.package_instance_id),
   }))
 
   return (
     <RepetirClient
       packages={packages}
       individuals={individuals}
+      displayPackages={displayPackages}
+      displayIndividuals={displayIndividuals}
       skippedSlots={skippedSlots}
+      sizeBlockedGroups={sizeBlockedGroups}
+      mainSizes={mainSizes}
       activeMealOptions={activeMealOptions}
       orderDate={lastOrder.created_at}
       orderNumber={lastOrder.order_number}

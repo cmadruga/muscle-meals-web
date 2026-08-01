@@ -19,8 +19,11 @@ type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
   | { type: 'package'; instanceId: string; name: string }
 
+type MainSize = { sizeId: string; name: string; price: number; protein_qty: number; carb_qty: number; veg_qty: number }
+
 export default function CartClient({
   inCutoff,
+  mainSizes,
   prefill,
   membership,
   pickupSpots,
@@ -28,6 +31,7 @@ export default function CartClient({
   activeMeals,
 }: {
   inCutoff: boolean
+  mainSizes: MainSize[]
   prefill: PrefillInfo | null
   membership: MembershipInfo | null
   pickupSpots: PickupSpot[]
@@ -35,16 +39,37 @@ export default function CartClient({
   activeMeals: Meal[]
 }) {
   const router = useRouter()
-  const { removeItem, removePackage, updateQty, getTotal } = useCartStore()
+  const { removeItem, removePackage, updateQty, getTotal, replaceSizeId } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const [editingPkg, setEditingPkg] = useState<PackageGroup | null>(null)
   const [validating, setValidating] = useState(false)
   const [validationError, setValidationError] = useState<string | null>(null)
   const [membershipModalOpen, setMembershipModalOpen] = useState(false)
+  const [pendingSizeSelections, setPendingSizeSelections] = useState<Record<string, MainSize>>({})
   const items = useCartStore(state => state.items)
 
   const totalQty = items.reduce((n, i) => n + i.qty, 0)
+
+  const mainSizeIdSet = useMemo(() => new Set(mainSizes.map(s => s.sizeId)), [mainSizes])
+
+  const customSizeGroups = useMemo(() => {
+    if (!inCutoff) return []
+    const groupMap = new Map<string, { sizeId: string; sizeName: string; mealNames: string[]; totalQty: number }>()
+    for (const item of items) {
+      if (mainSizeIdSet.has(item.sizeId)) continue
+      if (!groupMap.has(item.sizeId)) {
+        groupMap.set(item.sizeId, { sizeId: item.sizeId, sizeName: item.sizeName, mealNames: [], totalQty: 0 })
+      }
+      const g = groupMap.get(item.sizeId)!
+      g.totalQty += item.qty
+      if (!g.mealNames.includes(item.mealName)) g.mealNames.push(item.mealName)
+    }
+    const result: { sizeId: string; sizeName: string; mealNames: string[]; totalQty: number }[] = []
+  groupMap.forEach(group => result.push(group))
+  return result
+  }, [items, inCutoff, mainSizeIdSet])
+
   const isMembershipMatch = Boolean(
     !usedMembershipThisWeek &&
     membership?.is_member &&
@@ -199,6 +224,91 @@ export default function CartClient({
         ))}
       </div>
 
+      {/* Size replacement banner — one group per blocked custom size */}
+      {customSizeGroups.map(group => {
+        const pending = pendingSizeSelections[group.sizeId]
+        const applyGroup = () => {
+          if (!pending) return
+          replaceSizeId(group.sizeId, pending.sizeId, pending.name, pending.price)
+          setPendingSizeSelections(prev => { const n = { ...prev }; delete n[group.sizeId]; return n })
+        }
+        return (
+          <div key={group.sizeId} style={{
+            marginBottom: 16,
+            border: `2px solid ${pending ? '#a855f788' : '#a855f755'}`,
+            borderRadius: 12,
+            overflow: 'hidden',
+            background: colors.grayDark,
+          }}>
+            <div style={{
+              padding: '14px 16px',
+              background: pending ? '#a855f718' : '#a855f712',
+              borderBottom: `1px solid #a855f733`,
+            }}>
+              <div style={{ fontWeight: 700, color: '#a855f7', fontSize: 15, marginBottom: 4 }}>
+                {group.totalQty} {group.totalQty === 1 ? 'platillo' : 'platillos'} {group.sizeName} requieren nuevo tamaño
+              </div>
+              <div style={{ fontSize: 12, color: colors.textMuted, marginBottom: 2 }}>
+                Por el período crítico · stock limitado
+              </div>
+              <div style={{ fontSize: 12, color: colors.textMuted }}>
+                {group.mealNames.join(', ')}
+              </div>
+            </div>
+            <div style={{ padding: '14px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+              {mainSizes.map(size => {
+                const isSelected = pending?.sizeId === size.sizeId
+                return (
+                  <button
+                    key={size.sizeId}
+                    onClick={() => setPendingSizeSelections(prev => ({ ...prev, [group.sizeId]: size }))}
+                    style={{
+                      padding: '10px 18px',
+                      borderRadius: 10,
+                      border: `2px solid ${isSelected ? '#a855f7' : colors.grayLight}`,
+                      background: isSelected ? '#a855f722' : 'transparent',
+                      color: isSelected ? '#a855f7' : colors.textMuted,
+                      cursor: 'pointer',
+                      fontFamily: 'inherit',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                      transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <span style={{ fontSize: 15, fontWeight: 700 }}>{size.name}</span>
+                    <span style={{ fontSize: 11, color: isSelected ? '#c084fc' : colors.textMuted }}>
+                      {size.protein_qty}P · {size.carb_qty}C · {size.veg_qty}V
+                    </span>
+                    <span style={{ fontSize: 11, color: isSelected ? '#a855f7' : colors.textMuted }}>
+                      ${(size.price / 100).toFixed(0)} c/u
+                    </span>
+                  </button>
+                )
+              })}
+              {pending && (
+                <button
+                  onClick={applyGroup}
+                  style={{
+                    marginLeft: 'auto',
+                    padding: '10px 20px',
+                    borderRadius: 10,
+                    border: 'none',
+                    background: '#a855f7',
+                    color: colors.white,
+                    cursor: 'pointer',
+                    fontSize: 14,
+                    fontWeight: 700,
+                    fontFamily: 'inherit',
+                  }}
+                >
+                  Guardar
+                </button>
+              )}
+            </div>
+          </div>
+        )
+      })}
+
       {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
         <div style={{
           padding: '16px 20px',
@@ -231,6 +341,7 @@ export default function CartClient({
         validationError={validationError}
         isMembershipMatch={isMembershipMatch}
         onMembershipConfirm={() => setMembershipModalOpen(true)}
+        blocked={customSizeGroups.length > 0}
       />
       </div>
     </main>
@@ -591,13 +702,15 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
 
   // One section per unique size in the package
   const sizeSections = useMemo(() => {
-    const map = new Map<string, { sizeId: string; sizeName: string; unitPrice: number }>()
+    const seen = new Set<string>()
+    const result: { sizeId: string; sizeName: string; unitPrice: number }[] = []
     for (const item of pkg.items) {
-      if (!map.has(item.sizeId)) {
-        map.set(item.sizeId, { sizeId: item.sizeId, sizeName: item.sizeName, unitPrice: item.unitPrice })
+      if (!seen.has(item.sizeId)) {
+        seen.add(item.sizeId)
+        result.push({ sizeId: item.sizeId, sizeName: item.sizeName, unitPrice: item.unitPrice })
       }
     }
-    return [...map.values()]
+    return result
   }, [pkg.items])
 
   // qty keyed by `${mealId}__${sizeId}`
@@ -844,13 +957,15 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
   )
 }
 
-function CartActions({ onCheckout, validating, validationError, isMembershipMatch, onMembershipConfirm }: {
+function CartActions({ onCheckout, validating, validationError, isMembershipMatch, onMembershipConfirm, blocked }: {
   onCheckout: () => void
   validating: boolean
   validationError: string | null
   isMembershipMatch: boolean
   onMembershipConfirm: () => void
+  blocked: boolean
 }) {
+  const isDisabled = validating || blocked
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
       {validationError && (
@@ -869,6 +984,7 @@ function CartActions({ onCheckout, validating, validationError, isMembershipMatc
       {isMembershipMatch ? (
         <button
           onClick={onMembershipConfirm}
+          disabled={blocked}
           className="franchise-stroke"
           style={{
             width: '100%',
@@ -882,7 +998,8 @@ function CartActions({ onCheckout, validating, validationError, isMembershipMatc
             letterSpacing: 0,
             lineHeight: 1,
             textTransform: 'uppercase',
-            cursor: 'pointer',
+            cursor: blocked ? 'not-allowed' : 'pointer',
+            opacity: blocked ? 0.4 : 1,
           }}
         >
           Confirmar con membresía
@@ -890,13 +1007,13 @@ function CartActions({ onCheckout, validating, validationError, isMembershipMatc
       ) : (
         <button
           onClick={onCheckout}
-          disabled={validating}
+          disabled={isDisabled}
           className="franchise-stroke"
           style={{
             width: '100%',
             padding: '16px 24px',
-            cursor: validating ? 'not-allowed' : 'pointer',
-            opacity: validating ? 0.7 : 1,
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
+            opacity: isDisabled ? 0.4 : 1,
             background: colors.orange,
             color: colors.white,
             border: 'none',

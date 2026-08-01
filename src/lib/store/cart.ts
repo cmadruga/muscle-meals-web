@@ -18,6 +18,7 @@ interface CartStore {
   removeItem: (mealId: string, sizeId: string) => void
   removePackage: (packageInstanceId: string) => void
   updateQty: (mealId: string, sizeId: string, qty: number) => void
+  replaceSizeId: (oldSizeId: string, newSizeId: string, newSizeName: string, newUnitPrice: number) => void
   clearCart: () => void
   getTotal: () => number
   getItemCount: () => number
@@ -83,6 +84,16 @@ export const useCartStore = create<CartStore>()(
               ? { ...item, qty }
               : item
           )
+        }))
+      },
+
+      replaceSizeId: (oldSizeId, newSizeId, newSizeName, newUnitPrice) => {
+        set((state) => ({
+          items: state.items.map(item =>
+            item.sizeId === oldSizeId
+              ? { ...item, sizeId: newSizeId, sizeName: newSizeName, unitPrice: newUnitPrice }
+              : item
+          ),
         }))
       },
 

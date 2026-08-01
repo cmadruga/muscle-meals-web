@@ -48,9 +48,13 @@ type ItemRow = {
 export default function OrdenesClient({
   orders,
   items,
+  inCriticalPeriod = false,
+  customSizeIds = [],
 }: {
   orders: OrderRow[]
   items: ItemRow[]
+  inCriticalPeriod?: boolean
+  customSizeIds?: string[]
 }) {
   const [openId, setOpenId] = useState<string | null>(orders[0]?.id ?? null)
   const [addedId, setAddedId] = useState<string | null>(null)
@@ -69,8 +73,13 @@ export default function OrdenesClient({
 
   const fmtAmt = (cents: number) => `$${(cents / 100).toFixed(0)} MXN`
 
+  const customSizeIdSet = new Set(customSizeIds)
+
   const handleAddToCart = (order: OrderRow) => {
     const orderItems = itemsByOrder.get(order.id) ?? []
+    const eligibleItems = inCriticalPeriod
+      ? orderItems.filter(i => !customSizeIdSet.has(i.size_id))
+      : orderItems
 
     // Map original package_instance_id → new unique id so packages stay grouped
     const pkgIdMap = new Map<string, string>()
@@ -79,7 +88,8 @@ export default function OrdenesClient({
       return pkgIdMap.get(origId)!
     }
 
-    for (const item of orderItems) {
+    if (eligibleItems.length === 0) return
+    for (const item of eligibleItems) {
       addItem({
         mealId: item.meal_id,
         mealName: item.meals?.name ?? '',
@@ -123,6 +133,7 @@ export default function OrdenesClient({
               const status = order.status as OrderStatus
               const statusColor = STATUS_COLORS[status] ?? '#94a3b8'
               const wasAdded = addedId === order.id
+              const allCustom = inCriticalPeriod && orderItems.every(i => customSizeIdSet.has(i.size_id))
 
               const pkgMap = new Map<string, ItemRow[]>()
               const individuals: ItemRow[] = []
@@ -242,17 +253,21 @@ export default function OrdenesClient({
                       </div>
 
                       {/* Agregar al carrito */}
-                      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end' }}>
+                      <div style={{ marginTop: 12, display: 'flex', justifyContent: 'flex-end', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
+                        {allCustom && (
+                          <span style={{ fontSize: 12, color: '#f59e0b' }}>Tamaños personalizados no disponibles en período de entrega</span>
+                        )}
                         <button
                           onClick={() => handleAddToCart(order)}
-                          disabled={wasAdded}
+                          disabled={wasAdded || allCustom}
                           style={{
-                            background: wasAdded ? '#10b981' : colors.orange,
+                            background: wasAdded ? '#10b981' : allCustom ? '#444' : colors.orange,
                             color: colors.white,
                             border: 'none',
                             fontWeight: 700, fontSize: 15,
                             borderRadius: 8, padding: '10px 20px',
-                            cursor: wasAdded ? 'default' : 'pointer',
+                            cursor: wasAdded || allCustom ? 'not-allowed' : 'pointer',
+                            opacity: allCustom ? 0.5 : 1,
                             transition: 'background 0.2s',
                             fontFamily: 'inherit',
                           }}

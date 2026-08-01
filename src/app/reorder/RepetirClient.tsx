@@ -4,7 +4,10 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import type { CartItem } from '@/lib/store/cart'
-import type { PackageGroup, SkippedSlot, ActiveMealOption } from './page'
+import type {
+  PackageGroup, SkippedSlot, SizeBlockedGroup, MainSize,
+  ActiveMealOption, DisplayPackage, DisplayItem,
+} from './page'
 import { colors } from '@/lib/theme'
 import Link from 'next/link'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
@@ -13,7 +16,11 @@ import type { PickupSpot } from '@/lib/db/pickup-spots'
 interface Props {
   packages: PackageGroup[]
   individuals: CartItem[]
+  displayPackages: DisplayPackage[]
+  displayIndividuals: DisplayItem[]
   skippedSlots: SkippedSlot[]
+  sizeBlockedGroups: SizeBlockedGroup[]
+  mainSizes: MainSize[]
   activeMealOptions: ActiveMealOption[]
   orderDate: string | null
   orderNumber: string | null
@@ -24,21 +31,26 @@ interface Props {
 }
 
 type Selection = { mealId: string; mealName: string }
+type SizeSelection = { sizeId: string; sizeName: string; unitPrice: number }
 
 export default function RepetirClient({
-  packages, individuals, skippedSlots, activeMealOptions, orderDate, orderNumber,
+  packages, individuals, displayPackages, displayIndividuals,
+  skippedSlots, sizeBlockedGroups, mainSizes, activeMealOptions,
+  orderDate, orderNumber,
   prefill, membership, pickupSpots, usedMembershipThisWeek,
 }: Props) {
   const router = useRouter()
   const { addItem, clearCart } = useCartStore()
   const [selected, setSelected] = useState<Selection[]>([])
+  const [sizeGroupSelections, setSizeGroupSelections] = useState<Record<string, SizeSelection>>({})
   const [membershipModalOpen, setMembershipModalOpen] = useState(false)
   const [membershipItems, setMembershipItems] = useState<CartItem[]>([])
 
   const needed = skippedSlots.length
   const remaining = needed - selected.length
-  const hasItems = packages.length > 0 || individuals.length > 0 || needed > 0
-  const canProceed = hasItems && remaining === 0
+  const allSizesSelected = sizeBlockedGroups.every(g => sizeGroupSelections[g.originalSizeId])
+  const hasItems = displayPackages.length > 0 || displayIndividuals.length > 0 || needed > 0
+  const canProceed = hasItems && remaining === 0 && allSizesSelected
 
   const countOf = (mealId: string) => selected.filter(s => s.mealId === mealId).length
 
@@ -51,25 +63,48 @@ export default function RepetirClient({
     if (idx >= 0) setSelected(prev => prev.filter((_, i) => i !== idx))
   }
 
+  const selectSizeForGroup = (originalSizeId: string, size: MainSize) => {
+    setSizeGroupSelections(prev => ({
+      ...prev,
+      [originalSizeId]: { sizeId: size.sizeId, sizeName: size.name, unitPrice: size.price },
+    }))
+  }
+
   // Qty and price totals
   const activeQty = packages.reduce((n, p) => n + p.items.reduce((s, i) => s + i.qty, 0), 0) +
     individuals.reduce((n, i) => n + i.qty, 0)
+  const blockedQty = sizeBlockedGroups.reduce((n, g) => n + g.slots.filter(s => !s.isSkipped).reduce((m, s) => m + s.qty, 0), 0)
   const totalQtySkipped = skippedSlots.reduce((n, s) => n + s.qty, 0)
-  const totalQtyReorder = activeQty + totalQtySkipped
-
-  const replacedQty = skippedSlots.slice(0, selected.length).reduce((n, s) => n + s.qty, 0)
+  const totalQtyReorder = activeQty + blockedQty + totalQtySkipped
 
   const activePrice = packages.reduce((n, p) => n + p.items.reduce((s, i) => s + i.unitPrice * i.qty, 0), 0) +
     individuals.reduce((n, i) => n + i.unitPrice * i.qty, 0)
-  const replacedPrice = skippedSlots.slice(0, selected.length).reduce((n, s) => n + s.unitPrice * s.qty, 0)
-  const totalPrice = activePrice + replacedPrice
+
+  const blockedGroupsPrice = sizeBlockedGroups.reduce((n, g) => {
+    const sel = sizeGroupSelections[g.originalSizeId]
+    if (!sel) return n
+    return n + g.slots.filter(s => !s.isSkipped).reduce((m, s) => m + sel.unitPrice * s.qty, 0)
+  }, 0)
+
+  const replacedPrice = skippedSlots.slice(0, selected.length).reduce((n, slot) => {
+    const groupSel = sizeGroupSelections[slot.sizeId]
+    return n + (groupSel ? groupSel.unitPrice : slot.unitPrice) * slot.qty
+  }, 0)
+
+  const totalPrice = activePrice + blockedGroupsPrice + replacedPrice
 
   // Membership match: all items same size and total qty matches
-  const allSizeIdsReorder = [
+  const activeGroupSizeIds = [
     ...packages.flatMap(p => p.items.map(i => i.sizeId)),
     ...individuals.map(i => i.sizeId),
-    ...skippedSlots.map(s => s.sizeId),
   ]
+  const blockedGroupSizeIds = sizeBlockedGroups.flatMap(g => {
+    const sel = sizeGroupSelections[g.originalSizeId]
+    return g.slots.filter(s => !s.isSkipped).map(() => sel?.sizeId ?? g.originalSizeId)
+  })
+  const skippedSizeIds = skippedSlots.map(s => sizeGroupSelections[s.sizeId]?.sizeId ?? s.sizeId)
+  const allSizeIdsReorder = [...activeGroupSizeIds, ...blockedGroupSizeIds, ...skippedSizeIds]
+
   const isMembershipMatch = Boolean(
     !usedMembershipThisWeek &&
     membership.is_member &&
@@ -85,16 +120,36 @@ export default function RepetirClient({
     const result: CartItem[] = []
     packages.forEach(pkg => pkg.items.forEach(item => result.push(item)))
     individuals.forEach(item => result.push(item))
+
+    // Size-blocked items (active meal, new size chosen per group)
+    sizeBlockedGroups.forEach(group => {
+      const sel = sizeGroupSelections[group.originalSizeId]
+      if (!sel) return
+      group.slots.filter(s => !s.isSkipped).forEach(slot => {
+        result.push({
+          mealId: slot.mealId!,
+          mealName: slot.mealName,
+          sizeId: sel.sizeId,
+          sizeName: sel.sizeName,
+          qty: slot.qty,
+          unitPrice: sel.unitPrice,
+          ...(slot.packageInstanceId ? { packageInstanceId: slot.packageInstanceId, packageName: 'Arma tu paquete' } : {}),
+        })
+      })
+    })
+
+    // Skipped meal replacements — use group's chosen size if the original size was custom
     skippedSlots.forEach((slot, idx) => {
       const rep = selected[idx]
       if (!rep) return
+      const groupSel = sizeGroupSelections[slot.sizeId]
       result.push({
         mealId: rep.mealId,
         mealName: rep.mealName,
-        sizeId: slot.sizeId,
-        sizeName: slot.sizeName,
+        sizeId: groupSel?.sizeId ?? slot.sizeId,
+        sizeName: groupSel?.sizeName ?? slot.sizeName,
         qty: slot.qty,
-        unitPrice: slot.unitPrice,
+        unitPrice: groupSel?.unitPrice ?? slot.unitPrice,
         ...(slot.packageInstanceId ? { packageInstanceId: slot.packageInstanceId, packageName: 'Arma tu paquete' } : {}),
       })
     })
@@ -110,6 +165,53 @@ export default function RepetirClient({
   const handleMembershipOpen = () => {
     setMembershipItems(buildItems())
     setMembershipModalOpen(true)
+  }
+
+  // Helper: display a package-style card (read-only)
+  const renderDisplayItems = (items: DisplayItem[], pkgLabel?: string, reactKey?: number | string) => {
+    const totalPkg = pkgLabel ? items.reduce((n, i) => n + i.unitPrice * i.qty, 0) : null
+    return (
+      <div key={reactKey} style={{
+        marginBottom: 16,
+        border: `2px solid ${colors.grayLight}`,
+        borderRadius: 12,
+        overflow: 'hidden',
+        background: colors.grayDark,
+      }}>
+        {pkgLabel && (
+          <div style={{
+            padding: 16, background: colors.grayLight,
+            borderBottom: `1px solid ${colors.grayLight}`,
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+          }}>
+            <span style={{ fontWeight: 'bold', color: colors.orange }}>{pkgLabel}</span>
+            <span style={{ fontWeight: 'bold', color: colors.white }}>
+              ${(totalPkg! / 100).toFixed(0)} MXN
+            </span>
+          </div>
+        )}
+        {items.map((item, i) => (
+          <div key={`${item.mealName}-${i}`} style={{
+            padding: '12px 16px',
+            borderBottom: i < items.length - 1 ? `1px solid ${colors.grayLight}` : 'none',
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+          }}>
+            <div>
+              <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
+              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+            </div>
+            <div style={{ textAlign: 'right', flexShrink: 0 }}>
+              <span style={{ fontSize: 13, color: colors.textMuted }}>
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+              </span>
+              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
@@ -144,87 +246,15 @@ export default function RepetirClient({
           </div>
         ) : (
           <>
-            {/* Active items */}
-            <div style={{ marginBottom: needed > 0 ? 8 : 24 }}>
-              {packages.map((pkg, pi) => (
-                <div key={pkg.instanceId} style={{
-                  marginBottom: 16,
-                  border: `2px solid ${colors.grayLight}`,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  background: colors.grayDark,
-                }}>
-                  <div style={{
-                    padding: 16,
-                    background: colors.grayLight,
-                    borderBottom: `1px solid ${colors.grayLight}`,
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center',
-                  }}>
-                    <span style={{ fontWeight: 'bold', color: colors.orange }}>
-                      Arma tu paquete · x{pkg.items.length}
-                    </span>
-                    <span style={{ fontWeight: 'bold', color: colors.white }}>
-                      ${(pkg.items.reduce((s, i) => s + i.unitPrice * i.qty, 0) / 100).toFixed(0)} MXN
-                    </span>
-                  </div>
-                  <div>
-                    {pkg.items.map((item, i) => (
-                      <div key={`${item.mealId}-${i}`} style={{
-                        padding: '12px 16px',
-                        borderBottom: i < pkg.items.length - 1 ? `1px solid ${colors.grayLight}` : 'none',
-                        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-                      }}>
-                        <div>
-                          <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
-                          <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
-                        </div>
-                        <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                          <span style={{ fontSize: 13, color: colors.textMuted }}>
-                            ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
-                          </span>
-                          <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                            ${(item.unitPrice * item.qty / 100).toFixed(0)}
-                          </span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              {individuals.length > 0 && (
-                <div style={{
-                  marginBottom: 16,
-                  border: `2px solid ${colors.grayLight}`,
-                  borderRadius: 12,
-                  overflow: 'hidden',
-                  background: colors.grayDark,
-                }}>
-                  {individuals.map((item, i) => (
-                    <div key={`${item.mealId}-${item.sizeId}-${i}`} style={{
-                      padding: '12px 16px',
-                      borderBottom: i < individuals.length - 1 ? `1px solid ${colors.grayLight}` : 'none',
-                      display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-                    }}>
-                      <div>
-                        <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
-                        <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
-                      </div>
-                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                        <span style={{ fontSize: 13, color: colors.textMuted }}>
-                          ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
-                        </span>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                          ${(item.unitPrice * item.qty / 100).toFixed(0)}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+            {/* Summary: read-only display of all items from the last order */}
+            <div style={{ marginBottom: needed > 0 || sizeBlockedGroups.length > 0 ? 8 : 24 }}>
+              {displayPackages.map((pkg, pi) =>
+                renderDisplayItems(pkg.items, `Arma tu paquete · x${pkg.items.reduce((n, i) => n + i.qty, 0)}`, pi)
               )}
+              {displayIndividuals.length > 0 && renderDisplayItems(displayIndividuals, undefined, 'individuals')}
             </div>
 
-            {/* Replacement picker */}
+            {/* Meal replacement picker (inactive meals) */}
             {needed > 0 && (
               <div style={{
                 marginBottom: 24,
@@ -348,6 +378,82 @@ export default function RepetirClient({
               </div>
             )}
 
+            {/* Size replacement picker — grouped by original custom size */}
+            {sizeBlockedGroups.map(group => {
+              const sel = sizeGroupSelections[group.originalSizeId]
+              const nonSkippedCount = group.slots.filter(s => !s.isSkipped).length
+              const skippedCount = group.slots.filter(s => s.isSkipped).length
+              const mealList = group.slots.map(s => s.mealName + (s.isSkipped ? ' (reemplazo)' : '')).join(', ')
+              return (
+                <div key={group.originalSizeId} style={{
+                  marginBottom: 16,
+                  border: `2px solid ${sel ? '#a855f788' : '#a855f755'}`,
+                  borderRadius: 12,
+                  overflow: 'hidden',
+                  background: colors.grayDark,
+                }}>
+                  <div style={{
+                    padding: '14px 16px',
+                    background: sel ? '#a855f722' : '#a855f712',
+                    borderBottom: `1px solid #a855f733`,
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12,
+                  }}>
+                    <div>
+                      <div style={{ fontWeight: 'bold', color: '#a855f7', fontSize: 15 }}>
+                        {group.totalQty} {group.totalQty === 1 ? 'platillo' : 'platillos'} {group.originalSizeName} requieren nuevo tamaño
+                      </div>
+                      <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 3, lineHeight: 1.4 }}>
+                        {mealList}
+                      </div>
+                    </div>
+                    {sel && (
+                      <span style={{
+                        flexShrink: 0,
+                        padding: '3px 10px',
+                        background: '#a855f722',
+                        border: `1px solid #a855f788`,
+                        borderRadius: 20,
+                        fontSize: 12, fontWeight: 700, color: '#a855f7',
+                      }}>
+                        ✓ {sel.sizeName}
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ padding: '14px 16px', display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
+                    {mainSizes.map(size => {
+                      const isSelected = sel?.sizeId === size.sizeId
+                      return (
+                        <button
+                          key={size.sizeId}
+                          onClick={() => selectSizeForGroup(group.originalSizeId, size)}
+                          style={{
+                            padding: '10px 18px',
+                            borderRadius: 10,
+                            border: `2px solid ${isSelected ? '#a855f7' : colors.grayLight}`,
+                            background: isSelected ? '#a855f722' : 'transparent',
+                            color: isSelected ? '#a855f7' : colors.textMuted,
+                            cursor: 'pointer',
+                            fontFamily: 'inherit',
+                            transition: 'border-color 0.15s, color 0.15s, background 0.15s',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3,
+                            textAlign: 'center',
+                          }}
+                        >
+                          <span style={{ fontSize: 15, fontWeight: 700 }}>{size.name}</span>
+                          <span style={{ fontSize: 11, color: isSelected ? '#c084fc' : colors.textMuted }}>
+                            {size.protein_qty}P · {size.carb_qty}C · {size.veg_qty}V
+                          </span>
+                          <span style={{ fontSize: 11, color: isSelected ? '#a855f7' : colors.textMuted }}>
+                            ${(size.price / 100).toFixed(0)} c/u
+                          </span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              )
+            })}
+
             {/* Membership banner */}
             {membership.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
               <div style={{
@@ -421,7 +527,7 @@ export default function RepetirClient({
                   cursor: canProceed ? 'pointer' : 'not-allowed',
                 }}
               >
-                {remaining > 0 ? `Elige ${remaining} más para continuar` : 'Confirmar con membresía'}
+                {remaining > 0 ? `Elige ${remaining} más para continuar` : !allSizesSelected ? 'Elige tamaños para continuar' : 'Confirmar con membresía'}
               </button>
             ) : (
               <button
@@ -443,7 +549,7 @@ export default function RepetirClient({
                   cursor: canProceed ? 'pointer' : 'not-allowed',
                 }}
               >
-                {remaining > 0 ? `Elige ${remaining} más para continuar` : 'Volver a pedir →'}
+                {remaining > 0 ? `Elige ${remaining} más para continuar` : !allSizesSelected ? 'Elige tamaños para continuar' : 'Volver a pedir →'}
               </button>
             )}
           </>
