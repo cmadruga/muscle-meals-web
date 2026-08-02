@@ -160,14 +160,18 @@ export default async function CustomersPage({
     c.guestOrders = mapOrders(preAccountOrders.get(key) ?? [])
   }
 
+  // Build map: real DB UUID → guest_${phoneKey} for highlight translation
+  const uuidToGuestId = new Map<string, string>()
   const guestCustomers: CustomerRow[] = []
   for (const [phoneKey, rows] of guestMap) {
     rows.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     const latest = rows[0]
     const allOrders = mapOrders(rows.flatMap((r: any) => r.orders ?? []))
     if (allOrders.length === 0) continue  // skip guests with no orders at all
+    const guestId = `guest_${phoneKey}`
+    for (const row of rows) { if (row.id) uuidToGuestId.set(row.id, guestId) }
     guestCustomers.push({
-      id: `guest_${phoneKey}`,
+      id: guestId,
       full_name: latest.full_name,
       email: '',
       phone: toE164(latest.phone),
@@ -183,7 +187,12 @@ export default async function CustomersPage({
     })
   }
 
+  // Translate real UUID to guest synthetic ID if needed
+  const resolvedHighlightId = highlightId
+    ? (uuidToGuestId.get(highlightId) ?? highlightId)
+    : null
+
   const sizes: SizeOption[] = (sizesRaw ?? []).map((s: any) => ({ id: s.id, name: s.name, is_main: s.is_main ?? false, customer_id: s.customer_id ?? null }))
 
-  return <CustomersClient customers={customers} guestCustomers={guestCustomers} sizes={sizes} highlightId={highlightId} />
+  return <CustomersClient customers={customers} guestCustomers={guestCustomers} sizes={sizes} highlightId={resolvedHighlightId} />
 }

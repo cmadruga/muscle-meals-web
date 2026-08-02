@@ -441,21 +441,21 @@ export default function OrdersTable({
                               <div style={{ color: colors.textMuted, fontSize: 11, marginTop: 2 }}>{date} · {time}</div>
                             </td>
                             <td style={{ ...tdStyle, color: colors.white, minWidth: 160 }}>
-                              <div style={{ fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}>
-                                {order.customer_name || '—'}
-                                {order.customer_user_id && order.customer_id && (
+                              <div style={{ fontWeight: 500 }}>
+                                {order.customer_id ? (
                                   <a
                                     href={`/admin/customers?id=${order.customer_id}`}
-                                    title="Ver perfil del cliente"
-                                    style={{
-                                      fontSize: 10, color: colors.orange,
-                                      border: `1px solid ${colors.orange}66`,
-                                      borderRadius: 10, padding: '1px 6px',
-                                      textDecoration: 'none', flexShrink: 0, fontWeight: 700,
-                                    }}
+                                    style={{ color: colors.white, textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 4 }}
+                                    onMouseOver={e => (e.currentTarget.style.color = colors.orange)}
+                                    onMouseOut={e => (e.currentTarget.style.color = colors.white)}
                                   >
-                                    cuenta
+                                    {order.customer_name || '—'}
+                                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ opacity: 0.45, flexShrink: 0 }}>
+                                      <path d="M2 8L8 2M8 2H4M8 2v4" />
+                                    </svg>
                                   </a>
+                                ) : (
+                                  order.customer_name || '—'
                                 )}
                               </div>
                               {order.customer_phone && (

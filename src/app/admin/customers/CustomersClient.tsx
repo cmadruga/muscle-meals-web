@@ -676,7 +676,9 @@ export default function CustomersClient({ customers, guestCustomers, sizes, high
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [tab, setTab] = useState<'cuenta' | 'invitado'>('cuenta')
+  const [tab, setTab] = useState<'cuenta' | 'invitado'>(
+    highlightId?.startsWith('guest_') ? 'invitado' : 'cuenta'
+  )
   const [waModalOpen, setWaModalOpen] = useState(false)
   const [configCustomer, setConfigCustomer] = useState<CustomerRow | null>(null)
   const [detailCustomer, setDetailCustomer] = useState<CustomerRow | null>(null)
