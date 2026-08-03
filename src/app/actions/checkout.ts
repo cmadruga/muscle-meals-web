@@ -112,6 +112,8 @@ export type ProcessCheckoutInput = {
   pickupSpotId?: string | null
   shippingCost: number
   items: CheckoutItem[]
+  discountId?: string | null
+  discountAmount?: number
 }
 
 export async function processCheckout(
@@ -218,6 +220,14 @@ export async function processCheckout(
     await supabase.from('orders').delete().eq('id', order.id)
     console.error('Error creating order items:', itemsError)
     return { orderId: '', orderNumber: '', error: 'Error al crear los items de la orden' }
+  }
+
+  // Log discount use
+  if (data.discountId && (data.discountAmount ?? 0) > 0) {
+    await Promise.all([
+      supabase.from('orders').update({ discount_id: data.discountId, discount_amount: data.discountAmount }).eq('id', order.id),
+      supabase.from('discount_uses').insert({ discount_id: data.discountId, customer_id: customerId, order_id: order.id, amount_saved: data.discountAmount }),
+    ])
   }
 
   return { orderId: order.id, orderNumber: order.order_number }
@@ -448,6 +458,14 @@ export async function processMembershipOrder(
   // Deducir stock extra (periodo crítico) — membresía no pasa por webhook de Conekta
   const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
   await deductExtraStockForOrder(order.id)
+
+  // Log discount use
+  if (data.discountId && (data.discountAmount ?? 0) > 0) {
+    await Promise.all([
+      supabase.from('orders').update({ discount_id: data.discountId, discount_amount: data.discountAmount }).eq('id', order.id),
+      supabase.from('discount_uses').insert({ discount_id: data.discountId, customer_id: data.customerId, order_id: order.id, amount_saved: data.discountAmount }),
+    ])
+  }
 
   return { orderId: order.id, orderNumber: order.order_number }
 }

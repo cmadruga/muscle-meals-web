@@ -11,8 +11,10 @@ import RecetasTab from './RecetasTab'
 import MaterialesTab from './MaterialesTab'
 import PincheTab from './PincheTab'
 import TamanosTab from './TamanosTab'
+import DescuentosTab from './DescuentosTab'
 import Link from 'next/link'
 import { getAllSizesAdmin } from '@/app/actions/database'
+import { getDiscounts } from '@/app/actions/discounts'
 
 const TABS = [
   { id: 'tamanos', label: 'Tamaños' },
@@ -21,6 +23,7 @@ const TABS = [
   { id: 'ingredientes', label: 'Ingredientes' },
   { id: 'recetas', label: 'Recetas' },
   { id: 'meals', label: 'Platillos' },
+  { id: 'descuentos', label: 'Descuentos' },
 ] as const
 
 type Tab = (typeof TABS)[number]['id']
@@ -36,7 +39,7 @@ export default async function DatabasePage({
       ? (params.tab as Tab)
       : 'meals'
 
-  const [meals, ingredients, recipes, materials, vessels, mainSizes, adminSizes] = await Promise.all([
+  const [meals, ingredients, recipes, materials, vessels, mainSizes, adminSizes, discounts] = await Promise.all([
     activeTab === 'meals' ? getAllMeals() : Promise.resolve(null),
     activeTab === 'ingredientes' || activeTab === 'recetas' || activeTab === 'meals' || activeTab === 'tamanos' ? getAllIngredients() : Promise.resolve(null),
     activeTab === 'recetas' || activeTab === 'meals' ? getAllRecipes() : Promise.resolve(null),
@@ -44,6 +47,7 @@ export default async function DatabasePage({
     activeTab === 'pinche' || activeTab === 'recetas' ? getAllPincheVessels() : Promise.resolve(null),
     activeTab === 'meals' ? getMainSizes() : Promise.resolve(null),
     activeTab === 'tamanos' ? getAllSizesAdmin() : Promise.resolve(null),
+    activeTab === 'descuentos' ? getDiscounts() : Promise.resolve(null),
   ])
 
   return (
@@ -83,6 +87,7 @@ export default async function DatabasePage({
       {activeTab === 'materiales' && materials && <MaterialesTab materials={materials} />}
       {activeTab === 'pinche' && vessels && <PincheTab vessels={vessels} />}
       {activeTab === 'tamanos' && adminSizes && ingredients && <TamanosTab sizes={adminSizes} ingredients={ingredients} />}
+      {activeTab === 'descuentos' && discounts && <DescuentosTab discounts={discounts} />}
     </div>
   )
 }

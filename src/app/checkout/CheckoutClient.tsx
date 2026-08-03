@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
+import { validateDiscount } from '@/app/actions/discounts'
+import type { ValidatedDiscount } from '@/lib/types/discount'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { PackageGroup } from '@/hooks/useCartGroups'
@@ -53,6 +55,12 @@ export default function CheckoutClient({
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Descuentos
+  const [discountCode, setDiscountCode] = useState('')
+  const [appliedDiscount, setAppliedDiscount] = useState<ValidatedDiscount | null>(null)
+  const [discountError, setDiscountError] = useState('')
+  const [discountLoading, setDiscountLoading] = useState(false)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
@@ -121,7 +129,10 @@ export default function CheckoutClient({
   // Miembros no pagan envío
   const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
   const shippingCost = membershipMode ? 0 : SHIPPING_COSTS[shippingType]
-  const total = subtotal + shippingCost
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.type === 'free_shipping' ? shippingCost : appliedDiscount.discountAmount
+    : 0
+  const total = subtotal + shippingCost - discountAmount
 
   // Validar pickup spot si es necesario
   const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
@@ -194,6 +205,33 @@ export default function CheckoutClient({
     }
   }
 
+  async function handleApplyDiscount() {
+    const code = discountCode.trim()
+    if (!code) return
+    setDiscountError('')
+    setDiscountLoading(true)
+    try {
+      const { discount, error: dErr } = await validateDiscount({
+        customerId: prefill?.customerId ?? null,
+        code,
+        subtotal,
+        itemCount: totalQty,
+        shippingCost,
+      })
+      if (dErr) { setDiscountError(dErr); setAppliedDiscount(null) }
+      else if (discount) { setAppliedDiscount(discount); setDiscountError('') }
+    } finally {
+      setDiscountLoading(false)
+    }
+  }
+
+  function handleRemoveDiscount() {
+    setAppliedDiscount(null)
+    setDiscountCode('')
+    setDiscountError('')
+  }
+
+
   const handleMembershipCheckout = async () => {
     if (!validatePhone(customerPhone)) {
       setError('Teléfono inválido (debe ser 10 dígitos)')
@@ -237,6 +275,8 @@ export default function CheckoutClient({
           unitPrice: item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
+        discountId: appliedDiscount?.id ?? null,
+        discountAmount,
       })
 
       if (result.error) throw new Error(result.error)
@@ -321,38 +361,33 @@ export default function CheckoutClient({
           unitPrice: item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
+        discountId: appliedDiscount?.id ?? null,
+        discountAmount,
       })
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
       // 3. Crear preferencia de pago en MercadoPago
-      const mpItems = [
-        ...items.map(item => ({
+      // Si hay descuento, colapsamos a un item para evitar precio negativo
+      let mpItems: Array<{ name: string; unit_price: number; quantity: number }>
+
+      if (discountAmount > 0) {
+        mpItems = [{ name: 'Pedido Muscle Meals', unit_price: total, quantity: 1 }]
+      } else {
+        mpItems = items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
           unit_price: item.unitPrice,
-          quantity: item.qty
+          quantity: item.qty,
         }))
-      ]
 
-      if (shippingCost > 0) {
-        mpItems.push({
-          name: 'Envío Estándar',
-          unit_price: shippingCost,
-          quantity: 1
-        })
-      } else if (shippingType === 'priority') {
-        mpItems.push({
-          name: 'Envío Prioritario (A cotizar)',
-          unit_price: 0,
-          quantity: 1
-        })
-      } else if (shippingType === 'pickup') {
-        const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
-        mpItems.push({
-          name: `Recoger en: ${spot?.name || 'Pickup Spot'}`,
-          unit_price: 0,
-          quantity: 1
-        })
+        if (shippingCost > 0) {
+          mpItems.push({ name: 'Envío Estándar', unit_price: shippingCost, quantity: 1 })
+        } else if (shippingType === 'priority') {
+          mpItems.push({ name: 'Envío Prioritario (A cotizar)', unit_price: 0, quantity: 1 })
+        } else if (shippingType === 'pickup') {
+          const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
+          mpItems.push({ name: `Recoger en: ${spot?.name || 'Pickup Spot'}`, unit_price: 0, quantity: 1 })
+        }
       }
 
       const result = await createPaymentPreference({
@@ -442,7 +477,38 @@ export default function CheckoutClient({
             membershipMode={membershipMode}
             membershipWeeks={membershipMode ? membershipWeeks : undefined}
             membershipDiscountPct={membershipMode ? membershipDiscountPct : undefined}
+            appliedDiscount={appliedDiscount}
+            discountAmount={discountAmount}
           />
+
+          {/* Código promo */}
+          {!appliedDiscount ? (
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+              <input
+                value={discountCode}
+                onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
+                placeholder="Código de descuento"
+                disabled={discountLoading}
+                style={{ flex: 1, background: '#1a1a1a', border: `1px solid ${discountError ? '#ef4444' : '#333'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none' }}
+              />
+              <button
+                onClick={handleApplyDiscount}
+                disabled={discountLoading || !discountCode.trim()}
+                style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: discountCode.trim() ? '#333' : '#1a1a1a', color: discountCode.trim() ? '#fff' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+              >
+                {discountLoading ? '…' : 'Aplicar'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98115', border: '1px solid #10b98140', borderRadius: 8 }}>
+              <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600 }}>✓ {appliedDiscount.label}</span>
+              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>Quitar</button>
+            </div>
+          )}
+          {discountError && (
+            <p style={{ color: '#ef4444', fontSize: 13, margin: '6px 0 0 2px' }}>{discountError}</p>
+          )}
         </div>
 
         <ShippingSelector
@@ -600,7 +666,7 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct, appliedDiscount, discountAmount }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
   subtotal: number
@@ -610,6 +676,8 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
   membershipMode?: boolean
   membershipWeeks?: number
   membershipDiscountPct?: number
+  appliedDiscount: ValidatedDiscount | null
+  discountAmount: number
 }) {
   const rowStyle: React.CSSProperties = {
     display: 'flex',
@@ -664,6 +732,14 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
             )}
           </span>
         </div>
+
+        {/* Descuento */}
+        {appliedDiscount && discountAmount > 0 && (
+          <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12, color: '#10b981' }}>
+            <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.label}):</span>
+            <span style={{ fontWeight: 700 }}>-${(discountAmount / 100).toFixed(0)} MXN</span>
+          </div>
+        )}
 
         {/* Total */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
