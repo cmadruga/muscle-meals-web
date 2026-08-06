@@ -2,7 +2,7 @@
 
 import { cookies } from 'next/headers'
 import { revalidatePath } from 'next/cache'
-import { setSalesEnabled, setCriticalPeriodConfig, setShippingStandard } from '@/lib/db/settings'
+import { setSalesEnabled, setCriticalPeriodConfig, setShippingStandard, setMembershipDiscounts, type MembershipDiscounts } from '@/lib/db/settings'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { CriticalPeriodConfig } from '@/lib/utils/delivery'
 
@@ -33,6 +33,17 @@ export async function updateShippingStandard(cents: number): Promise<{ error?: s
     await checkAdmin()
     await setShippingStandard(cents)
     revalidatePath('/admin/orders')
+    revalidatePath('/checkout')
+    return {}
+  } catch (e) {
+    return { error: e instanceof Error ? e.message : 'Error' }
+  }
+}
+
+export async function updateMembershipDiscounts(discounts: MembershipDiscounts): Promise<{ error?: string }> {
+  try {
+    await checkAdmin()
+    await setMembershipDiscounts(discounts)
     revalidatePath('/checkout')
     return {}
   } catch (e) {

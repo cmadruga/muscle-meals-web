@@ -4,6 +4,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import Image from 'next/image'
 import { useCartGroups } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
@@ -14,6 +15,7 @@ import { validateCart } from '@/app/actions/checkout'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
 import type { Meal } from '@/lib/types'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 
 type PendingDelete =
   | { type: 'item'; mealId: string; sizeId: string; name: string }
@@ -29,6 +31,8 @@ export default function CartClient({
   pickupSpots,
   usedMembershipThisWeek,
   activeMeals,
+  membershipDiscounts,
+  canPurchaseMembership,
 }: {
   inCutoff: boolean
   mainSizes: MainSize[]
@@ -37,6 +41,8 @@ export default function CartClient({
   pickupSpots: PickupSpot[]
   usedMembershipThisWeek: boolean
   activeMeals: Meal[]
+  membershipDiscounts: MembershipDiscounts
+  canPurchaseMembership: boolean
 }) {
   const router = useRouter()
   const { removeItem, removePackage, updateQty, getTotal, replaceSizeId } = useCartStore()
@@ -47,9 +53,20 @@ export default function CartClient({
   const [validationError, setValidationError] = useState<string | null>(null)
   const [membershipModalOpen, setMembershipModalOpen] = useState(false)
   const [pendingSizeSelections, setPendingSizeSelections] = useState<Record<string, MainSize>>({})
+  const [membershipMode, setMembershipMode] = useState(false)
+  const [membershipWeeks, setMembershipWeeks] = useState<4 | 8 | 12>(4)
   const items = useCartStore(state => state.items)
 
   const totalQty = items.reduce((n, i) => n + i.qty, 0)
+  const subtotal = getTotal()
+
+  const discountMap: Record<number, number> = {
+    4: membershipDiscounts.w4,
+    8: membershipDiscounts.w8,
+    12: membershipDiscounts.w12,
+  }
+  const membershipDiscountPct = discountMap[membershipWeeks]
+  const membershipTotal = Math.round(subtotal * membershipWeeks * (1 - membershipDiscountPct / 100))
 
   const mainSizeIdSet = useMemo(() => new Set(mainSizes.map(s => s.sizeId)), [mainSizes])
 
@@ -97,6 +114,12 @@ export default function CartClient({
     if (!result.valid) {
       setValidationError(result.errors[0].message)
       return
+    }
+    // Store membership purchase intent for checkout page
+    if (membershipMode && canPurchaseMembership) {
+      localStorage.setItem('mm_membership_intent', JSON.stringify({ enabled: true, weeks: membershipWeeks }))
+    } else {
+      localStorage.removeItem('mm_membership_intent')
     }
     router.push('/checkout')
   }
@@ -311,29 +334,48 @@ export default function CartClient({
 
       {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
         <div style={{
-          padding: '16px 20px',
+          padding: '20px 22px',
           marginBottom: 16,
           background: isMembershipMatch ? `${colors.orange}18` : colors.grayDark,
-          border: `2px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
-          borderRadius: 10,
+          border: `3px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
+          borderRadius: 12,
         }}>
           {isMembershipMatch ? (
-            <div style={{ fontSize: 16, fontWeight: 700, color: colors.orange }}>
+            <div style={{ fontSize: 20, fontWeight: 700, color: colors.orange, lineHeight: 1.3 }}>
               Tu pedido está cubierto por tu Membresía Muscle Meals
             </div>
           ) : usedMembershipThisWeek ? (
-            <div style={{ fontSize: 13, color: colors.textMuted }}>
+            <div style={{ fontSize: 19, fontWeight: 700, color: colors.white, lineHeight: 1.3 }}>
               Ya usaste tu membresía esta semana — paga normalmente para este pedido
             </div>
           ) : (
-            <div style={{ fontSize: 13, color: colors.textMuted }}>
+            <div style={{ fontSize: 19, fontWeight: 700, color: colors.white, lineHeight: 1.3 }}>
               Tu carrito actual no coincide con tu Membresía Muscle Meals, verifica tu pedido o paga normalmente
             </div>
           )}
         </div>
       )}
 
-      <CartSummary total={getTotal()} isMembershipMatch={isMembershipMatch} />
+      <CartSummary
+        total={subtotal}
+        isMembershipMatch={isMembershipMatch}
+        membershipMode={membershipMode && canPurchaseMembership && !isMembershipMatch}
+        membershipWeeks={membershipWeeks}
+        membershipDiscountPct={membershipDiscountPct}
+        membershipTotal={membershipTotal}
+      />
+
+      {/* Membership upsell toggle — solo cuando puede comprar y no hay match exacto */}
+      {canPurchaseMembership && !isMembershipMatch && (
+        <MembershipUpsellCard
+          membershipMode={membershipMode}
+          onToggle={() => setMembershipMode(m => !m)}
+          membershipWeeks={membershipWeeks}
+          onWeeksChange={setMembershipWeeks}
+          discountMap={discountMap}
+          isRenewal={Boolean(membership?.is_member && (membership.membership_weeks_left ?? 0) === 0)}
+        />
+      )}
 
       <CartActions
         onCheckout={handleCheckout}
@@ -606,7 +648,69 @@ function QuantityControls({ value, onChange }: {
   )
 }
 
-function CartSummary({ total, isMembershipMatch }: { total: number; isMembershipMatch: boolean }) {
+function CartSummary({
+  total,
+  isMembershipMatch,
+  membershipMode,
+  membershipWeeks,
+  membershipDiscountPct,
+  membershipTotal,
+}: {
+  total: number
+  isMembershipMatch: boolean
+  membershipMode: boolean
+  membershipWeeks: number
+  membershipDiscountPct: number
+  membershipTotal: number
+}) {
+  if (membershipMode) {
+    const originalMultiple = total * membershipWeeks
+    return (
+      <div style={{
+        padding: '24px 22px',
+        background: `${colors.orange}15`,
+        border: `3px solid ${colors.orange}`,
+        borderRadius: 14,
+        marginBottom: 12,
+      }}>
+        {/* Crossed out: regular price × weeks */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 13, color: colors.textMuted }}>
+            Precio regular × {membershipWeeks} sem.
+          </span>
+          <span style={{ fontSize: 13, color: colors.textMuted, textDecoration: 'line-through' }}>
+            ${(originalMultiple / 100).toFixed(0)} MXN
+          </span>
+        </div>
+        {/* Divider */}
+        <div style={{ height: 1, background: `${colors.orange}40`, marginBottom: 14 }} />
+        {/* Membership total */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+          <div>
+            <div style={{ fontSize: 15, fontWeight: 700, color: colors.white, marginBottom: 8 }}>Total membresía:</div>
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: colors.orange,
+                background: `${colors.orange}28`, borderRadius: 20, padding: '5px 13px',
+              }}>
+                −{membershipDiscountPct}% descuento
+              </span>
+              <span style={{
+                fontSize: 14, fontWeight: 700, color: '#10b981',
+                background: '#10b98122', borderRadius: 20, padding: '5px 13px',
+              }}>
+                ✓ Envío siempre gratis
+              </span>
+            </div>
+          </div>
+          <span style={{ fontSize: 26, fontWeight: 700, color: colors.orange, flexShrink: 0 }}>
+            ${(membershipTotal / 100).toFixed(0)} MXN
+          </span>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div style={{
       padding: 20,
@@ -953,6 +1057,97 @@ function PackageEditModal({ pkg, activeMeals, onClose }: {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function MembershipUpsellCard({
+  membershipMode,
+  onToggle,
+  membershipWeeks,
+  onWeeksChange,
+  discountMap,
+  isRenewal,
+}: {
+  membershipMode: boolean
+  onToggle: () => void
+  membershipWeeks: 4 | 8 | 12
+  onWeeksChange: (w: 4 | 8 | 12) => void
+  discountMap: Record<number, number>
+  isRenewal: boolean
+}) {
+  return (
+    <div style={{
+      marginBottom: 16,
+      border: `2px solid ${membershipMode ? colors.orange : `${colors.orange}70`}`,
+      borderRadius: 12,
+      overflow: 'hidden',
+    }}>
+      <button
+        onClick={onToggle}
+        style={{
+          width: '100%', position: 'relative', overflow: 'hidden',
+          minHeight: 160,
+          display: 'flex', alignItems: 'center',
+          padding: '20px 24px',
+          backgroundImage: 'url(/media/Fondo.jpg)',
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+          border: 'none', cursor: 'pointer', color: colors.white, fontFamily: 'inherit',
+        }}
+      >
+        {/* Corner image — anchored bottom-left, sized to fill card */}
+        <Image
+          src="/media/Muscle Meals Membership_Corner.png"
+          alt=""
+          aria-hidden={true}
+          width={2419}
+          height={1648}
+          style={{
+            position: 'absolute', bottom: 0, left: 0,
+            height: '165%', width: 'auto',
+            pointerEvents: 'none',
+          }}
+        />
+
+        {/* Toggle — far right */}
+        <div style={{
+          position: 'relative', zIndex: 1,
+          width: 56, height: 30, borderRadius: 15, flexShrink: 0, marginLeft: 'auto',
+          background: membershipMode ? colors.orange : colors.grayLight,
+          transition: 'background 0.2s',
+        }}>
+          <div style={{
+            position: 'absolute', top: 3, left: membershipMode ? 29 : 3,
+            width: 24, height: 24, borderRadius: '50%', background: colors.white,
+            transition: 'left 0.2s',
+          }} />
+        </div>
+      </button>
+
+      {membershipMode && (
+        <div style={{ padding: '14px 22px', backgroundImage: 'url(/media/Fondo.jpg)', backgroundSize: 'cover', backgroundPosition: 'center', borderTop: `2px solid ${colors.orange}` }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            {([4, 8, 12] as const).map(w => (
+              <button
+                key={w}
+                onClick={() => onWeeksChange(w)}
+                style={{
+                  flex: 1, padding: '14px 0', borderRadius: 8, cursor: 'pointer',
+                  border: `2px solid ${membershipWeeks === w ? colors.orange : colors.grayLight}`,
+                  background: membershipWeeks === w ? `${colors.orange}22` : 'transparent',
+                  color: membershipWeeks === w ? colors.orange : colors.textSecondary,
+                  fontFamily: 'inherit', fontSize: 18, fontWeight: 700,
+                }}
+              >
+                {w} sem.
+                <br />
+                <span style={{ fontSize: 15, fontWeight: 400 }}>−{discountMap[w]}%</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

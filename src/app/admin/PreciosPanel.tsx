@@ -2,7 +2,8 @@
 
 import { useState } from 'react'
 import { colors } from '@/lib/theme'
-import { updateSizePrice, updateShippingStandard } from '@/app/actions/admin-settings'
+import { updateSizePrice, updateShippingStandard, updateMembershipDiscounts } from '@/app/actions/admin-settings'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { Size } from '@/lib/types'
 
 const inputStyle: React.CSSProperties = {
@@ -24,9 +25,11 @@ function toCents(str: string) { return Math.round(parseFloat(str.replace(/[^0-9.
 export default function PreciosPanel({
   mainSizes,
   shippingStandard,
+  membershipDiscounts,
 }: {
   mainSizes: Size[]
   shippingStandard: number
+  membershipDiscounts: MembershipDiscounts
 }) {
   const [editing, setEditing] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -36,6 +39,11 @@ export default function PreciosPanel({
     Object.fromEntries(mainSizes.map(s => [s.id, { price: pesos(s.price), pkg: pesos(s.package_price ?? 0) }]))
   )
   const [shipping, setShipping] = useState(pesos(shippingStandard))
+  const [discounts, setDiscounts] = useState({
+    w4: String(membershipDiscounts.w4),
+    w8: String(membershipDiscounts.w8),
+    w12: String(membershipDiscounts.w12),
+  })
 
   const handleSave = async () => {
     setSaving(true)
@@ -43,6 +51,11 @@ export default function PreciosPanel({
     const results = await Promise.all([
       ...mainSizes.map(s => updateSizePrice(s.id, toCents(prices[s.id].price), toCents(prices[s.id].pkg))),
       updateShippingStandard(toCents(shipping)),
+      updateMembershipDiscounts({
+        w4: Math.max(0, Math.min(100, parseInt(discounts.w4) || 0)),
+        w8: Math.max(0, Math.min(100, parseInt(discounts.w8) || 0)),
+        w12: Math.max(0, Math.min(100, parseInt(discounts.w12) || 0)),
+      }),
     ])
     setSaving(false)
     const failed = results.find(r => r.error)
@@ -53,6 +66,7 @@ export default function PreciosPanel({
   const handleCancel = () => {
     setPrices(Object.fromEntries(mainSizes.map(s => [s.id, { price: pesos(s.price), pkg: pesos(s.package_price ?? 0) }])))
     setShipping(pesos(shippingStandard))
+    setDiscounts({ w4: String(membershipDiscounts.w4), w8: String(membershipDiscounts.w8), w12: String(membershipDiscounts.w12) })
     setEditing(false)
     setError(null)
   }
@@ -88,6 +102,16 @@ export default function PreciosPanel({
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4, paddingTop: 8, borderTop: `1px solid ${colors.grayLight}` }}>
             <span style={{ fontSize: 14, color: colors.white, fontWeight: 600 }}>Envío estándar</span>
             <span style={{ fontSize: 13, color: colors.textMuted }}>${pesos(shippingStandard)} MXN</span>
+          </div>
+          <div style={{ marginTop: 12, paddingTop: 10, borderTop: `1px solid ${colors.grayLight}` }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              Desc. membresía
+            </span>
+            <div style={{ display: 'flex', gap: 12, marginTop: 6 }}>
+              {([['4 sem', membershipDiscounts.w4], ['8 sem', membershipDiscounts.w8], ['12 sem', membershipDiscounts.w12]] as const).map(([label, d]) => (
+                <span key={label} style={{ fontSize: 13, color: colors.textMuted }}>{label}: {d}%</span>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -129,6 +153,28 @@ export default function PreciosPanel({
         <div>
           <label style={labelStyle}>Precio ($)</label>
           <input style={inputStyle} value={shipping} onChange={e => setShipping(e.target.value)} />
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: colors.grayLight, margin: '4px 0 16px' }} />
+
+      {/* Descuentos membresía */}
+      <div style={{ marginBottom: 20 }}>
+        <p style={{ margin: '0 0 8px', fontSize: 13, fontWeight: 700, color: colors.white }}>Descuento membresía (%)</p>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+          {(['w4', 'w8', 'w12'] as const).map((key, i) => (
+            <div key={key}>
+              <label style={labelStyle}>{[4, 8, 12][i]} sem.</label>
+              <input
+                style={inputStyle}
+                type="number"
+                min={0}
+                max={100}
+                value={discounts[key]}
+                onChange={e => setDiscounts(prev => ({ ...prev, [key]: e.target.value }))}
+              />
+            </div>
+          ))}
         </div>
       </div>
 

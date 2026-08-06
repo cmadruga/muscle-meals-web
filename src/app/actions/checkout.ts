@@ -3,8 +3,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaymentConfirmation, sendInternalOrderAlert } from '@/lib/whatsapp'
 import { getExtraStockForWeek } from '@/lib/db/extra-stock'
-import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getCriticalPeriodConfig, getMembershipDiscounts } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
+import { createPaymentPreference } from '@/app/actions/payment'
 
 export type CheckoutItem = {
   mealId: string
@@ -164,12 +165,20 @@ export async function processCheckout(
     customerId = newCustomer.id
   } else {
     // Logueado: actualizar su registro (nunca borrar dirección guardada)
+    // Si la membresía está vencida (is_member=true pero weeks_left=0), resetearla
+    const { data: memberCheck } = await supabase
+      .from('customers')
+      .select('is_member, membership_weeks_left')
+      .eq('id', customerId)
+      .single()
+    const shouldResetMembership = memberCheck?.is_member && (memberCheck.membership_weeks_left ?? 0) === 0
     await supabase
       .from('customers')
       .update({
         full_name: data.customerName,
         phone: data.customerPhone || null,
         ...(data.customerAddress ? { address: data.customerAddress } : {}),
+        ...(shouldResetMembership ? { is_member: false } : {}),
       })
       .eq('id', customerId)
   }
@@ -211,6 +220,100 @@ export async function processCheckout(
   }
 
   return { orderId: order.id, orderNumber: order.order_number }
+}
+
+export type PurchaseMembershipInput = {
+  customerId: string
+  customerName: string
+  customerPhone: string
+  customerAddress: string | null
+  shippingType: 'standard' | 'priority' | 'pickup'
+  pickupSpotId?: string | null
+  membershipWeeks: 4 | 8 | 12
+  items: CheckoutItem[]
+}
+
+export async function purchaseMembership(
+  data: PurchaseMembershipInput
+): Promise<{ checkoutUrl?: string; error?: string }> {
+  const supabase = createAdminClient()
+
+  const discounts = await getMembershipDiscounts()
+  const discountMap: Record<number, number> = { 4: discounts.w4, 8: discounts.w8, 12: discounts.w12 }
+  const discountPct = discountMap[data.membershipWeeks] ?? 10
+
+  const subtotal = data.items.reduce((s, i) => s + i.unitPrice * i.qty, 0)
+  const totalAmount = Math.round(subtotal * data.membershipWeeks * (1 - discountPct / 100))
+
+  // Actualizar datos del cliente
+  await supabase
+    .from('customers')
+    .update({
+      full_name: data.customerName,
+      phone: data.customerPhone || null,
+      ...(data.customerAddress ? { address: data.customerAddress } : {}),
+    })
+    .eq('id', data.customerId)
+
+  // Crear orden de compra de membresía
+  const { data: order, error: orderError } = await supabase
+    .from('orders')
+    .insert({
+      customer_id: data.customerId,
+      total_amount: totalAmount,
+      status: 'creado',
+      shipping_type: data.shippingType,
+      pickup_spot_id: data.pickupSpotId || null,
+      shipping_cost: 0,
+      is_membership_purchase: true,
+      membership_weeks: data.membershipWeeks,
+    })
+    .select('id, order_number')
+    .single()
+
+  if (orderError) {
+    console.error('Error creating membership purchase order:', orderError)
+    return { error: 'Error al crear la orden de membresía' }
+  }
+
+  const { error: itemsError } = await supabase.from('order_items').insert(
+    data.items.map(item => ({
+      order_id: order.id,
+      meal_id: item.mealId,
+      size_id: item.sizeId,
+      qty: item.qty,
+      unit_price: item.unitPrice,
+      package_instance_id: item.packageInstanceId ?? null,
+    }))
+  )
+
+  if (itemsError) {
+    await supabase.from('orders').delete().eq('id', order.id)
+    console.error('Error creating membership purchase order items:', itemsError)
+    return { error: 'Error al crear los items de la orden' }
+  }
+
+  const totalQty = data.items.reduce((n, i) => n + i.qty, 0)
+
+  const mpResult = await createPaymentPreference({
+    orderId: order.id,
+    customerName: data.customerName,
+    customerEmail: '',
+    customerPhone: data.customerPhone,
+    items: [{
+      name: `Membresia Muscle Meals - ${data.membershipWeeks} sem - ${totalQty} platillos sem - ${discountPct}% dto`,
+      unit_price: totalAmount,
+      quantity: 1,
+    }],
+  })
+
+  if (!mpResult.success || !mpResult.checkoutUrl) {
+    await supabase.from('order_items').delete().eq('order_id', order.id)
+    await supabase.from('orders').delete().eq('id', order.id)
+    return { error: mpResult.error ?? 'Error al crear preferencia de pago' }
+  }
+
+  return { checkoutUrl: mpResult.checkoutUrl }
 }
 
 export async function processMembershipOrder(

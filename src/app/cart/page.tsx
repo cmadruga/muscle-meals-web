@@ -1,4 +1,4 @@
-import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getCriticalPeriodConfig, getMembershipDiscounts } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { getActiveMeals } from '@/lib/db/meals'
@@ -10,11 +10,12 @@ import CartClient from './CartClient'
 export const dynamic = 'force-dynamic'
 
 export default async function CartPage() {
-  const [criticalConfig, pickupSpots, supabase, activeMeals] = await Promise.all([
+  const [criticalConfig, pickupSpots, supabase, activeMeals, membershipDiscounts] = await Promise.all([
     getCriticalPeriodConfig(),
     getActivePickupSpots(),
     createClient(),
     getActiveMeals(),
+    getMembershipDiscounts(),
   ])
   const inCutoff = isInCutoffWindow(criticalConfig)
 
@@ -83,6 +84,10 @@ export default async function CartPage() {
     }
   }
 
+  const canPurchaseMembership = Boolean(
+    prefill && (!membership?.is_member || (membership.membership_weeks_left ?? 0) === 0)
+  )
+
   return (
     <CartClient
       inCutoff={inCutoff}
@@ -92,6 +97,8 @@ export default async function CartPage() {
       pickupSpots={pickupSpots}
       usedMembershipThisWeek={usedMembershipThisWeek}
       activeMeals={activeMeals}
+      membershipDiscounts={membershipDiscounts}
+      canPurchaseMembership={canPurchaseMembership}
     />
   )
 }

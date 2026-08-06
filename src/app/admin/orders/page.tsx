@@ -8,7 +8,7 @@ import { getActiveMeals } from '@/lib/db/meals'
 import { getAllSizesWithCustomer } from '@/lib/db/sizes'
 import type { CustomerBasic } from '@/lib/db/customers'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
-import { getSalesEnabled, getCriticalPeriodConfig, getShippingStandard } from '@/lib/db/settings'
+import { getSalesEnabled, getCriticalPeriodConfig, getShippingStandard, getMembershipDiscounts } from '@/lib/db/settings'
 import { getMainSizes } from '@/lib/db/sizes'
 import OrdersTable from './OrdersTable'
 import WeekNav from '../components/WeekNav'
@@ -55,7 +55,7 @@ export default async function PanelOrdersPage({
   const supabase = await createClient()
   const admin = createAdminClient()
 
-  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, criticalPeriodConfig, mainSizes, shippingStandard] = await Promise.all([
+  const [orders, productionData, meals, sizes, customersRes, pickupSpots, salesEnabled, criticalPeriodConfig, mainSizes, shippingStandard, membershipDiscounts] = await Promise.all([
     getOrdersForWeek(admin, weekStart),
     getWeeklyProductionData(admin, weekStart),
     getActiveMeals(),
@@ -66,6 +66,7 @@ export default async function PanelOrdersPage({
     getCriticalPeriodConfig(),
     getMainSizes(),
     getShippingStandard(),
+    getMembershipDiscounts(),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
@@ -97,7 +98,7 @@ export default async function PanelOrdersPage({
           Pedidos
         </h1>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <SettingsDrawer salesEnabled={salesEnabled} criticalPeriodConfig={criticalPeriodConfig} mainSizes={mainSizes} shippingStandard={shippingStandard} />
+          <SettingsDrawer salesEnabled={salesEnabled} criticalPeriodConfig={criticalPeriodConfig} mainSizes={mainSizes} shippingStandard={shippingStandard} membershipDiscounts={membershipDiscounts} />
           <NewOrderButton
             weekStr={weekStr}
             meals={meals.map(m => ({ id: m.id, name: m.name }))}

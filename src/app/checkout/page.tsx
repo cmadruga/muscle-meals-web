@@ -6,13 +6,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
-import { getShippingStandard } from '@/lib/db/settings'
+import { getShippingStandard, getMembershipDiscounts } from '@/lib/db/settings'
 
 export default async function CheckoutPage() {
-  const [pickupSpots, supabase, shippingStandard] = await Promise.all([
+  const [pickupSpots, supabase, shippingStandard, membershipDiscounts] = await Promise.all([
     getActivePickupSpots(),
     createClient(),
     getShippingStandard(),
+    getMembershipDiscounts(),
   ])
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -62,6 +63,7 @@ export default async function CheckoutPage() {
       deliveryDateStr={formatDeliveryDate(deliveryDate)}
       membership={membership}
       shippingStandard={shippingStandard}
+      membershipDiscounts={membershipDiscounts}
     />
   )
 }
