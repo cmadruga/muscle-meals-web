@@ -381,12 +381,7 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
         <div style={{ flex: 1, minWidth: 200 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4, flexWrap: 'wrap' }}>
             <div style={{ fontSize: 16, fontWeight: 700, color: colors.white }}>{customer.full_name}</div>
-            {isGuest && (
-              <span style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', background: '#94a3b818', border: '1px solid #94a3b844', borderRadius: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}>
-                Sin cuenta
-              </span>
-            )}
-            {!isGuest && customer.is_member && (
+            {customer.is_member && (
               <span style={{ fontSize: 11, fontWeight: 700, color: colors.orange, background: colors.orange + '18', border: `1px solid ${colors.orange}44`, borderRadius: 10, padding: '2px 8px', whiteSpace: 'nowrap' }}>
                 Miembro · {customer.membership_weeks_left} sem
               </span>

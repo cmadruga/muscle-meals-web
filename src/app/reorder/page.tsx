@@ -4,7 +4,8 @@ import { redirect } from 'next/navigation'
 import RepetirClient from './RepetirClient'
 import type { CartItem } from '@/lib/store/cart'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
-import { getCriticalPeriodConfig } from '@/lib/db/settings'
+import { getCriticalPeriodConfig, getMembershipDiscounts } from '@/lib/db/settings'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { normalizePhone } from '@/lib/address-validation'
 
@@ -54,6 +55,7 @@ export type DisplayItem = {
   sizeName: string
   qty: number
   unitPrice: number
+  isSkipped?: boolean  // slot pendiente de reemplazo — pertenece al paquete pero aún no se eligió
 }
 
 export type DisplayPackage = {
@@ -74,12 +76,13 @@ export default async function RepetirPage() {
 
   const admin = createAdminClient()
 
-  const [{ data: customer }, pickupSpots] = await Promise.all([
+  const [{ data: customer }, pickupSpots, membershipDiscounts] = await Promise.all([
     admin.from('customers')
       .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items')
       .eq('user_id', user.id)
       .maybeSingle(),
     getActivePickupSpots(),
+    getMembershipDiscounts(),
   ])
 
   if (!customer) redirect('/cuenta/login?next=/reorder')
@@ -140,7 +143,8 @@ export default async function RepetirPage() {
         packages={[]} individuals={[]} displayPackages={[]} displayIndividuals={[]}
         skippedSlots={[]} sizeBlockedGroups={[]} mainSizes={[]} activeMealOptions={[]}
         orderDate={null} orderNumber={null}
-        prefill={prefill} membership={membership} pickupSpots={pickupSpots} usedMembershipThisWeek={usedMembershipThisWeek}
+        prefill={prefill} membership={membership} pickupSpots={pickupSpots}
+        usedMembershipThisWeek={usedMembershipThisWeek} membershipDiscounts={membershipDiscounts}
       />
     )
   }
@@ -234,7 +238,8 @@ export default async function RepetirPage() {
     return extraPackageMap.get(originalId)
   }
 
-  // Display: ALL items from the last order (active + sizeBlocked) shown as a read-only summary
+  // Display: ALL items from the last order (active + sizeBlocked + skipped) shown as a read-only summary.
+  // Skipped items that belong to a package appear as pending slots so the package count is correct.
   const displayPkgMap = new Map<string, DisplayItem[]>()
   const displayIndividuals: DisplayItem[] = []
   for (const item of [...activeItems, ...sizeBlockedItems]) {
@@ -243,6 +248,23 @@ export default async function RepetirPage() {
       sizeName: item.sizes?.name ?? '',
       qty: item.qty,
       unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
+    }
+    if (item.package_instance_id) {
+      const g = displayPkgMap.get(item.package_instance_id) ?? []
+      g.push(di)
+      displayPkgMap.set(item.package_instance_id, g)
+    } else {
+      displayIndividuals.push(di)
+    }
+  }
+  // Skipped items: include in their original package (if any) as pending slots
+  for (const item of skippedItems) {
+    const di: DisplayItem = {
+      mealName: item.meals?.name ?? 'Platillo',
+      sizeName: item.sizes?.name ?? '',
+      qty: item.qty,
+      unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
+      isSkipped: true,
     }
     if (item.package_instance_id) {
       const g = displayPkgMap.get(item.package_instance_id) ?? []
@@ -314,6 +336,7 @@ export default async function RepetirPage() {
       membership={membership}
       pickupSpots={pickupSpots}
       usedMembershipThisWeek={usedMembershipThisWeek}
+      membershipDiscounts={membershipDiscounts}
     />
   )
 }

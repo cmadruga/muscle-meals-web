@@ -86,9 +86,8 @@ export default async function CartPage() {
     }
   }
 
-  const canPurchaseMembership = Boolean(
-    prefill && (!membership?.is_member || (membership.membership_weeks_left ?? 0) === 0)
-  )
+  // Show the upsell to everyone (guests included) — guests get a login prompt on toggle
+  const canPurchaseMembership = !membership?.is_member || (membership.membership_weeks_left ?? 0) === 0
 
   return (
     <CartClient
