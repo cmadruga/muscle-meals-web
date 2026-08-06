@@ -88,3 +88,38 @@ export async function setShippingStandard(cents: number): Promise<void> {
     .from('site_settings')
     .upsert({ key: 'shipping_standard', value: cents, updated_at: new Date().toISOString() })
 }
+
+export type MembershipDiscounts = { w4: number; w8: number; w12: number }
+
+const DEFAULT_MEMBERSHIP_DISCOUNTS: MembershipDiscounts = { w4: 10, w8: 13, w12: 15 }
+
+/**
+ * Lee los descuentos por opción de membresía (porcentaje por semanas: 4/8/12).
+ */
+export async function getMembershipDiscounts(): Promise<MembershipDiscounts> {
+  try {
+    const { data, error } = await createAdminClient()
+      .from('site_settings')
+      .select('value')
+      .eq('key', 'membership_discounts')
+      .single()
+    if (error || !data) return DEFAULT_MEMBERSHIP_DISCOUNTS
+    const v = data.value as Partial<MembershipDiscounts>
+    return {
+      w4: v.w4 ?? DEFAULT_MEMBERSHIP_DISCOUNTS.w4,
+      w8: v.w8 ?? DEFAULT_MEMBERSHIP_DISCOUNTS.w8,
+      w12: v.w12 ?? DEFAULT_MEMBERSHIP_DISCOUNTS.w12,
+    }
+  } catch {
+    return DEFAULT_MEMBERSHIP_DISCOUNTS
+  }
+}
+
+/**
+ * Guarda los descuentos por opción de membresía.
+ */
+export async function setMembershipDiscounts(discounts: MembershipDiscounts): Promise<void> {
+  await createAdminClient()
+    .from('site_settings')
+    .upsert({ key: 'membership_discounts', value: discounts, updated_at: new Date().toISOString() })
+}

@@ -20,6 +20,7 @@ export type MembershipInfo = {
   membership_weeks_left: number
   membership_qty: number | null
   membership_size_id: string | null
+  membership_items: { size_id: string; qty: number }[] | null
 }
 
 const SHIPPING_COSTS = { standard: 4900, pickup: 0, priority: 0 }

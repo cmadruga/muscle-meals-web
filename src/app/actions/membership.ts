@@ -9,6 +9,7 @@ export async function updateMembership(
     membership_weeks_left: number
     membership_qty: number | null
     membership_size_id: string | null
+    membership_items?: { size_id: string; qty: number }[] | null
   }
 ): Promise<void> {
   const admin = createAdminClient()

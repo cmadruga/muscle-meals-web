@@ -34,6 +34,7 @@ export type CustomerRow = {
   membership_weeks_left: number
   membership_qty: number | null
   membership_size_id: string | null
+  membership_items: { size_id: string; qty: number }[] | null
   orders: CustomerOrder[]
   guestOrders: CustomerOrder[]  // orders made before creating account
 }
@@ -57,7 +58,7 @@ export default async function CustomersPage({
       .from('customers')
       .select(`
         id, full_name, email, phone, address, user_id, created_at,
-        is_member, membership_weeks_left, membership_qty, membership_size_id,
+        is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items,
         orders(
           id, order_number, created_at, total_amount, status,
           order_items(id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name))
@@ -114,6 +115,7 @@ export default async function CustomersPage({
     membership_weeks_left: c.membership_weeks_left ?? 0,
     membership_qty: c.membership_qty ?? null,
     membership_size_id: c.membership_size_id ?? null,
+    membership_items: (c.membership_items as { size_id: string; qty: number }[] | null) ?? null,
     orders: mapOrders(c.orders ?? []),
     guestOrders: [],  // filled below after guestRaw is processed
   }))
@@ -160,14 +162,18 @@ export default async function CustomersPage({
     c.guestOrders = mapOrders(preAccountOrders.get(key) ?? [])
   }
 
+  // Build map: real DB UUID → guest_${phoneKey} for highlight translation
+  const uuidToGuestId = new Map<string, string>()
   const guestCustomers: CustomerRow[] = []
   for (const [phoneKey, rows] of guestMap) {
     rows.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     const latest = rows[0]
     const allOrders = mapOrders(rows.flatMap((r: any) => r.orders ?? []))
     if (allOrders.length === 0) continue  // skip guests with no orders at all
+    const guestId = `guest_${phoneKey}`
+    for (const row of rows) { if (row.id) uuidToGuestId.set(row.id, guestId) }
     guestCustomers.push({
-      id: `guest_${phoneKey}`,
+      id: guestId,
       full_name: latest.full_name,
       email: '',
       phone: toE164(latest.phone),
@@ -178,12 +184,18 @@ export default async function CustomersPage({
       membership_weeks_left: 0,
       membership_qty: null,
       membership_size_id: null,
+      membership_items: null,
       orders: allOrders,
       guestOrders: [],
     })
   }
 
+  // Translate real UUID to guest synthetic ID if needed
+  const resolvedHighlightId = highlightId
+    ? (uuidToGuestId.get(highlightId) ?? highlightId)
+    : null
+
   const sizes: SizeOption[] = (sizesRaw ?? []).map((s: any) => ({ id: s.id, name: s.name, is_main: s.is_main ?? false, customer_id: s.customer_id ?? null }))
 
-  return <CustomersClient customers={customers} guestCustomers={guestCustomers} sizes={sizes} highlightId={highlightId} />
+  return <CustomersClient customers={customers} guestCustomers={guestCustomers} sizes={sizes} highlightId={resolvedHighlightId} />
 }

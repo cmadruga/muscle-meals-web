@@ -1,15 +1,17 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
-import { processCheckout, processMembershipOrder, validateCart } from '@/app/actions/checkout'
+import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
 import { createPaymentPreference } from '@/app/actions/payment'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
+import { checkMembershipMatch } from '@/lib/utils/membership'
 import LoginBanner from '@/components/LoginBanner'
 import { 
   isValidPostalCode,
@@ -29,6 +31,7 @@ type MembershipInfo = {
   membership_weeks_left: number
   membership_qty: number | null
   membership_size_id: string | null
+  membership_items: { size_id: string; qty: number }[] | null
 }
 
 export default function CheckoutClient({
@@ -37,12 +40,14 @@ export default function CheckoutClient({
   deliveryDateStr,
   membership,
   shippingStandard = 4900,
+  membershipDiscounts,
 }: {
   pickupSpots: PickupSpot[]
   prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
   deliveryDateStr?: string
   membership?: MembershipInfo | null
   shippingStandard?: number
+  membershipDiscounts?: MembershipDiscounts | null
 }) {
   const { items, getTotal } = useCartStore()
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
@@ -92,10 +97,30 @@ export default function CheckoutClient({
       ? true
       : isAddressComplete
   
+  // Compra de membresía — se inicializa desde localStorage (intent guardado en carrito)
+  const [membershipMode, setMembershipMode] = useState(false)
+  const [membershipWeeks, setMembershipWeeks] = useState<4 | 8 | 12>(4)
+
+  useEffect(() => {
+    if (!canPurchaseMembership) return
+    try {
+      const stored = localStorage.getItem('mm_membership_intent')
+      if (stored) {
+        const intent = JSON.parse(stored)
+        if (intent.enabled && [4, 8, 12].includes(intent.weeks)) {
+          setMembershipMode(true)
+          setMembershipWeeks(intent.weeks as 4 | 8 | 12)
+        }
+      }
+    } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Calcular total
   const subtotal = getTotal()
+  // Miembros no pagan envío
   const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
-  const shippingCost = SHIPPING_COSTS[shippingType]
+  const shippingCost = membershipMode ? 0 : SHIPPING_COSTS[shippingType]
   const total = subtotal + shippingCost
 
   // Validar pickup spot si es necesario
@@ -106,11 +131,68 @@ export default function CheckoutClient({
   const isMembershipMatch = Boolean(
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
-    membership.membership_qty !== null &&
-    membership.membership_size_id !== null &&
-    totalQty === membership.membership_qty &&
-    items.every(i => i.sizeId === membership!.membership_size_id)
+    membership && checkMembershipMatch(
+      items.map(i => ({ sizeId: i.sizeId, qty: i.qty })),
+      membership
+    )
   )
+
+  // Precio de compra de membresía
+  const canPurchaseMembership = Boolean(
+    prefill?.customerId &&
+    (!membership?.is_member || (membership.membership_weeks_left ?? 0) === 0)
+  )
+  const discountMap: Record<number, number> = {
+    4: membershipDiscounts?.w4 ?? 10,
+    8: membershipDiscounts?.w8 ?? 13,
+    12: membershipDiscounts?.w12 ?? 15,
+  }
+  const membershipDiscountPct = discountMap[membershipWeeks]
+  const membershipTotal = Math.round(subtotal * membershipWeeks * (1 - membershipDiscountPct / 100))
+
+  const handleMembershipPurchase = async () => {
+    if (!validatePhone(customerPhone)) { setError('Teléfono inválido (debe ser 10 dígitos)'); return }
+    if (!customerName.trim()) { setError('Por favor ingresa tu nombre completo'); return }
+    if (!addressValidated) { setError('Por favor completa la dirección'); return }
+    if (!prefill?.customerId) { setError('Necesitas iniciar sesión para comprar una membresía'); return }
+
+    setIsProcessing(true)
+    setError(null)
+
+    try {
+      const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
+      const fullAddress = shippingType === 'pickup'
+        ? null
+        : addressOption === 'saved'
+          ? savedAddress
+          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
+
+      const result = await purchaseMembership({
+        customerId: prefill.customerId,
+        customerName,
+        customerPhone: whatsappPhone,
+        customerAddress: fullAddress,
+        shippingType,
+        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
+        membershipWeeks,
+        items: items.map(item => ({
+          mealId: item.mealId,
+          mealName: item.mealName,
+          sizeId: item.sizeId,
+          sizeName: item.sizeName,
+          qty: item.qty,
+          unitPrice: item.unitPrice,
+          packageInstanceId: item.packageInstanceId,
+        })),
+      })
+
+      if (result.error) throw new Error(result.error)
+      if (result.checkoutUrl) window.location.href = result.checkoutUrl
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al procesar la membresía')
+      setIsProcessing(false)
+    }
+  }
 
   const handleMembershipCheckout = async () => {
     if (!validatePhone(customerPhone)) {
@@ -356,7 +438,10 @@ export default function CheckoutClient({
             subtotal={subtotal}
             shippingCost={shippingCost}
             shippingType={shippingType}
-            total={total}
+            total={membershipMode ? membershipTotal : total}
+            membershipMode={membershipMode}
+            membershipWeeks={membershipMode ? membershipWeeks : undefined}
+            membershipDiscountPct={membershipMode ? membershipDiscountPct : undefined}
           />
         </div>
 
@@ -368,6 +453,7 @@ export default function CheckoutClient({
           pickupSpots={pickupSpots}
           disabled={isProcessing}
           shippingStandard={shippingStandard}
+          membershipMode={membershipMode}
         />
 
         <CustomerForm
@@ -406,6 +492,7 @@ export default function CheckoutClient({
             {error}
           </div>
         )}
+
 
         {/* Membresía activa — Flow A */}
         {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
@@ -451,6 +538,30 @@ export default function CheckoutClient({
           >
             {isProcessing ? 'Procesando…' : 'Confirmar con membresía'}
           </button>
+        ) : membershipMode ? (
+          <button
+            onClick={handleMembershipPurchase}
+            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
+            className={(!isProcessing && addressValidated) ? 'franchise-stroke' : undefined}
+            style={{
+              width: '100%',
+              padding: '18px 24px',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              background: colors.orange,
+              color: colors.white,
+              border: 'none',
+              borderRadius: 8,
+              fontFamily: 'Franchise, sans-serif',
+              fontSize: 22,
+              letterSpacing: 0,
+              lineHeight: 1,
+              textTransform: 'uppercase',
+              opacity: isProcessing ? 0.6 : 1,
+              transition: 'all 0.2s',
+            }}
+          >
+            {isProcessing ? 'Procesando…' : 'Activar membresía'}
+          </button>
         ) : (
           <PaymentButton
             onClick={handleCheckout}
@@ -489,13 +600,16 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
   subtotal: number
   shippingCost: number
   shippingType: 'standard' | 'priority' | 'pickup'
   total: number
+  membershipMode?: boolean
+  membershipWeeks?: number
+  membershipDiscountPct?: number
 }) {
   const rowStyle: React.CSSProperties = {
     display: 'flex',
@@ -529,26 +643,23 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         marginTop: 16,
         padding: 20,
         background: colors.grayDark,
-        border: `2px solid ${colors.grayLight}`,
+        border: `2px solid ${membershipMode ? colors.orange : colors.grayLight}`,
         borderRadius: 12,
       }}>
         {/* Subtotal */}
         <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
-          <span>Subtotal:</span>
-          <span>${(subtotal / 100).toFixed(0)} MXN</span>
+          <span>Subtotal{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:</span>
+          <span>${(total / 100).toFixed(0)} MXN</span>
         </div>
 
         {/* Envío */}
         <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12 }}>
           <span>
             Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
-            {shippingType === 'pickup' && (
-              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Sin costo)</span>
-            )}
           </span>
-          <span style={{ textAlign: 'right' }}>
-            {shippingCost > 0 ? `$${(shippingCost / 100).toFixed(0)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
-            {shippingType === 'priority' && (
+          <span style={{ textAlign: 'right', color: membershipMode ? '#10b981' : undefined }}>
+            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(0)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
+            {!membershipMode && shippingType === 'priority' && (
               <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Estimado: $100-200)</span>
             )}
           </span>
@@ -975,7 +1086,7 @@ function CustomerForm({
   )
 }
 
-function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, shippingStandard = 4900 }: {
+function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, shippingStandard = 4900, membershipMode = false }: {
   selectedType: 'standard' | 'priority' | 'pickup'
   onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
   selectedPickupSpot: string
@@ -983,6 +1094,7 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
   pickupSpots: PickupSpot[]
   disabled: boolean
   shippingStandard?: number
+  membershipMode?: boolean
 }) {
   return (
     <div style={{ marginBottom: 32 }}>
@@ -1046,8 +1158,8 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                 }}>
                   Envío Estándar
                 </span>
-                <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: colors.white }}>
-                  - ${(shippingStandard / 100).toFixed(0)} MXN
+                <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: membershipMode ? '#10b981' : colors.white }}>
+                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(0)} MXN`}
                 </span>
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>

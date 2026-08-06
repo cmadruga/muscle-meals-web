@@ -36,15 +36,30 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
   onClose: () => void
   onSaved: () => void
 }) {
+  const initialItems = (): { size_id: string; qty: number }[] => {
+    if (customer.membership_items && customer.membership_items.length > 0) return customer.membership_items
+    if (customer.membership_size_id) return [{ size_id: customer.membership_size_id, qty: customer.membership_qty ?? 5 }]
+    return [{ size_id: '', qty: 5 }]
+  }
+
   const [isMember, setIsMember] = useState(customer.is_member)
   const [weeksLeft, setWeeksLeft] = useState(customer.membership_weeks_left)
-  const [qty, setQty] = useState(customer.membership_qty ?? 5)
-  const [sizeId, setSizeId] = useState(customer.membership_size_id ?? '')
+  const [membershipItems, setMembershipItems] = useState<{ size_id: string; qty: number }[]>(initialItems)
   const [fullName, setFullName] = useState(customer.full_name ?? '')
   const [phone, setPhone] = useState(customer.phone ?? '')
   const [address, setAddress] = useState(customer.address ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  const validItems = membershipItems.filter(i => i.size_id && i.qty > 0)
+  const totalQty = validItems.reduce((n, i) => n + i.qty, 0)
+
+  const updateItem = (idx: number, patch: Partial<{ size_id: string; qty: number }>) =>
+    setMembershipItems(prev => prev.map((it, i) => i === idx ? { ...it, ...patch } : it))
+  const removeItem = (idx: number) =>
+    setMembershipItems(prev => prev.filter((_, i) => i !== idx))
+  const addItem = () =>
+    setMembershipItems(prev => [...prev, { size_id: '', qty: 1 }])
 
   const handleSave = async () => {
     setSaving(true)
@@ -54,8 +69,9 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
         updateMembership(customer.id, {
           is_member: isMember,
           membership_weeks_left: isMember ? weeksLeft : 0,
-          membership_qty: isMember ? qty : null,
-          membership_size_id: isMember && sizeId ? sizeId : null,
+          membership_qty: isMember && validItems.length > 0 ? totalQty : null,
+          membership_size_id: isMember && validItems.length === 1 ? validItems[0].size_id : null,
+          membership_items: isMember && validItems.length > 0 ? validItems : null,
         }),
         updateCustomerContact(customer.id, {
           full_name: fullName.trim() || null,
@@ -135,22 +151,51 @@ function MembershipModal({ customer, sizes, onClose, onSaved }: {
             {field('Semanas restantes',
               <input type="number" min={0} value={weeksLeft} onChange={e => setWeeksLeft(Number(e.target.value))} style={inputStyle} />
             )}
-            {field('Platillos por semana',
-              <input type="number" min={1} value={qty} onChange={e => setQty(Number(e.target.value))} style={inputStyle} />
-            )}
-            {field('Tamaño',
-              <select value={sizeId} onChange={e => setSizeId(e.target.value)} style={inputStyle}>
-                <option value="">— Sin especificar —</option>
-                {sizes
-                  .filter(s => (s.customer_id === null && s.is_main) || s.customer_id === customer.id)
-                  .map(s => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}{s.customer_id === customer.id ? ' (personalizado)' : ''}
-                    </option>
-                  ))
-                }
-              </select>
-            )}
+
+            <div style={{ marginBottom: 14 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+                <label style={{ fontSize: 12, color: colors.textMuted }}>Composición semanal</label>
+                {totalQty > 0 && (
+                  <span style={{ fontSize: 12, color: colors.orange, fontWeight: 600 }}>{totalQty} platillos</span>
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {membershipItems.map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
+                    <select
+                      value={item.size_id}
+                      onChange={e => updateItem(idx, { size_id: e.target.value })}
+                      style={{ ...inputStyle, flex: 1 }}
+                    >
+                      <option value="">— Tamaño —</option>
+                      {sizes
+                        .filter(s => (s.customer_id === null && s.is_main) || s.customer_id === customer.id)
+                        .map(s => (
+                          <option key={s.id} value={s.id}>
+                            {s.name}{s.customer_id === customer.id ? ' (personalizado)' : ''}
+                          </option>
+                        ))
+                      }
+                    </select>
+                    <input
+                      type="number" min={1} value={item.qty}
+                      onChange={e => updateItem(idx, { qty: Math.max(1, Number(e.target.value)) })}
+                      style={{ ...inputStyle, width: 56, textAlign: 'center' }}
+                    />
+                    {membershipItems.length > 1 && (
+                      <button
+                        onClick={() => removeItem(idx)}
+                        style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 18, cursor: 'pointer', padding: '0 4px', lineHeight: 1 }}
+                      >×</button>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={addItem}
+                style={{ marginTop: 8, fontSize: 12, color: colors.orange, background: 'none', border: `1px solid ${colors.orange}55`, borderRadius: 6, padding: '5px 10px', cursor: 'pointer' }}
+              >+ Agregar tamaño</button>
+            </div>
           </>
         )}
 
@@ -676,7 +721,9 @@ export default function CustomersClient({ customers, guestCustomers, sizes, high
 }) {
   const router = useRouter()
   const [search, setSearch] = useState('')
-  const [tab, setTab] = useState<'cuenta' | 'invitado'>('cuenta')
+  const [tab, setTab] = useState<'cuenta' | 'invitado'>(
+    highlightId?.startsWith('guest_') ? 'invitado' : 'cuenta'
+  )
   const [waModalOpen, setWaModalOpen] = useState(false)
   const [configCustomer, setConfigCustomer] = useState<CustomerRow | null>(null)
   const [detailCustomer, setDetailCustomer] = useState<CustomerRow | null>(null)

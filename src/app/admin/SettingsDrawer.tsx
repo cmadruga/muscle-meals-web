@@ -6,6 +6,7 @@ import SalesToggle from './SalesToggle'
 import CriticalPeriodConfigPanel from './CriticalPeriodConfig'
 import PreciosPanel from './PreciosPanel'
 import type { CriticalPeriodConfig } from '@/lib/utils/delivery'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { Size } from '@/lib/types'
 
 export default function SettingsDrawer({
@@ -13,11 +14,13 @@ export default function SettingsDrawer({
   criticalPeriodConfig,
   mainSizes,
   shippingStandard,
+  membershipDiscounts,
 }: {
   salesEnabled: boolean
   criticalPeriodConfig: CriticalPeriodConfig
   mainSizes: Size[]
   shippingStandard: number
+  membershipDiscounts: MembershipDiscounts
 }) {
   const [open, setOpen] = useState(false)
 
@@ -110,7 +113,7 @@ export default function SettingsDrawer({
 
               {/* Precios */}
               <section>
-                <PreciosPanel mainSizes={mainSizes} shippingStandard={shippingStandard} />
+                <PreciosPanel mainSizes={mainSizes} shippingStandard={shippingStandard} membershipDiscounts={membershipDiscounts} />
               </section>
 
             </div>

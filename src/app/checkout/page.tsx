@@ -6,13 +6,14 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
-import { getShippingStandard } from '@/lib/db/settings'
+import { getShippingStandard, getMembershipDiscounts } from '@/lib/db/settings'
 
 export default async function CheckoutPage() {
-  const [pickupSpots, supabase, shippingStandard] = await Promise.all([
+  const [pickupSpots, supabase, shippingStandard, membershipDiscounts] = await Promise.all([
     getActivePickupSpots(),
     createClient(),
     getShippingStandard(),
+    getMembershipDiscounts(),
   ])
 
   const { data: { user } } = await supabase.auth.getUser()
@@ -24,12 +25,13 @@ export default async function CheckoutPage() {
     membership_weeks_left: number
     membership_qty: number | null
     membership_size_id: string | null
+    membership_items: { size_id: string; qty: number }[] | null
   } | null = null
 
   if (user) {
     const { data: customer } = await createAdminClient()
       .from('customers')
-      .select('id, full_name, email, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
+      .select('id, full_name, email, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items')
       .eq('user_id', user.id)
       .single()
 
@@ -49,6 +51,7 @@ export default async function CheckoutPage() {
         membership_weeks_left: customer.membership_weeks_left ?? 0,
         membership_qty: customer.membership_qty ?? null,
         membership_size_id: customer.membership_size_id ?? null,
+        membership_items: (customer.membership_items as { size_id: string; qty: number }[] | null) ?? null,
       }
     }
   }
@@ -62,6 +65,7 @@ export default async function CheckoutPage() {
       deliveryDateStr={formatDeliveryDate(deliveryDate)}
       membership={membership}
       shippingStandard={shippingStandard}
+      membershipDiscounts={membershipDiscounts}
     />
   )
 }

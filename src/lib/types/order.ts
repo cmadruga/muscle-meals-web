@@ -56,6 +56,8 @@ export interface Order {
   shipping_cost: number
   note: string | null
   payment_method: string | null
+  is_membership_purchase: boolean | null
+  membership_weeks: number | null
   created_at: string
   updated_at: string
 }

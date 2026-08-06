@@ -38,8 +38,11 @@ export default async function CuentaPage() {
     .eq('user_id', user.id)
     .maybeSingle()
 
-  // Fetch last order + membership size in parallel, then fetch items
-  const [lastOrderRes, sizeRes] = await Promise.all([
+  // Fetch last order + membership size names in parallel, then fetch items
+  const membershipItemsRaw = (customer?.membership_items ?? null) as { size_id: string; qty: number }[] | null
+  const membershipSizeIds = membershipItemsRaw?.map(i => i.size_id) ?? (customer?.membership_size_id ? [customer.membership_size_id] : [])
+
+  const [lastOrderRes, sizesRes] = await Promise.all([
     customer
       ? admin.from('orders').select('id, order_number, created_at, total_amount, status')
           .eq('customer_id', customer.id)
@@ -48,9 +51,9 @@ export default async function CuentaPage() {
           .limit(1)
           .maybeSingle()
       : Promise.resolve({ data: null }),
-    customer?.membership_size_id
-      ? admin.from('sizes').select('name').eq('id', customer.membership_size_id).maybeSingle()
-      : Promise.resolve({ data: null }),
+    membershipSizeIds.length > 0
+      ? admin.from('sizes').select('id, name').in('id', membershipSizeIds)
+      : Promise.resolve({ data: [] }),
   ])
 
   const lastOrder = lastOrderRes.data ?? null
@@ -60,7 +63,12 @@ export default async function CuentaPage() {
         .select('id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name)')
         .eq('order_id', lastOrder.id)
     : { data: [] }
-  const membershipSizeName = sizeRes.data?.name ?? null
+
+  // Build display label for membership composition
+  const sizeNameMap = new Map((sizesRes.data ?? []).map((s: any) => [s.id, s.name as string]))
+  const membershipComposition: string = membershipItemsRaw && membershipItemsRaw.length > 0
+    ? membershipItemsRaw.map(i => `${i.qty}×${sizeNameMap.get(i.size_id) ?? '?'}`).join(' + ')
+    : (sizeNameMap.get(customer?.membership_size_id ?? '') ?? null) ?? ''
 
   const initial = customer?.full_name?.charAt(0)?.toUpperCase() ?? user.email?.charAt(0)?.toUpperCase() ?? '?'
   const memberSince = customer?.created_at
@@ -146,13 +154,13 @@ export default async function CuentaPage() {
                   </p>
                 </div>
               )}
-              {membershipSizeName && (
+              {membershipComposition && (
                 <div style={{ background: `${colors.orange}18`, borderRadius: 10, padding: '12px 14px' }}>
-                  <p style={{ margin: 0, fontSize: 22, fontWeight: 700, color: colors.white }}>
-                    {membershipSizeName}
+                  <p style={{ margin: 0, fontSize: membershipComposition.includes('+') ? 14 : 22, fontWeight: 700, color: colors.white, lineHeight: 1.2 }}>
+                    {membershipComposition}
                   </p>
                   <p style={{ margin: '4px 0 0', fontSize: 13, color: colors.textMuted }}>
-                    Talla
+                    Composición
                   </p>
                 </div>
               )}

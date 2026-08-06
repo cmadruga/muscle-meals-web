@@ -11,6 +11,7 @@ import type {
 import { colors } from '@/lib/theme'
 import Link from 'next/link'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
+import { checkMembershipMatch } from '@/lib/utils/membership'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 
 interface Props {
@@ -93,27 +94,33 @@ export default function RepetirClient({
 
   const totalPrice = activePrice + blockedGroupsPrice + replacedPrice
 
-  // Membership match: all items same size and total qty matches
-  const activeGroupSizeIds = [
-    ...packages.flatMap(p => p.items.map(i => i.sizeId)),
-    ...individuals.map(i => i.sizeId),
-  ]
-  const blockedGroupSizeIds = sizeBlockedGroups.flatMap(g => {
+  // Membership match: build cart items as {sizeId, qty} for checkMembershipMatch
+  const reorderCartItems: { sizeId: string; qty: number }[] = []
+  for (const pkg of packages) {
+    for (const item of pkg.items) {
+      reorderCartItems.push({ sizeId: item.sizeId, qty: item.qty })
+    }
+  }
+  for (const item of individuals) {
+    reorderCartItems.push({ sizeId: item.sizeId, qty: item.qty })
+  }
+  for (const g of sizeBlockedGroups) {
     const sel = sizeGroupSelections[g.originalSizeId]
-    return g.slots.filter(s => !s.isSkipped).map(() => sel?.sizeId ?? g.originalSizeId)
-  })
-  const skippedSizeIds = skippedSlots.map(s => sizeGroupSelections[s.sizeId]?.sizeId ?? s.sizeId)
-  const allSizeIdsReorder = [...activeGroupSizeIds, ...blockedGroupSizeIds, ...skippedSizeIds]
+    const resolvedSizeId = sel?.sizeId ?? g.originalSizeId
+    const groupQty = g.slots.filter(s => !s.isSkipped).reduce((n, s) => n + s.qty, 0)
+    if (groupQty > 0) reorderCartItems.push({ sizeId: resolvedSizeId, qty: groupQty })
+  }
+  for (const slot of skippedSlots) {
+    const resolvedSizeId = sizeGroupSelections[slot.sizeId]?.sizeId ?? slot.sizeId
+    reorderCartItems.push({ sizeId: resolvedSizeId, qty: slot.qty })
+  }
 
   const isMembershipMatch = Boolean(
     !usedMembershipThisWeek &&
     membership.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
-    membership.membership_qty !== null &&
-    membership.membership_size_id !== null &&
-    totalQtyReorder === membership.membership_qty &&
-    allSizeIdsReorder.length > 0 &&
-    allSizeIdsReorder.every(sid => sid === membership.membership_size_id)
+    reorderCartItems.length > 0 &&
+    checkMembershipMatch(reorderCartItems, membership)
   )
 
   const buildItems = (): CartItem[] => {
