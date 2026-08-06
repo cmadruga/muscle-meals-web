@@ -11,8 +11,10 @@ import type {
 import { colors } from '@/lib/theme'
 import Link from 'next/link'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
+import { MembershipUpsellCard } from '@/components/MembershipUpsellCard'
 import { checkMembershipMatch } from '@/lib/utils/membership'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
+import type { MembershipDiscounts } from '@/lib/db/settings'
 
 interface Props {
   packages: PackageGroup[]
@@ -29,6 +31,7 @@ interface Props {
   membership: MembershipInfo
   pickupSpots: PickupSpot[]
   usedMembershipThisWeek: boolean
+  membershipDiscounts: MembershipDiscounts
 }
 
 type Selection = { mealId: string; mealName: string }
@@ -38,7 +41,7 @@ export default function RepetirClient({
   packages, individuals, displayPackages, displayIndividuals,
   skippedSlots, sizeBlockedGroups, mainSizes, activeMealOptions,
   orderDate, orderNumber,
-  prefill, membership, pickupSpots, usedMembershipThisWeek,
+  prefill, membership, pickupSpots, usedMembershipThisWeek, membershipDiscounts,
 }: Props) {
   const router = useRouter()
   const { addItem, clearCart } = useCartStore()
@@ -46,6 +49,8 @@ export default function RepetirClient({
   const [sizeGroupSelections, setSizeGroupSelections] = useState<Record<string, SizeSelection>>({})
   const [membershipModalOpen, setMembershipModalOpen] = useState(false)
   const [membershipItems, setMembershipItems] = useState<CartItem[]>([])
+  const [membershipMode, setMembershipMode] = useState(false)
+  const [membershipWeeks, setMembershipWeeks] = useState<4 | 8 | 12>(4)
 
   const needed = skippedSlots.length
   const remaining = needed - selected.length
@@ -87,7 +92,9 @@ export default function RepetirClient({
     return n + g.slots.filter(s => !s.isSkipped).reduce((m, s) => m + sel.unitPrice * s.qty, 0)
   }, 0)
 
-  const replacedPrice = skippedSlots.slice(0, selected.length).reduce((n, slot) => {
+  // Skipped slots always count toward the total — the customer will always pay for those slots
+  // (they just haven't chosen the replacement meal yet). Price uses group size override if available.
+  const replacedPrice = skippedSlots.reduce((n, slot) => {
     const groupSel = sizeGroupSelections[slot.sizeId]
     return n + (groupSel ? groupSel.unitPrice : slot.unitPrice) * slot.qty
   }, 0)
@@ -122,6 +129,19 @@ export default function RepetirClient({
     reorderCartItems.length > 0 &&
     checkMembershipMatch(reorderCartItems, membership)
   )
+
+  // Membership purchase upsell — only when NOT already an active member
+  const canPurchaseMembership = Boolean(
+    prefill.customerId &&
+    (!membership.is_member || (membership.membership_weeks_left ?? 0) === 0)
+  )
+  const discountMap: Record<number, number> = {
+    4: membershipDiscounts.w4,
+    8: membershipDiscounts.w8,
+    12: membershipDiscounts.w12,
+  }
+  const membershipDiscountPct = discountMap[membershipWeeks]
+  const membershipTotal = Math.round(totalPrice * membershipWeeks * (1 - membershipDiscountPct / 100))
 
   const buildItems = (): CartItem[] => {
     const result: CartItem[] = []
@@ -166,6 +186,11 @@ export default function RepetirClient({
   const handleRepetir = () => {
     clearCart()
     buildItems().forEach(item => addItem(item))
+    if (membershipMode && canPurchaseMembership) {
+      localStorage.setItem('mm_membership_intent', JSON.stringify({ enabled: true, weeks: membershipWeeks }))
+    } else {
+      localStorage.removeItem('mm_membership_intent')
+    }
     router.push('/checkout')
   }
 
@@ -202,16 +227,28 @@ export default function RepetirClient({
             padding: '12px 16px',
             borderBottom: i < items.length - 1 ? `1px solid ${colors.grayLight}` : 'none',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+            background: item.isSkipped ? '#f59e0b08' : undefined,
           }}>
-            <div>
-              <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
-              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {item.isSkipped && (
+                <span style={{ fontSize: 13, color: '#f59e0b' }}>⚠</span>
+              )}
+              <div>
+                <span style={{ fontSize: 15, color: item.isSkipped ? colors.textMuted : colors.white }}>
+                  {item.mealName}
+                </span>
+                {item.isSkipped ? (
+                  <span style={{ fontSize: 12, color: '#f59e0b', marginLeft: 8 }}>por elegir</span>
+                ) : (
+                  <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+                )}
+              </div>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <span style={{ fontSize: 13, color: colors.textMuted }}>
                 ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
               </span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+              <span style={{ fontSize: 14, fontWeight: 600, color: item.isSkipped ? colors.textMuted : colors.white, marginLeft: 10 }}>
                 ${(item.unitPrice * item.qty / 100).toFixed(0)}
               </span>
             </div>
@@ -461,7 +498,29 @@ export default function RepetirClient({
               )
             })}
 
-            {/* Membership banner */}
+            {/* Membership purchase upsell — for non-members */}
+            {canPurchaseMembership && !isMembershipMatch && (
+              <>
+              <div style={{ marginBottom: 10 }}>
+                <p style={{ margin: 0, fontSize: 26, fontWeight: 700, color: colors.white, lineHeight: 1 }}>
+                  ¿Pides Muscle Meals cada semana?
+                </p>
+                <p style={{ margin: '1px 0 0', fontSize: 17, color: colors.textMuted, lineHeight: 1.4 }}>
+                  Convierte tu pedido en una membresía y recibe beneficios adicionales.
+                </p>
+              </div>
+              <MembershipUpsellCard
+                membershipMode={membershipMode}
+                onToggle={() => setMembershipMode(m => !m)}
+                membershipWeeks={membershipWeeks}
+                onWeeksChange={setMembershipWeeks}
+                discountMap={discountMap}
+                isRenewal={false}
+              />
+              </>
+            )}
+
+            {/* Membership banner — for active members */}
             {membership.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
               <div style={{
                 padding: '16px 20px',
@@ -487,78 +546,129 @@ export default function RepetirClient({
             )}
 
             {/* Total */}
-            <div style={{
-              padding: 20,
-              background: colors.grayDark,
-              border: `2px solid ${colors.orange}`,
-              borderRadius: 12,
-              marginBottom: 24,
-            }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
-                {isMembershipMatch ? (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
+            {membershipMode && canPurchaseMembership ? (
+              <div style={{
+                padding: '24px 22px',
+                background: `${colors.orange}15`,
+                border: `3px solid ${colors.orange}`,
+                borderRadius: 14,
+                marginBottom: 24,
+              }}>
+                {/* Precio regular tachado × semanas */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+                  <span style={{ fontSize: 13, color: colors.textMuted }}>
+                    Precio regular × {membershipWeeks} sem.
+                  </span>
+                  <span style={{ fontSize: 13, color: colors.textMuted, textDecoration: 'line-through' }}>
+                    ${(totalPrice * membershipWeeks / 100).toFixed(0)} MXN
+                  </span>
+                </div>
+                <div style={{ height: 1, background: `${colors.orange}40`, marginBottom: 14 }} />
+                {/* Total membresía */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+                  <div>
+                    <div style={{ fontSize: 15, fontWeight: 700, color: colors.white, marginBottom: 8 }}>Total membresía:</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      <span style={{
+                        fontSize: 14, fontWeight: 700, color: colors.orange,
+                        background: `${colors.orange}28`, borderRadius: 20, padding: '5px 13px',
+                      }}>
+                        −{membershipDiscountPct}% descuento
+                      </span>
+                      <span style={{
+                        fontSize: 14, fontWeight: 700, color: '#10b981',
+                        background: '#10b98122', borderRadius: 20, padding: '5px 13px',
+                      }}>
+                        ✓ Envío siempre gratis
+                      </span>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: 26, fontWeight: 700, color: colors.orange, flexShrink: 0 }}>
+                    ${(membershipTotal / 100).toFixed(0)} MXN
+                  </span>
+                </div>
+              </div>
+            ) : (
+              <div style={{
+                padding: 20,
+                background: colors.grayDark,
+                border: `2px solid ${colors.orange}`,
+                borderRadius: 12,
+                marginBottom: 24,
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
+                  {isMembershipMatch ? (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
+                        ${(totalPrice / 100).toFixed(0)} MXN
+                      </span>
+                      <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
+                        $0 MXN
+                      </span>
+                    </div>
+                  ) : (
+                    <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
                       ${(totalPrice / 100).toFixed(0)} MXN
                     </span>
-                    <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-                      $0 MXN
-                    </span>
-                  </div>
-                ) : (
-                  <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-                    ${(totalPrice / 100).toFixed(0)} MXN
-                  </span>
-                )}
+                  )}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Action button */}
-            {isMembershipMatch ? (
-              <button
-                onClick={handleMembershipOpen}
-                disabled={!canProceed}
-                className={canProceed ? 'franchise-stroke' : undefined}
-                style={{
-                  width: '100%',
-                  padding: '16px 24px',
-                  background: canProceed ? colors.orange : colors.grayDark,
-                  color: canProceed ? colors.white : colors.textMuted,
-                  border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
-                  borderRadius: 8,
-                  fontFamily: 'Franchise, sans-serif',
-                  fontSize: canProceed ? 22 : 16,
-                  letterSpacing: 0,
-                  lineHeight: 1,
-                  textTransform: 'uppercase',
-                  cursor: canProceed ? 'pointer' : 'not-allowed',
-                }}
-              >
-                {remaining > 0 ? `Elige ${remaining} más para continuar` : !allSizesSelected ? 'Elige tamaños para continuar' : 'Confirmar con membresía'}
-              </button>
-            ) : (
-              <button
-                onClick={handleRepetir}
-                disabled={!canProceed}
-                className={canProceed ? 'franchise-stroke' : undefined}
-                style={{
-                  width: '100%',
-                  padding: '16px 24px',
-                  background: canProceed ? colors.orange : colors.grayDark,
-                  color: canProceed ? colors.white : colors.textMuted,
-                  border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
-                  borderRadius: 8,
-                  fontFamily: 'Franchise, sans-serif',
-                  fontSize: canProceed ? 22 : 16,
-                  letterSpacing: 0,
-                  lineHeight: 1,
-                  textTransform: 'uppercase',
-                  cursor: canProceed ? 'pointer' : 'not-allowed',
-                }}
-              >
-                {remaining > 0 ? `Elige ${remaining} más para continuar` : !allSizesSelected ? 'Elige tamaños para continuar' : 'Volver a pedir →'}
-              </button>
-            )}
+            {(() => {
+              const btnDisabled = !canProceed
+              const btnLabel = remaining > 0
+                ? `Elige ${remaining} más para continuar`
+                : !allSizesSelected
+                  ? 'Elige tamaños para continuar'
+                  : null
+              const sharedStyle = {
+                width: '100%',
+                padding: '16px 24px',
+                background: canProceed ? colors.orange : colors.grayDark,
+                color: canProceed ? colors.white : colors.textMuted,
+                border: canProceed ? 'none' : `1px solid ${colors.grayLight}`,
+                borderRadius: 8,
+                fontFamily: 'Franchise, sans-serif',
+                fontSize: canProceed ? 22 : 16,
+                letterSpacing: 0,
+                lineHeight: 1,
+                textTransform: 'uppercase' as const,
+                cursor: canProceed ? 'pointer' : 'not-allowed',
+              }
+              if (isMembershipMatch) return (
+                <button
+                  onClick={handleMembershipOpen}
+                  disabled={btnDisabled}
+                  className={canProceed ? 'franchise-stroke' : undefined}
+                  style={sharedStyle}
+                >
+                  {btnLabel ?? 'Confirmar con membresía'}
+                </button>
+              )
+              if (membershipMode && canPurchaseMembership) return (
+                <button
+                  onClick={handleRepetir}
+                  disabled={btnDisabled}
+                  className={canProceed ? 'franchise-stroke' : undefined}
+                  style={sharedStyle}
+                >
+                  {btnLabel ?? 'Activar membresía →'}
+                </button>
+              )
+              return (
+                <button
+                  onClick={handleRepetir}
+                  disabled={btnDisabled}
+                  className={canProceed ? 'franchise-stroke' : undefined}
+                  style={sharedStyle}
+                >
+                  {btnLabel ?? 'Volver a pedir →'}
+                </button>
+              )
+            })()}
           </>
         )}
       </div>

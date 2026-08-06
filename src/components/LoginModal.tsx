@@ -7,6 +7,12 @@ import { colors } from '@/lib/theme'
 interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
+  /** Override the redirect after OAuth (default: current origin + /auth/callback → /cuenta) */
+  redirectTo?: string
+  /** Override the modal title */
+  title?: string
+  /** Override the modal subtitle */
+  description?: string
 }
 
 function GoogleIcon() {
@@ -20,12 +26,15 @@ function GoogleIcon() {
   )
 }
 
-export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, redirectTo, title, description }: LoginModalProps) {
   const handleGoogleLogin = async () => {
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/auth/callback`
     const supabase = createClient()
     await supabase.auth.signInWithOAuth({
       provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: { redirectTo: callbackUrl },
     })
   }
 
@@ -36,10 +45,10 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           Muscle Meals
         </p>
         <h2 style={{ color: colors.white, fontSize: 22, fontWeight: 700, marginBottom: 8 }}>
-          Inicia sesión
+          {title ?? 'Inicia sesión'}
         </h2>
         <p style={{ color: colors.textMuted, fontSize: 14, marginBottom: 32, lineHeight: 1.5 }}>
-          Guarda tu historial de órdenes y accede rápido a tu información.
+          {description ?? 'Guarda tu historial de órdenes y accede rápido a tu información.'}
         </p>
 
         <button
