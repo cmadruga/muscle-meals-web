@@ -34,6 +34,7 @@ export type CustomerRow = {
   membership_weeks_left: number
   membership_qty: number | null
   membership_size_id: string | null
+  membership_items: { size_id: string; qty: number }[] | null
   orders: CustomerOrder[]
   guestOrders: CustomerOrder[]  // orders made before creating account
 }
@@ -57,7 +58,7 @@ export default async function CustomersPage({
       .from('customers')
       .select(`
         id, full_name, email, phone, address, user_id, created_at,
-        is_member, membership_weeks_left, membership_qty, membership_size_id,
+        is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items,
         orders(
           id, order_number, created_at, total_amount, status,
           order_items(id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name))
@@ -114,6 +115,7 @@ export default async function CustomersPage({
     membership_weeks_left: c.membership_weeks_left ?? 0,
     membership_qty: c.membership_qty ?? null,
     membership_size_id: c.membership_size_id ?? null,
+    membership_items: (c.membership_items as { size_id: string; qty: number }[] | null) ?? null,
     orders: mapOrders(c.orders ?? []),
     guestOrders: [],  // filled below after guestRaw is processed
   }))
@@ -182,6 +184,7 @@ export default async function CustomersPage({
       membership_weeks_left: 0,
       membership_qty: null,
       membership_size_id: null,
+      membership_items: null,
       orders: allOrders,
       guestOrders: [],
     })

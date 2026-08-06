@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { updateOrderStatus, updatePaymentGatewayId, getOrderById, getOrderWithItems } from '@/lib/db/orders'
 import { getCustomerById } from '@/lib/db/customers'
 import { updateMembership } from '@/app/actions/membership'
+import { buildMembershipItems } from '@/lib/utils/membership'
 import { deductExtraStockForOrder } from '@/lib/db/extra-stock'
 import { sendPaymentConfirmation, sendInternalOrderAlert } from '@/lib/whatsapp'
 
@@ -66,12 +67,15 @@ export async function POST(request: NextRequest) {
   // Activar membresía si aplica
   let membershipActivated = false
   if (order.is_membership_purchase && order.membership_weeks && order.customer_id) {
-    const sizeId = orderWithItems?.items[0]?.size_id ?? null
+    const orderItems = orderWithItems?.items ?? []
+    const membershipItems = buildMembershipItems(orderItems.map(i => ({ size_id: i.size_id, qty: i.qty })))
+    const singleSizeId = membershipItems.length === 1 ? membershipItems[0].size_id : null
     await updateMembership(order.customer_id, {
       is_member: true,
       membership_weeks_left: order.membership_weeks - 1,
       membership_qty: totalQty || null,
-      membership_size_id: sizeId,
+      membership_size_id: singleSizeId,
+      membership_items: membershipItems,
     })
     membershipActivated = true
     console.log(`✅ [TEST] Membresía activada: cliente ${order.customer_id} · ${order.membership_weeks} sem.`)

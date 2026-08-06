@@ -44,6 +44,7 @@ export default async function CartPage() {
     membership_weeks_left: number
     membership_qty: number | null
     membership_size_id: string | null
+    membership_items: { size_id: string; qty: number }[] | null
   } | null = null
   let usedMembershipThisWeek = false
 
@@ -51,7 +52,7 @@ export default async function CartPage() {
     const admin = createAdminClient()
     const { data: customer } = await admin
       .from('customers')
-      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
+      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items')
       .eq('user_id', user.id)
       .maybeSingle()
 
@@ -68,6 +69,7 @@ export default async function CartPage() {
         membership_weeks_left: customer.membership_weeks_left ?? 0,
         membership_qty: customer.membership_qty ?? null,
         membership_size_id: customer.membership_size_id ?? null,
+        membership_items: (customer.membership_items as { size_id: string; qty: number }[] | null) ?? null,
       }
 
       if (customer.is_member) {

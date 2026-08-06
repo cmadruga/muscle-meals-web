@@ -6,6 +6,7 @@ import { getExtraStockForWeek } from '@/lib/db/extra-stock'
 import { getCriticalPeriodConfig, getMembershipDiscounts } from '@/lib/db/settings'
 import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
 import { createPaymentPreference } from '@/app/actions/payment'
+import { checkMembershipMatch } from '@/lib/utils/membership'
 
 export type CheckoutItem = {
   mealId: string
@@ -328,7 +329,7 @@ export async function processMembershipOrder(
   // Re-verificar membresía server-side
   const { data: customer } = await supabase
     .from('customers')
-    .select('id, phone, full_name, is_member, membership_weeks_left, membership_qty, membership_size_id')
+    .select('id, phone, full_name, is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items')
     .eq('id', data.customerId)
     .single()
 
@@ -350,11 +351,16 @@ export async function processMembershipOrder(
     return { orderId: '', orderNumber: '', error: 'Ya tienes un pedido esta semana — solo se permite uno por membresía' }
   }
 
-  // Re-verificar que el carrito coincide exactamente
-  const totalQty = data.items.reduce((n, i) => n + i.qty, 0)
-  const allMatchSize = data.items.every(i => i.sizeId === customer.membership_size_id)
-  if (totalQty !== customer.membership_qty || !allMatchSize) {
-    return { orderId: '', orderNumber: '', error: 'El carrito no coincide con la membresía — verifica cantidad y tamaño' }
+  // Re-verificar que el carrito coincide exactamente con la membresía
+  const cartMatches = checkMembershipMatch(
+    data.items.map(i => ({ sizeId: i.sizeId, qty: i.qty })),
+    {
+      membership_qty: customer.membership_qty ?? null,
+      membership_items: (customer.membership_items as { size_id: string; qty: number }[] | null) ?? null,
+    }
+  )
+  if (!cartMatches) {
+    return { orderId: '', orderNumber: '', error: 'El carrito no coincide con la membresía — verifica cantidad y tamaños' }
   }
 
   // Actualizar datos del cliente
@@ -411,6 +417,7 @@ export async function processMembershipOrder(
     .eq('id', data.customerId)
 
   // WhatsApp al cliente
+  const totalQty = data.items.reduce((n, i) => n + i.qty, 0)
   if (customer.phone) {
     await sendPaymentConfirmation(
       customer.phone,

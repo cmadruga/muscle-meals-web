@@ -12,6 +12,7 @@ import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { validateCart } from '@/app/actions/checkout'
+import { checkMembershipMatch } from '@/lib/utils/membership'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { MembershipConfirmModal, type PrefillInfo, type MembershipInfo } from '@/components/MembershipConfirmModal'
 import type { Meal } from '@/lib/types'
@@ -91,10 +92,10 @@ export default function CartClient({
     !usedMembershipThisWeek &&
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
-    membership.membership_qty !== null &&
-    membership.membership_size_id !== null &&
-    totalQty === membership.membership_qty &&
-    items.every(i => i.sizeId === membership!.membership_size_id)
+    membership && checkMembershipMatch(
+      items.map(i => ({ sizeId: i.sizeId, qty: i.qty })),
+      membership
+    )
   )
 
   const handleCheckout = async () => {

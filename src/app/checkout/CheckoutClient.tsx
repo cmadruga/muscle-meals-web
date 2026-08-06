@@ -11,6 +11,7 @@ import type { CartItem } from '@/lib/store/cart'
 import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
+import { checkMembershipMatch } from '@/lib/utils/membership'
 import LoginBanner from '@/components/LoginBanner'
 import { 
   isValidPostalCode,
@@ -30,6 +31,7 @@ type MembershipInfo = {
   membership_weeks_left: number
   membership_qty: number | null
   membership_size_id: string | null
+  membership_items: { size_id: string; qty: number }[] | null
 }
 
 export default function CheckoutClient({
@@ -129,10 +131,10 @@ export default function CheckoutClient({
   const isMembershipMatch = Boolean(
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
-    membership.membership_qty !== null &&
-    membership.membership_size_id !== null &&
-    totalQty === membership.membership_qty &&
-    items.every(i => i.sizeId === membership!.membership_size_id)
+    membership && checkMembershipMatch(
+      items.map(i => ({ sizeId: i.sizeId, qty: i.qty })),
+      membership
+    )
   )
 
   // Precio de compra de membresía

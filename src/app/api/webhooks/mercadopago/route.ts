@@ -5,6 +5,7 @@ import { updateOrderStatus, updatePaymentGatewayId, getOrderById, getOrderWithIt
 import { getCustomerById } from '@/lib/db/customers'
 import { sendPaymentConfirmation, sendPaymentPending, sendInternalOrderAlert } from '@/lib/whatsapp'
 import { updateMembership } from '@/app/actions/membership'
+import { buildMembershipItems } from '@/lib/utils/membership'
 
 const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN!
 const MP_WEBHOOK_SECRET = process.env.MP_WEBHOOK_SECRET
@@ -106,13 +107,16 @@ export async function POST(request: NextRequest) {
 
       // Si es compra de membresía → activar automáticamente
       if (order.is_membership_purchase && order.membership_weeks && order.customer_id) {
-        const totalQty = (orderWithItems?.items ?? []).reduce((n, i) => n + i.qty, 0)
-        const sizeId = orderWithItems?.items[0]?.size_id ?? null
+        const orderItems = orderWithItems?.items ?? []
+        const totalQty = orderItems.reduce((n, i) => n + i.qty, 0)
+        const membershipItems = buildMembershipItems(orderItems.map(i => ({ size_id: i.size_id, qty: i.qty })))
+        const singleSizeId = membershipItems.length === 1 ? membershipItems[0].size_id : null
         await updateMembership(order.customer_id, {
           is_member: true,
           membership_weeks_left: order.membership_weeks - 1,
           membership_qty: totalQty || null,
-          membership_size_id: sizeId,
+          membership_size_id: singleSizeId,
+          membership_items: membershipItems,
         })
         console.log(`✅ Membresía activada: cliente ${order.customer_id} · ${order.membership_weeks} sem.`)
       }

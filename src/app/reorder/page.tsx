@@ -76,7 +76,7 @@ export default async function RepetirPage() {
 
   const [{ data: customer }, pickupSpots] = await Promise.all([
     admin.from('customers')
-      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id')
+      .select('id, full_name, phone, address, is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items')
       .eq('user_id', user.id)
       .maybeSingle(),
     getActivePickupSpots(),
@@ -97,6 +97,7 @@ export default async function RepetirPage() {
     membership_weeks_left: customer.membership_weeks_left ?? 0,
     membership_qty: customer.membership_qty ?? null,
     membership_size_id: customer.membership_size_id ?? null,
+    membership_items: (customer.membership_items as { size_id: string; qty: number }[] | null) ?? null,
   }
 
   let usedMembershipThisWeek = false
