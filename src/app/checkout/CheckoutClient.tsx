@@ -61,6 +61,7 @@ export default function CheckoutClient({
   const [appliedDiscount, setAppliedDiscount] = useState<ValidatedDiscount | null>(null)
   const [discountError, setDiscountError] = useState('')
   const [discountLoading, setDiscountLoading] = useState(false)
+  const [autoDiscountNotif, setAutoDiscountNotif] = useState<string | null>(null)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
@@ -121,6 +122,24 @@ export default function CheckoutClient({
         }
       }
     } catch {}
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  // Descuentos automáticos (sin código) — se verifican al cargar
+  useEffect(() => {
+    const subtotalNow = getTotal()
+    if (subtotalNow === 0) return
+    validateDiscount({
+      customerId: prefill?.customerId ?? null,
+      subtotal: subtotalNow,
+      itemCount: items.reduce((n, i) => n + i.qty, 0),
+      shippingCost: shippingStandard, // envío estándar como base
+    }).then(({ discount }) => {
+      if (discount) {
+        setAppliedDiscount(discount)
+        setAutoDiscountNotif(discount.name)
+      }
+    })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -481,6 +500,14 @@ export default function CheckoutClient({
             discountAmount={discountAmount}
           />
 
+          {/* Notificación descuento automático */}
+          {autoDiscountNotif && (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98118', border: '1px solid #10b98145', borderRadius: 8 }}>
+              <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>🎉 ¡Descuento aplicado automáticamente: {autoDiscountNotif}!</span>
+              <button onClick={() => setAutoDiscountNotif(null)} style={{ background: 'transparent', border: 'none', color: '#10b98180', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'inherit' }}>×</button>
+            </div>
+          )}
+
           {/* Código promo */}
           {!appliedDiscount ? (
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
@@ -490,20 +517,20 @@ export default function CheckoutClient({
                 onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
                 placeholder="Código de descuento"
                 disabled={discountLoading}
-                style={{ flex: 1, background: '#1a1a1a', border: `1px solid ${discountError ? '#ef4444' : '#333'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none' }}
+                style={{ flex: 1, background: '#242424', border: `1px solid ${discountError ? '#ef4444' : '#555'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
               />
               <button
                 onClick={handleApplyDiscount}
                 disabled={discountLoading || !discountCode.trim()}
-                style={{ padding: '10px 18px', borderRadius: 8, border: 'none', background: discountCode.trim() ? '#333' : '#1a1a1a', color: discountCode.trim() ? '#fff' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.15s' }}
+                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : '#2a2a2a', color: discountCode.trim() ? '#111' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit' }}
               >
                 {discountLoading ? '…' : 'Aplicar'}
               </button>
             </div>
           ) : (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98115', border: '1px solid #10b98140', borderRadius: 8 }}>
-              <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600 }}>✓ {appliedDiscount.label}</span>
-              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: 'none', color: '#666', cursor: 'pointer', fontSize: 13, padding: '0 4px' }}>Quitar</button>
+              <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>✓ {appliedDiscount.name}</span>
+              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: '1px solid #ef444460', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '4px 10px', fontFamily: 'inherit', transition: 'all 0.15s' }}>Quitar</button>
             </div>
           )}
           {discountError && (
@@ -717,7 +744,7 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         {/* Subtotal */}
         <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
           <span>Subtotal{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:</span>
-          <span>${(total / 100).toFixed(0)} MXN</span>
+          <span>${((membershipMode ? total : subtotal) / 100).toFixed(2)} MXN</span>
         </div>
 
         {/* Envío */}
@@ -726,7 +753,7 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
             Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
           </span>
           <span style={{ textAlign: 'right', color: membershipMode ? '#10b981' : undefined }}>
-            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(0)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
+            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(2)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
             {!membershipMode && shippingType === 'priority' && (
               <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Estimado: $100-200)</span>
             )}
@@ -736,8 +763,8 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         {/* Descuento */}
         {appliedDiscount && discountAmount > 0 && (
           <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12, color: '#10b981' }}>
-            <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.label}):</span>
-            <span style={{ fontWeight: 700 }}>-${(discountAmount / 100).toFixed(0)} MXN</span>
+            <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.name}):</span>
+            <span style={{ fontWeight: 700 }}>-${(discountAmount / 100).toFixed(2)} MXN</span>
           </div>
         )}
 
@@ -745,7 +772,7 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-            ${(total / 100).toFixed(0)} MXN
+            ${(total / 100).toFixed(2)} MXN
           </span>
         </div>
       </div>
@@ -765,7 +792,7 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         alignItems: 'center'
       }}>
         <strong style={{ color: colors.orange }}>{pkg.packageName} · x{pkg.totalMeals}</strong>
-        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
+        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</strong>
       </div>
 
       {/* Package items — merged by mealId+sizeId */}
@@ -795,10 +822,10 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <span style={{ fontSize: 12, color: colors.textMuted }}>
-                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
               </span>
               <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+                ${(item.unitPrice * item.qty / 100).toFixed(2)}
               </span>
             </div>
           </div>
@@ -833,10 +860,10 @@ function IndividualItemSummary({ item, showBorder }: {
       </div>
       <div style={{ textAlign: 'right' }}>
         <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
-          ${(item.unitPrice / 100).toFixed(0)} MXN c/u
+          ${(item.unitPrice / 100).toFixed(2)} MXN c/u
         </p>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold', color: colors.white }}>
-          ${(item.unitPrice * item.qty / 100).toFixed(0)} MXN
+          ${(item.unitPrice * item.qty / 100).toFixed(2)} MXN
         </p>
       </div>
     </div>
@@ -1235,7 +1262,7 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                   Envío Estándar
                 </span>
                 <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: membershipMode ? '#10b981' : colors.white }}>
-                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(0)} MXN`}
+                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(2)} MXN`}
                 </span>
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>

@@ -22,7 +22,7 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })
 }
 function fmtAmt(cents: number) {
-  return `$${(cents / 100).toFixed(0)} MXN`
+  return `$${(cents / 100).toFixed(2)} MXN`
 }
 function lastOrderTs(c: CustomerRow): number {
   return c.orders[0] ? new Date(c.orders[0].created_at).getTime() : new Date(c.created_at).getTime()

@@ -14,8 +14,6 @@ export type DiscountFormData = {
   min_items: number | null
   min_amount: number | null // centavos
   valid_days: number[] | null
-  max_uses: number | null
-  max_uses_per_customer: number | null
   active: boolean
   starts_at: string | null
   expires_at: string | null
@@ -162,7 +160,7 @@ export async function validateDiscount(
 
     // Min amount
     if (d.min_amount !== null && subtotal < d.min_amount) {
-      if (code) return { discount: null, error: `Requiere mínimo $${(d.min_amount / 100).toFixed(0)} MXN` }
+      if (code) return { discount: null, error: `Requiere mínimo $${(d.min_amount / 100).toFixed(2)} MXN` }
       continue
     }
 
@@ -194,31 +192,6 @@ export async function validateDiscount(
       }
     }
 
-    // Global usage limit
-    if (d.max_uses !== null) {
-      const { count } = await supabase
-        .from('discount_uses')
-        .select('id', { count: 'exact', head: true })
-        .eq('discount_id', d.id)
-      if ((count ?? 0) >= d.max_uses) {
-        if (code) return { discount: null, error: 'Código agotado' }
-        continue
-      }
-    }
-
-    // Per-customer usage limit
-    if (d.max_uses_per_customer !== null && customerId) {
-      const { count } = await supabase
-        .from('discount_uses')
-        .select('id', { count: 'exact', head: true })
-        .eq('discount_id', d.id)
-        .eq('customer_id', customerId)
-      if ((count ?? 0) >= d.max_uses_per_customer) {
-        if (code) return { discount: null, error: 'Ya usaste este descuento' }
-        continue
-      }
-    }
-
     // Compute amount
     let discountAmount = 0
     if (d.type === 'percent') {
@@ -231,7 +204,7 @@ export async function validateDiscount(
 
     let valueLabel = ''
     if (d.type === 'percent') valueLabel = `-${d.value}%`
-    else if (d.type === 'fixed') valueLabel = `-$${(d.value / 100).toFixed(0)}`
+    else if (d.type === 'fixed') valueLabel = `-$${(d.value / 100).toFixed(2)}`
     else valueLabel = 'Envío gratis'
 
     const label = d.code ? `${d.code} (${valueLabel})` : `${d.name} (${valueLabel})`
@@ -243,6 +216,7 @@ export async function validateDiscount(
         value: d.value,
         discountAmount,
         label,
+        name: d.name,
       },
     }
   }

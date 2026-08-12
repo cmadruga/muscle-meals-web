@@ -22,7 +22,7 @@ function randomCode() {
 
 function typeLabel(d: Discount) {
   if (d.type === 'percent') return `${d.value}% off`
-  if (d.type === 'fixed') return `-$${(d.value / 100).toFixed(0)}`
+  if (d.type === 'fixed') return `-$${(d.value / 100).toFixed(2)}`
   return 'Envío gratis'
 }
 
@@ -53,7 +53,6 @@ type Step1 = {
   condition_value: string
   min_items: string
   min_amount: string   // pesos
-  max_uses: string
 }
 
 type ActiveMode = 'active' | 'scheduled' | 'inactive'
@@ -68,7 +67,7 @@ type Step2 = {
 const emptyStep1 = (): Step1 => ({
   name: '', code: '', type: 'percent', value: '10',
   condition_type: 'always', condition_value: '',
-  min_items: '', min_amount: '', max_uses: '',
+  min_items: '', min_amount: '',
 })
 
 const emptyStep2 = (): Step2 => ({ activeMode: 'active', starts_at: '', hasExpiry: false, expires_at: '' })
@@ -83,7 +82,6 @@ function discountToStep1(d: Discount): Step1 {
     condition_value: d.condition_value != null ? String(d.condition_value) : '',
     min_items: d.min_items != null ? String(d.min_items) : '',
     min_amount: d.min_amount != null ? String(d.min_amount / 100) : '',
-    max_uses: d.max_uses != null ? String(d.max_uses) : '',
   }
 }
 
@@ -115,8 +113,6 @@ function buildFormData(s1: Step1, s2: Step2): DiscountFormData {
     min_items: s1.min_items ? (parseInt(s1.min_items) || null) : null,
     min_amount: s1.min_amount ? Math.round((parseFloat(s1.min_amount) || 0) * 100) : null,
     valid_days: null,
-    max_uses: s1.condition_type === 'first_order' ? null : (s1.max_uses ? parseInt(s1.max_uses) || null : null),
-    max_uses_per_customer: isCode ? 1 : null,
     active: s2.activeMode !== 'inactive',
     starts_at: s2.activeMode === 'scheduled' && s2.starts_at
       ? new Date(s2.starts_at + 'T00:00:00').toISOString() : null,
@@ -299,13 +295,6 @@ function DiscountModal({ discount, onClose }: { discount: Discount | null; onClo
                 </div>
               </div>
 
-              {/* Límite de usos — oculto para primer pedido */}
-              {s1.condition_type !== 'first_order' && (
-                <div>
-                  <label style={lbl}>Límite de usos totales por cliente</label>
-                  <input style={inp} type="number" min={0} value={s1.max_uses} onChange={e => set1('max_uses', e.target.value)} placeholder="Ilimitado" />
-                </div>
-              )}
             </div>
 
           </div>
@@ -484,9 +473,9 @@ export default function DescuentosTab({ discounts }: { discounts: Discount[] }) 
                     <td style={{ padding: '12px', color: colors.textSecondary, fontSize: 13 }}>
                       {conditionLabel(d)}
                       {d.min_items && <div style={{ fontSize: 11, color: colors.textMuted }}>≥{d.min_items} platos</div>}
-                      {d.min_amount && <div style={{ fontSize: 11, color: colors.textMuted }}>≥${(d.min_amount / 100).toFixed(0)} MXN</div>}
+                      {d.min_amount && <div style={{ fontSize: 11, color: colors.textMuted }}>≥${(d.min_amount / 100).toFixed(2)} MXN</div>}
                     </td>
-                    <td style={{ padding: '12px', color: colors.textSecondary }}>{d.total_uses}{d.max_uses ? `/${d.max_uses}` : ''}</td>
+                    <td style={{ padding: '12px', color: colors.textSecondary }}>{d.total_uses}</td>
                     <td style={{ padding: '12px' }}>
                       <button
                         onClick={() => handleToggle(d)}

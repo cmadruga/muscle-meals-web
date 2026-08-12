@@ -12,8 +12,6 @@ export type Discount = {
   min_items: number | null
   min_amount: number | null  // centavos
   valid_days: number[] | null
-  max_uses: number | null
-  max_uses_per_customer: number | null
   active: boolean
   starts_at: string | null
   expires_at: string | null
@@ -27,4 +25,5 @@ export type ValidatedDiscount = {
   value: number
   discountAmount: number  // centavos
   label: string
+  name: string            // display name without type suffix
 }

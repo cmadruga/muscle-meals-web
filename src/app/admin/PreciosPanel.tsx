@@ -19,7 +19,7 @@ const labelStyle: React.CSSProperties = {
   display: 'block', marginBottom: 4,
 }
 
-function pesos(cents: number) { return (cents / 100).toFixed(0) }
+function pesos(cents: number) { return (cents / 100).toFixed(2) }
 function toCents(str: string) { return Math.round(parseFloat(str.replace(/[^0-9.]/g, '')) * 100) }
 
 export default function PreciosPanel({
