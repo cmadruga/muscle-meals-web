@@ -622,12 +622,12 @@ export default function CheckoutClient({
                 onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
                 placeholder="Código de descuento o referido"
                 disabled={discountLoading}
-                style={{ flex: 1, background: '#242424', border: `1px solid ${discountError ? '#ef4444' : '#555'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+                style={{ flex: 1, minWidth: 0, background: '#242424', border: `1.5px solid ${discountError ? '#ef4444' : colors.orange}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
               />
               <button
                 onClick={handleApplyDiscount}
                 disabled={discountLoading || !discountCode.trim()}
-                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : '#2a2a2a', color: discountCode.trim() ? '#111' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit' }}
+                style={{ padding: '10px 40px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : `${colors.orange}40`, color: discountCode.trim() ? '#111' : colors.orange, cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit', flexShrink: 0 }}
               >
                 {discountLoading ? '…' : 'Aplicar'}
               </button>
