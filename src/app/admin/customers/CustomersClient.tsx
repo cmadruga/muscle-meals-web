@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { colors } from '@/lib/theme'
 import { sendReorderBroadcast, listTemplateImages, uploadTemplateImage } from '@/app/actions/whatsapp'
 import { updateMembership, updateCustomerContact } from '@/app/actions/membership'
+import { getCustomerReferralInfo, type ReferralUseRow } from '@/app/actions/referrals'
 import type { CustomerRow, CustomerOrder, SizeOption } from './page'
 
 const STATUS_LABELS: Record<string, string> = {
@@ -297,6 +298,17 @@ function OrderRow({ order, openOrder, setOpenOrder }: {
 
 function OrdersDrawer({ customer, onClose }: { customer: CustomerRow; onClose: () => void }) {
   const [openOrder, setOpenOrder] = useState<string | null>(null)
+  const [referralInfo, setReferralInfo] = useState<{
+    referralCode: string | null
+    asReferrer: ReferralUseRow[]
+    asReferee: { referrer_name: string | null; order_number: string; created_at: string } | null
+  } | null>(null)
+
+  useEffect(() => {
+    if (customer.user_id) {
+      getCustomerReferralInfo(customer.id).then(setReferralInfo).catch(() => {})
+    }
+  }, [customer.id, customer.user_id])
 
   return (
     <div style={{ position: 'fixed', inset: 0, zIndex: 500 }}>
@@ -353,6 +365,59 @@ function OrdersDrawer({ customer, onClose }: { customer: CustomerRow; onClose: (
             </>
           )}
         </div>
+
+        {/* Referidos — solo para clientes con cuenta */}
+        {customer.user_id && referralInfo && (
+          <div style={{ padding: '0 24px 24px', borderTop: `1px solid ${colors.grayLight}`, marginTop: 8, paddingTop: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: colors.orange, textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 12 }}>
+              🎁 Referidos
+            </div>
+
+            {/* Su código */}
+            {referralInfo.referralCode && (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+                <span style={{ fontSize: 12, color: colors.textMuted }}>Código:</span>
+                <span style={{ fontFamily: 'monospace', fontWeight: 700, color: colors.orange, fontSize: 14 }}>
+                  {referralInfo.referralCode.toUpperCase()}
+                </span>
+              </div>
+            )}
+
+            {/* Usó un referido */}
+            {referralInfo.asReferee && (
+              <div style={{ background: colors.black, borderRadius: 8, padding: '10px 12px', marginBottom: 10, fontSize: 13 }}>
+                <span style={{ color: colors.textMuted }}>Llegó referido por </span>
+                <span style={{ color: colors.white, fontWeight: 600 }}>{referralInfo.asReferee.referrer_name ?? 'cliente'}</span>
+                <span style={{ color: colors.textMuted }}> · Orden {referralInfo.asReferee.order_number}</span>
+              </div>
+            )}
+
+            {/* Personas que refirió */}
+            {referralInfo.asReferrer.length === 0 ? (
+              <p style={{ color: colors.textMuted, fontSize: 13, margin: 0 }}>Sin referidos aún</p>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {referralInfo.asReferrer.map(r => (
+                  <div key={r.id} style={{ background: colors.black, borderRadius: 8, padding: '10px 12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div>
+                      <span style={{ color: colors.white, fontWeight: 600, fontSize: 13 }}>{r.referee_name}</span>
+                      <span style={{ color: colors.textMuted, fontSize: 12, marginLeft: 6 }}>· Orden {r.order_number}</span>
+                    </div>
+                    <span style={{
+                      fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                      background: r.reward_redeemed ? '#10b98122' : `${colors.orange}22`,
+                      color: r.reward_redeemed ? '#10b981' : colors.orange,
+                      border: `1px solid ${r.reward_redeemed ? '#10b98144' : `${colors.orange}44`}`,
+                      whiteSpace: 'nowrap',
+                    }}>
+                      {r.reward_redeemed ? `Canjeado · ${r.reward_order_number}` : 'Recompensa pendiente'}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   )

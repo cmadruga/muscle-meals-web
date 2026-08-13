@@ -40,6 +40,42 @@ export async function getDiscounts(): Promise<Discount[]> {
   }))
 }
 
+export type DiscountUseRow = {
+  id: string
+  customer_name: string | null
+  customer_id: string | null
+  order_number: string
+  amount_saved: number
+  created_at: string
+}
+
+export async function getDiscountUses(discountId: string): Promise<DiscountUseRow[]> {
+  const supabase = createAdminClient()
+  const { data } = await supabase
+    .from('discount_uses')
+    .select('id, customer_id, amount_saved, created_at, orders!inner(order_number)')
+    .eq('discount_id', discountId)
+    .order('created_at', { ascending: false })
+
+  if (!data || data.length === 0) return []
+
+  const customerIds = [...new Set(data.map((u: any) => u.customer_id).filter(Boolean))]
+  const { data: customers } = customerIds.length
+    ? await supabase.from('customers').select('id, full_name').in('id', customerIds)
+    : { data: [] }
+
+  const nameMap = new Map((customers ?? []).map((c: any) => [c.id, c.full_name]))
+
+  return data.map((u: any) => ({
+    id: u.id,
+    customer_id: u.customer_id,
+    customer_name: u.customer_id ? (nameMap.get(u.customer_id) ?? 'Cliente') : 'Invitado',
+    order_number: (u.orders as any)?.order_number ?? '—',
+    amount_saved: u.amount_saved,
+    created_at: u.created_at,
+  }))
+}
+
 export async function createDiscount(form: DiscountFormData) {
   const supabase = createAdminClient()
   const { error } = await supabase.from('discounts').insert({

@@ -8,7 +8,9 @@ import {
   updateDiscount,
   toggleDiscount,
   deleteDiscount,
+  getDiscountUses,
   type DiscountFormData,
+  type DiscountUseRow,
 } from '@/app/actions/discounts'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -389,11 +391,75 @@ function DiscountModal({ discount, onClose }: { discount: Discount | null; onClo
   )
 }
 
+// ─── Drawer de usos ───────────────────────────────────────────────────────────
+
+function DiscountUsesDrawer({ discount, onClose }: { discount: Discount; onClose: () => void }) {
+  const [uses, setUses] = useState<DiscountUseRow[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getDiscountUses(discount.id).then(data => { setUses(data); setLoading(false) })
+  }, [discount.id])
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [onClose])
+
+  return (
+    <>
+      {/* Overlay */}
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000 }} />
+      {/* Panel */}
+      <div style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: 420, maxWidth: '95vw', background: colors.grayDark, borderLeft: `1px solid ${colors.grayLight}`, zIndex: 1001, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+        {/* Header */}
+        <div style={{ padding: '20px 24px', borderBottom: `1px solid ${colors.grayLight}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+          <div>
+            <p style={{ margin: 0, fontWeight: 700, color: colors.white, fontSize: 16 }}>{discount.name}</p>
+            <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
+              {typeLabel(discount)} · {uses.length} uso{uses.length !== 1 ? 's' : ''}
+            </p>
+          </div>
+          <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1 }}>×</button>
+        </div>
+        {/* Lista */}
+        <div style={{ flex: 1, overflowY: 'auto', padding: '16px 24px' }}>
+          {loading ? (
+            <p style={{ color: colors.textMuted, fontSize: 14 }}>Cargando…</p>
+          ) : uses.length === 0 ? (
+            <p style={{ color: colors.textMuted, fontSize: 14, textAlign: 'center', marginTop: 40 }}>Sin usos registrados</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+              {uses.map(u => (
+                <div key={u.id} style={{ background: colors.black, borderRadius: 8, padding: '12px 14px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <p style={{ margin: 0, fontWeight: 600, color: colors.white, fontSize: 14 }}>{u.customer_name}</p>
+                      <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
+                        Orden {u.order_number} · {new Date(u.created_at).toLocaleDateString('es-MX', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <span style={{ color: '#10b981', fontWeight: 700, fontSize: 14, whiteSpace: 'nowrap' }}>
+                      -${(u.amount_saved / 100).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── Main component ───────────────────────────────────────────────────────────
 
 export default function DescuentosTab({ discounts }: { discounts: Discount[] }) {
   const [editing, setEditing] = useState<Discount | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [viewingUses, setViewingUses] = useState<Discount | null>(null)
   const [togglePending, startToggle] = useTransition()
   const [deletePending, startDelete] = useTransition()
   const [actionError, setActionError] = useState('')
@@ -475,7 +541,14 @@ export default function DescuentosTab({ discounts }: { discounts: Discount[] }) 
                       {d.min_items && <div style={{ fontSize: 11, color: colors.textMuted }}>≥{d.min_items} platos</div>}
                       {d.min_amount && <div style={{ fontSize: 11, color: colors.textMuted }}>≥${(d.min_amount / 100).toFixed(2)} MXN</div>}
                     </td>
-                    <td style={{ padding: '12px', color: colors.textSecondary }}>{d.total_uses}</td>
+                    <td style={{ padding: '12px' }}>
+                      <button
+                        onClick={() => setViewingUses(d)}
+                        style={{ background: 'transparent', border: 'none', padding: 0, cursor: d.total_uses > 0 ? 'pointer' : 'default', color: d.total_uses > 0 ? colors.orange : colors.textMuted, fontWeight: 600, fontSize: 14, textDecoration: d.total_uses > 0 ? 'underline' : 'none' }}
+                      >
+                        {d.total_uses}
+                      </button>
+                    </td>
                     <td style={{ padding: '12px' }}>
                       <button
                         onClick={() => handleToggle(d)}
@@ -504,6 +577,7 @@ export default function DescuentosTab({ discounts }: { discounts: Discount[] }) 
       )}
 
       {showModal && <DiscountModal discount={editing} onClose={closeModal} />}
+      {viewingUses && <DiscountUsesDrawer discount={viewingUses} onClose={() => setViewingUses(null)} />}
     </div>
   )
 }

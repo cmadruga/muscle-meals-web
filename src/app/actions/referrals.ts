@@ -107,6 +107,74 @@ export async function checkReferrerRewards(params: {
   }
 }
 
+// ─── Info de referidos para panel admin ───────────────────────────────────────
+
+export type ReferralUseRow = {
+  id: string
+  referee_name: string | null
+  order_number: string
+  reward_redeemed: boolean
+  reward_order_number: string | null
+  created_at: string
+}
+
+export async function getCustomerReferralInfo(customerId: string): Promise<{
+  referralCode: string | null
+  asReferrer: ReferralUseRow[]   // personas que usaron su código
+  asReferee: { referrer_name: string | null; order_number: string; created_at: string } | null  // si él usó un código
+}> {
+  const supabase = createAdminClient()
+
+  const [{ data: customer }, { data: asReferrer }, { data: asRefereeRaw }] = await Promise.all([
+    supabase.from('customers').select('referral_code').eq('id', customerId).maybeSingle(),
+    supabase
+      .from('referral_uses')
+      .select('id, referee_customer_id, reward_redeemed, created_at, orders!referral_uses_order_id_fkey(order_number), reward_order:orders!referral_uses_reward_order_id_fkey(order_number)')
+      .eq('referrer_customer_id', customerId)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('referral_uses')
+      .select('referrer_customer_id, created_at, orders!referral_uses_order_id_fkey(order_number)')
+      .eq('referee_customer_id', customerId)
+      .maybeSingle(),
+  ])
+
+  // Nombres de los referees
+  const refereeIds = [...new Set((asReferrer ?? []).map((r: any) => r.referee_customer_id).filter(Boolean))]
+  const { data: refereeCustomers } = refereeIds.length
+    ? await supabase.from('customers').select('id, full_name').in('id', refereeIds)
+    : { data: [] }
+  const refereeNames = new Map((refereeCustomers ?? []).map((c: any) => [c.id, c.full_name]))
+
+  // Nombre del referidor (si este cliente usó un código)
+  let referrerName: string | null = null
+  if (asRefereeRaw?.referrer_customer_id) {
+    const { data: ref } = await supabase.from('customers').select('full_name').eq('id', asRefereeRaw.referrer_customer_id).maybeSingle()
+    referrerName = ref?.full_name ?? null
+  }
+
+  const referrerRows: ReferralUseRow[] = (asReferrer ?? []).map((r: any) => ({
+    id: r.id,
+    referee_name: refereeNames.get(r.referee_customer_id) ?? 'Cliente',
+    order_number: (r.orders as any)?.order_number ?? '—',
+    reward_redeemed: r.reward_redeemed,
+    reward_order_number: (r.reward_order as any)?.order_number ?? null,
+    created_at: r.created_at,
+  }))
+
+  return {
+    referralCode: customer?.referral_code ?? null,
+    asReferrer: referrerRows,
+    asReferee: asRefereeRaw
+      ? {
+          referrer_name: referrerName,
+          order_number: (asRefereeRaw.orders as any)?.order_number ?? '—',
+          created_at: asRefereeRaw.created_at,
+        }
+      : null,
+  }
+}
+
 // ─── Stats para /cuenta (server component — recibe customerId) ────────────────
 
 export async function getReferralStats(customerId: string): Promise<{
