@@ -114,6 +114,9 @@ export type ProcessCheckoutInput = {
   items: CheckoutItem[]
   discountId?: string | null
   discountAmount?: number
+  // Referidos
+  referrerCustomerId?: string | null   // referee usó código de referido
+  isReferrerReward?: boolean           // referidor usa su recompensa ganada
 }
 
 export async function processCheckout(
@@ -196,6 +199,7 @@ export async function processCheckout(
       shipping_type: data.shippingType,
       pickup_spot_id: data.pickupSpotId || null,
       shipping_cost: data.shippingCost,
+      referrer_customer_id: data.referrerCustomerId ?? null,
     })
     .select('id, order_number')
     .single()
@@ -222,12 +226,34 @@ export async function processCheckout(
     return { orderId: '', orderNumber: '', error: 'Error al crear los items de la orden' }
   }
 
-  // Log discount use
+  // Log discount use (solo para descuentos de la tabla discounts, no referidos)
   if (data.discountId && (data.discountAmount ?? 0) > 0) {
     await Promise.all([
       supabase.from('orders').update({ discount_id: data.discountId, discount_amount: data.discountAmount }).eq('id', order.id),
       supabase.from('discount_uses').insert({ discount_id: data.discountId, customer_id: customerId, order_id: order.id, amount_saved: data.discountAmount }),
     ])
+  } else if (!data.discountId && (data.discountAmount ?? 0) > 0) {
+    // Descuento de referido (no tiene discount_id, solo monto)
+    await supabase.from('orders').update({ discount_amount: data.discountAmount }).eq('id', order.id)
+  }
+
+  // Si el referidor usa su recompensa → marcar el cupón más antiguo como canjeado
+  if (data.isReferrerReward && customerId) {
+    const { data: pending } = await supabase
+      .from('referral_uses')
+      .select('id')
+      .eq('referrer_customer_id', customerId)
+      .eq('reward_redeemed', false)
+      .order('created_at', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (pending) {
+      await supabase
+        .from('referral_uses')
+        .update({ reward_redeemed: true, reward_order_id: order.id })
+        .eq('id', pending.id)
+    }
   }
 
   return { orderId: order.id, orderNumber: order.order_number }

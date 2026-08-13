@@ -59,7 +59,7 @@ export default async function CustomersPage({
       .select(`
         id, full_name, email, phone, address, user_id, created_at,
         is_member, membership_weeks_left, membership_qty, membership_size_id, membership_items,
-        orders(
+        orders!orders_customer_id_fkey(
           id, order_number, created_at, total_amount, status,
           order_items(id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name))
         )
@@ -74,7 +74,7 @@ export default async function CustomersPage({
       .from('customers')
       .select(`
         id, full_name, phone, address, created_at,
-        orders(
+        orders!orders_customer_id_fkey(
           id, order_number, created_at, total_amount, status,
           order_items(id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name))
         )

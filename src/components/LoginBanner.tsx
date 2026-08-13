@@ -116,6 +116,7 @@ export default function LoginBanner() {
             }}>
               Guarda tu dirección, revisa tu historial y pide más rápido.
             </p>
+
           </div>
         </div>
 

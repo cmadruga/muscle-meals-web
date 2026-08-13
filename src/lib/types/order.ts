@@ -58,6 +58,7 @@ export interface Order {
   payment_method: string | null
   is_membership_purchase: boolean | null
   membership_weeks: number | null
+  referrer_customer_id: string | null
   created_at: string
   updated_at: string
 }

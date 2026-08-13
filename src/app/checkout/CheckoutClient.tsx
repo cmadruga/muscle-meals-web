@@ -5,6 +5,7 @@ import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
 import { validateDiscount } from '@/app/actions/discounts'
+import { validateReferralCode, checkReferrerRewards } from '@/app/actions/referrals'
 import type { ValidatedDiscount } from '@/lib/types/discount'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { MembershipDiscounts } from '@/lib/db/settings'
@@ -15,6 +16,7 @@ import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import { checkMembershipMatch } from '@/lib/utils/membership'
 import LoginBanner from '@/components/LoginBanner'
+import ReferralBanner from '@/components/ReferralBanner'
 import { 
   isValidPostalCode,
   getZoneByPostalCode,
@@ -62,6 +64,9 @@ export default function CheckoutClient({
   const [discountError, setDiscountError] = useState('')
   const [discountLoading, setDiscountLoading] = useState(false)
   const [autoDiscountNotif, setAutoDiscountNotif] = useState<string | null>(null)
+  // Referidos
+  const [referrerCustomerId, setReferrerCustomerId] = useState<string | null>(null)
+  const [pendingReferrerRewards, setPendingReferrerRewards] = useState(0)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
@@ -125,21 +130,38 @@ export default function CheckoutClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Descuentos automáticos (sin código) — se verifican al cargar
+  // Descuentos automáticos al cargar — prioridad: recompensa referidor > descuento automático
   useEffect(() => {
     const subtotalNow = getTotal()
     if (subtotalNow === 0) return
-    validateDiscount({
-      customerId: prefill?.customerId ?? null,
-      subtotal: subtotalNow,
-      itemCount: items.reduce((n, i) => n + i.qty, 0),
-      shippingCost: shippingStandard, // envío estándar como base
-    }).then(({ discount }) => {
+    const customerId = prefill?.customerId ?? null
+
+    async function autoApply() {
+      // 1. Recompensas de referido (solo clientes con cuenta)
+      if (customerId) {
+        const { count, discount } = await checkReferrerRewards({ customerId, subtotal: subtotalNow })
+        if (discount) {
+          setPendingReferrerRewards(count)
+          setAppliedDiscount(discount)
+          setAutoDiscountNotif(discount.name)
+          return
+        }
+      }
+
+      // 2. Descuento automático (sin código)
+      const { discount } = await validateDiscount({
+        customerId,
+        subtotal: subtotalNow,
+        itemCount: items.reduce((n, i) => n + i.qty, 0),
+        shippingCost: shippingStandard,
+      })
       if (discount) {
         setAppliedDiscount(discount)
         setAutoDiscountNotif(discount.name)
       }
-    })
+    }
+
+    autoApply()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -229,16 +251,48 @@ export default function CheckoutClient({
     if (!code) return
     setDiscountError('')
     setDiscountLoading(true)
+    const customerId = prefill?.customerId ?? null
     try {
+      // 1. Buscar en tabla de descuentos
       const { discount, error: dErr } = await validateDiscount({
-        customerId: prefill?.customerId ?? null,
+        customerId,
         code,
         subtotal,
         itemCount: totalQty,
         shippingCost,
       })
-      if (dErr) { setDiscountError(dErr); setAppliedDiscount(null) }
-      else if (discount) { setAppliedDiscount(discount); setDiscountError('') }
+      if (discount) {
+        setAppliedDiscount(discount)
+        setReferrerCustomerId(null)
+        setDiscountError('')
+        return
+      }
+
+      // 2. Si no encontró descuento, intentar como código de referido
+      const { discount: refDiscount, referrerCustomerId: refId, error: refErr } = await validateReferralCode({
+        code,
+        customerId,
+        subtotal,
+      })
+
+      if (refDiscount && refId) {
+        setAppliedDiscount(refDiscount)
+        setReferrerCustomerId(refId)
+        setDiscountError('')
+      } else if (refErr === 'referral_needs_account') {
+        setDiscountError('Crea una cuenta para usar códigos de referido')
+        setAppliedDiscount(null)
+      } else if (refErr) {
+        setDiscountError(refErr)
+        setAppliedDiscount(null)
+      } else if (dErr) {
+        // Tampoco era un referido — mostrar error del descuento
+        setDiscountError(dErr)
+        setAppliedDiscount(null)
+      } else {
+        setDiscountError('Código no encontrado')
+        setAppliedDiscount(null)
+      }
     } finally {
       setDiscountLoading(false)
     }
@@ -246,6 +300,7 @@ export default function CheckoutClient({
 
   function handleRemoveDiscount() {
     setAppliedDiscount(null)
+    setReferrerCustomerId(null)
     setDiscountCode('')
     setDiscountError('')
   }
@@ -364,6 +419,9 @@ export default function CheckoutClient({
           : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
 
       // 2. Crear customer + orden en el servidor
+      const isReferralDiscount = appliedDiscount?.id.startsWith('referral:') || appliedDiscount?.id.startsWith('referrer_reward:')
+      const isReferrerReward = appliedDiscount?.id.startsWith('referrer_reward:') ?? false
+
       const checkoutResult = await processCheckout({
         customerId: prefill?.customerId,
         customerName,
@@ -380,8 +438,11 @@ export default function CheckoutClient({
           unitPrice: item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
-        discountId: appliedDiscount?.id ?? null,
+        // Descuentos normales usan discountId; referidos solo monto
+        discountId: isReferralDiscount ? null : (appliedDiscount?.id ?? null),
         discountAmount,
+        referrerCustomerId: referrerCustomerId ?? null,
+        isReferrerReward,
       })
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
@@ -503,19 +564,28 @@ export default function CheckoutClient({
           {/* Notificación descuento automático */}
           {autoDiscountNotif && (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98118', border: '1px solid #10b98145', borderRadius: 8 }}>
-              <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>🎉 ¡Descuento aplicado automáticamente: {autoDiscountNotif}!</span>
-              <button onClick={() => setAutoDiscountNotif(null)} style={{ background: 'transparent', border: 'none', color: '#10b98180', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'inherit' }}>×</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                  🎁 {appliedDiscount?.id.startsWith('referrer_reward:') ? 'Recompensa por referido aplicada' : `¡${autoDiscountNotif} aplicado automáticamente!`}
+                </span>
+                {appliedDiscount?.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
+                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
+                    Tienes {pendingReferrerRewards - 1} recompensa{pendingReferrerRewards - 1 > 1 ? 's' : ''} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setAutoDiscountNotif(null)} style={{ background: 'transparent', border: 'none', color: '#10b98180', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'inherit', flexShrink: 0 }}>×</button>
             </div>
           )}
 
-          {/* Código promo */}
+          {/* Código promo / referido */}
           {!appliedDiscount ? (
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               <input
                 value={discountCode}
                 onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError('') }}
                 onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
-                placeholder="Código de descuento"
+                placeholder="Código de descuento o referido"
                 disabled={discountLoading}
                 style={{ flex: 1, background: '#242424', border: `1px solid ${discountError ? '#ef4444' : '#555'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
               />
@@ -529,8 +599,15 @@ export default function CheckoutClient({
             </div>
           ) : (
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98115', border: '1px solid #10b98140', borderRadius: 8 }}>
-              <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>✓ {appliedDiscount.name}</span>
-              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: '1px solid #ef444460', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '4px 10px', fontFamily: 'inherit', transition: 'all 0.15s' }}>Quitar</button>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>✓ {appliedDiscount.name}</span>
+                {appliedDiscount.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
+                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
+                    +{pendingReferrerRewards - 1} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
+                  </span>
+                )}
+              </div>
+              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: '1px solid #ef444460', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '4px 10px', fontFamily: 'inherit', transition: 'all 0.15s', flexShrink: 0 }}>Quitar</button>
             </div>
           )}
           {discountError && (
@@ -666,6 +743,7 @@ export default function CheckoutClient({
       </div>
     </main>
     <LoginBanner />
+    <ReferralBanner />
     </>
   )
 }

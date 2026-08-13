@@ -9,6 +9,7 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
+import ReferralBanner from '@/components/ReferralBanner'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { validateCart } from '@/app/actions/checkout'
 import { checkMembershipMatch } from '@/lib/utils/membership'
@@ -423,6 +424,7 @@ export default function CartClient({
     )}
 
     <LoginBanner />
+    <ReferralBanner />
 
     <LoginModal
       isOpen={membershipLoginOpen}

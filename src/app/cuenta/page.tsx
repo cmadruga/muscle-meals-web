@@ -4,6 +4,8 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { colors } from '@/lib/theme'
 import PerfilForm from './perfil/PerfilForm'
+import ReferralCard from './ReferralCard'
+import { getReferralStats } from '@/app/actions/referrals'
 import type { OrderStatus } from '@/lib/types'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -42,7 +44,7 @@ export default async function CuentaPage() {
   const membershipItemsRaw = (customer?.membership_items ?? null) as { size_id: string; qty: number }[] | null
   const membershipSizeIds = membershipItemsRaw?.map(i => i.size_id) ?? (customer?.membership_size_id ? [customer.membership_size_id] : [])
 
-  const [lastOrderRes, sizesRes] = await Promise.all([
+  const [lastOrderRes, sizesRes, referralStats] = await Promise.all([
     customer
       ? admin.from('orders').select('id, order_number, created_at, total_amount, status')
           .eq('customer_id', customer.id)
@@ -54,6 +56,7 @@ export default async function CuentaPage() {
     membershipSizeIds.length > 0
       ? admin.from('sizes').select('id, name').in('id', membershipSizeIds)
       : Promise.resolve({ data: [] }),
+    customer ? getReferralStats(customer.id) : Promise.resolve(null),
   ])
 
   const lastOrder = lastOrderRes.data ?? null
@@ -296,6 +299,18 @@ export default async function CuentaPage() {
             </div>
           )}
         </div>
+
+        {/* ── Comparte y gana ── */}
+        {referralStats?.referralCode && (
+          <div style={sectionStyle}>
+            <p style={sectionTitleStyle}>🎁 Comparte y gana</p>
+            <ReferralCard
+              referralCode={referralStats.referralCode}
+              totalReferrals={referralStats.totalReferrals}
+              pendingRewards={referralStats.pendingRewards}
+            />
+          </div>
+        )}
 
       </div>
     </main>
