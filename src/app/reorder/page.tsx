@@ -161,7 +161,7 @@ export default async function RepetirPage() {
   ] = await Promise.all([
     admin.from('meals').select('id').in('id', allMealIds).eq('active', true),
     admin.from('meals').select('id, name, img').eq('active', true).order('name'),
-    admin.from('sizes').select('id, price, customer_id').in('id', allSizeIds),
+    admin.from('sizes').select('id, price, package_price, customer_id').in('id', allSizeIds),
     admin.from('sizes').select('id, name, price, protein_qty, carb_qty, veg_qty').eq('is_main', true).is('customer_id', null).order('price'),
     getCriticalPeriodConfig(),
   ])
@@ -174,6 +174,7 @@ export default async function RepetirPage() {
       : []
   )
   const priceMap = new Map(sizes?.map((s: any) => [s.id, s.price as number]) ?? [])
+  const pkgPriceMap = new Map(sizes?.map((s: any) => [s.id, (s.package_price ?? s.price) as number]) ?? [])
   const extractQty = (val: any): number => {
     if (typeof val === 'number') return val
     if (val && typeof val === 'object') return Number(Object.values(val)[0] ?? 0)
@@ -190,15 +191,18 @@ export default async function RepetirPage() {
   const sizeBlockedItems = rawItems.filter(i => activeMealIdSet.has(i.meal_id) && customSizeIdSet.has(i.size_id))
   const skippedItems = rawItems.filter(i => !activeMealIdSet.has(i.meal_id))
 
-  const toCartItem = (i: RawItem, extra?: Partial<CartItem>): CartItem => ({
-    mealId: i.meal_id,
-    mealName: i.meals?.name ?? 'Platillo',
-    sizeId: i.size_id,
-    sizeName: i.sizes?.name ?? '',
-    qty: i.qty,
-    unitPrice: priceMap.get(i.size_id) ?? i.unit_price,
-    ...extra,
-  })
+  const toCartItem = (i: RawItem, extra?: Partial<CartItem>): CartItem => {
+    const isPackageItem = Boolean(i.package_instance_id || extra?.packageInstanceId)
+    return {
+      mealId: i.meal_id,
+      mealName: i.meals?.name ?? 'Platillo',
+      sizeId: i.size_id,
+      sizeName: i.sizes?.name ?? '',
+      qty: i.qty,
+      unitPrice: (isPackageItem ? pkgPriceMap.get(i.size_id) : priceMap.get(i.size_id)) ?? i.unit_price,
+      ...extra,
+    }
+  }
 
   // Build packages first so we can map original → new instanceId
   const packageMap = new Map<string, RawItem[]>()
@@ -247,7 +251,7 @@ export default async function RepetirPage() {
       mealName: item.meals?.name ?? 'Platillo',
       sizeName: item.sizes?.name ?? '',
       qty: item.qty,
-      unitPrice: priceMap.get(item.size_id) ?? item.unit_price,
+      unitPrice: (item.package_instance_id ? pkgPriceMap.get(item.size_id) : priceMap.get(item.size_id)) ?? item.unit_price,
     }
     if (item.package_instance_id) {
       const g = displayPkgMap.get(item.package_instance_id) ?? []
