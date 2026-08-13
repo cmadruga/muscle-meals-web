@@ -130,6 +130,16 @@ export default function CheckoutClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Cuando membresía activa, limpiar cualquier descuento — no se combinan
+  useEffect(() => {
+    if (membershipMode) {
+      setAppliedDiscount(null)
+      setAutoDiscountNotif(null)
+      setDiscountCode('')
+      setDiscountError('')
+    }
+  }, [membershipMode])
+
   // Descuentos automáticos al cargar — prioridad: recompensa referidor > descuento automático
   useEffect(() => {
     const subtotalNow = getTotal()
@@ -137,6 +147,15 @@ export default function CheckoutClient({
     const customerId = prefill?.customerId ?? null
 
     async function autoApply() {
+      // Si hay intención de membresía activa, no aplicar ningún descuento
+      try {
+        const stored = localStorage.getItem('mm_membership_intent')
+        if (stored) {
+          const intent = JSON.parse(stored)
+          if (intent.enabled) return
+        }
+      } catch {}
+
       // 1. Recompensas de referido (solo clientes con cuenta)
       if (customerId) {
         const { count, discount } = await checkReferrerRewards({ customerId, subtotal: subtotalNow })
@@ -579,7 +598,23 @@ export default function CheckoutClient({
           )}
 
           {/* Código promo / referido */}
-          {!appliedDiscount ? (
+          {membershipMode ? (
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+              <input
+                disabled
+                value=""
+                onChange={() => {}}
+                placeholder="Membresía activa — no aplican más descuentos"
+                style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', borderRadius: 8, padding: '10px 14px', color: '#555', fontSize: 14, outline: 'none', fontFamily: 'inherit', cursor: 'not-allowed' }}
+              />
+              <button
+                disabled
+                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: '#2a2a2a', color: '#555', cursor: 'not-allowed', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'inherit' }}
+              >
+                Aplicar
+              </button>
+            </div>
+          ) : !appliedDiscount ? (
             <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
               <input
                 value={discountCode}
@@ -587,12 +622,12 @@ export default function CheckoutClient({
                 onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
                 placeholder="Código de descuento o referido"
                 disabled={discountLoading}
-                style={{ flex: 1, background: '#242424', border: `1px solid ${discountError ? '#ef4444' : '#555'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+                style={{ flex: 1, minWidth: 0, background: '#242424', border: `1.5px solid ${discountError ? '#ef4444' : colors.orange}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
               />
               <button
                 onClick={handleApplyDiscount}
                 disabled={discountLoading || !discountCode.trim()}
-                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : '#2a2a2a', color: discountCode.trim() ? '#111' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit' }}
+                style={{ padding: '10px 40px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : `${colors.orange}40`, color: discountCode.trim() ? '#111' : colors.orange, cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit', flexShrink: 0 }}
               >
                 {discountLoading ? '…' : 'Aplicar'}
               </button>
@@ -800,13 +835,15 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         background: colors.grayDark
       }}>
         {packageGroups.map((pkg) => (
-          <PackageSummaryCard key={pkg.packageInstanceId} package={pkg} />
+          <PackageSummaryCard key={pkg.packageInstanceId} package={pkg} membershipMode={membershipMode} membershipDiscountPct={membershipDiscountPct} />
         ))}
         {individualItems.map((item, idx) => (
           <IndividualItemSummary
             key={`${item.mealId}-${item.sizeId}`}
             item={item}
             showBorder={idx < individualItems.length - 1 || packageGroups.length > 0}
+            membershipMode={membershipMode}
+            membershipDiscountPct={membershipDiscountPct}
           />
         ))}
       </div>
@@ -858,7 +895,10 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
   )
 }
 
-function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
+function PackageSummaryCard({ package: pkg, membershipMode, membershipDiscountPct }: { package: PackageGroup; membershipMode?: boolean; membershipDiscountPct?: number }) {
+  const pct = membershipMode && membershipDiscountPct ? membershipDiscountPct : 0
+  const discountedPkgTotal = pct ? Math.round(pkg.totalPrice * (1 - pct / 100)) : pkg.totalPrice
+
   return (
     <div style={{ background: colors.grayLight }}>
       {/* Package header */}
@@ -870,7 +910,15 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         alignItems: 'center'
       }}>
         <strong style={{ color: colors.orange }}>{pkg.packageName} · x{pkg.totalMeals}</strong>
-        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</strong>
+        {pct ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ color: colors.textMuted, textDecoration: 'line-through', fontSize: 14 }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</span>
+            <span style={{ color: colors.orange, fontSize: 13 }}>→</span>
+            <strong style={{ color: colors.white }}>${(discountedPkgTotal / 100).toFixed(2)} MXN</strong>
+          </div>
+        ) : (
+          <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</strong>
+        )}
       </div>
 
       {/* Package items — merged by mealId+sizeId */}
@@ -882,41 +930,63 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
           if (existing) existing.qty += item.qty
           else merged.set(k, { ...item })
         }
-        return Array.from(merged.values()).map(item => (
-          <div
-            key={`${item.mealId}-${item.sizeId}`}
-            style={{
-              padding: '10px 16px 10px 24px',
-              borderBottom: `1px solid ${colors.grayDark}`,
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              gap: 12,
-            }}
-          >
-            <div>
-              <span style={{ fontSize: 14, color: colors.white }}>{item.mealName}</span>
-              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+        return Array.from(merged.values()).map(item => {
+          const discountedUnit = pct ? Math.round(item.unitPrice * (1 - pct / 100)) : item.unitPrice
+          return (
+            <div
+              key={`${item.mealId}-${item.sizeId}`}
+              style={{
+                padding: '10px 16px 10px 24px',
+                borderBottom: `1px solid ${colors.grayDark}`,
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: 12,
+              }}
+            >
+              <div>
+                <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
+                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                {pct ? (
+                  <>
+                    <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
+                      ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
+                    </span>
+                    <span style={{ fontSize: 15, color: colors.orange }}>→</span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: colors.white }}>
+                      ${(discountedUnit / 100).toFixed(2)} c/u
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span style={{ fontSize: 15, color: colors.textMuted }}>
+                      ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
+                    </span>
+                    <span style={{ fontSize: 15, fontWeight: 600, color: colors.white, marginLeft: 4 }}>
+                      ${(item.unitPrice * item.qty / 100).toFixed(2)}
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
-            <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <span style={{ fontSize: 12, color: colors.textMuted }}>
-                ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
-              </span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                ${(item.unitPrice * item.qty / 100).toFixed(2)}
-              </span>
-            </div>
-          </div>
-        ))
+          )
+        })
       })()}
     </div>
   )
 }
 
-function IndividualItemSummary({ item, showBorder }: {
+function IndividualItemSummary({ item, showBorder, membershipMode, membershipDiscountPct }: {
   item: CartItem
   showBorder: boolean
+  membershipMode?: boolean
+  membershipDiscountPct?: number
 }) {
+  const pct = membershipMode && membershipDiscountPct ? membershipDiscountPct : 0
+  const discountedUnit = pct ? Math.round(item.unitPrice * (1 - pct / 100)) : item.unitPrice
+
   return (
     <div
       style={{
@@ -929,7 +999,7 @@ function IndividualItemSummary({ item, showBorder }: {
       }}
     >
       <div>
-        <h3 style={{ margin: '0 0 4px 0', fontSize: 16, color: colors.orange }}>
+        <h3 style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.orange }}>
           {item.mealName}
         </h3>
         <p style={{ margin: 0, fontSize: 14, color: colors.textMuted }}>
@@ -937,12 +1007,25 @@ function IndividualItemSummary({ item, showBorder }: {
         </p>
       </div>
       <div style={{ textAlign: 'right' }}>
-        <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
-          ${(item.unitPrice / 100).toFixed(2)} MXN c/u
-        </p>
-        <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold', color: colors.white }}>
-          ${(item.unitPrice * item.qty / 100).toFixed(2)} MXN
-        </p>
+        {pct ? (
+          <>
+            <p style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
+              ${(item.unitPrice / 100).toFixed(2)} MXN c/u
+            </p>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: colors.white }}>
+              ${(discountedUnit / 100).toFixed(2)} MXN c/u
+            </p>
+          </>
+        ) : (
+          <>
+            <p style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.textMuted }}>
+              ${(item.unitPrice / 100).toFixed(2)} MXN c/u
+            </p>
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: colors.white }}>
+              ${(item.unitPrice * item.qty / 100).toFixed(2)} MXN
+            </p>
+          </>
+        )}
       </div>
     </div>
   )

@@ -362,6 +362,7 @@ export default function CartClient({
 
       <CartSummary
         total={subtotal}
+        totalQty={totalQty}
         isMembershipMatch={isMembershipMatch}
         membershipMode={membershipMode && canPurchaseMembership && !isMembershipMatch}
         membershipWeeks={membershipWeeks}
@@ -563,13 +564,13 @@ function PackageCard({ package: pkg, onRemove, onEdit }: {
           >
             <div>
               <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
-              <span style={{ fontSize: 12, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
+              <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
-              <span style={{ fontSize: 13, color: colors.textMuted }}>
+              <span style={{ fontSize: 15, color: colors.textMuted }}>
                 ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
               </span>
-              <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
+              <span style={{ fontSize: 15, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
                 ${(item.unitPrice * item.qty / 100).toFixed(2)}
               </span>
             </div>
@@ -676,6 +677,7 @@ function QuantityControls({ value, onChange }: {
 
 function CartSummary({
   total,
+  totalQty,
   isMembershipMatch,
   membershipMode,
   membershipWeeks,
@@ -683,6 +685,7 @@ function CartSummary({
   membershipTotal,
 }: {
   total: number
+  totalQty: number
   isMembershipMatch: boolean
   membershipMode: boolean
   membershipWeeks: number
@@ -691,9 +694,15 @@ function CartSummary({
 }) {
   if (membershipMode) {
     const originalMultiple = total * membershipWeeks
+    const pricePerMeal = totalQty > 0 ? total / totalQty : 0
+    const discountedPerMeal = Math.round(pricePerMeal * (1 - membershipDiscountPct / 100))
+    const weeklyTotal = discountedPerMeal * totalQty
+
+    const fmt = (cents: number) => `$${(cents / 100).toLocaleString('es-MX', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+
     return (
       <div style={{
-        padding: '24px 22px',
+        padding: '20px 22px',
         background: `${colors.orange}15`,
         border: `3px solid ${colors.orange}`,
         borderRadius: 14,
@@ -701,36 +710,73 @@ function CartSummary({
       }}>
         {/* Crossed out: regular price × weeks */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-          <span style={{ fontSize: 13, color: colors.textMuted }}>
+          <span style={{ fontSize: 15, color: colors.textMuted }}>
             Precio regular × {membershipWeeks} sem.
           </span>
-          <span style={{ fontSize: 13, color: colors.textMuted, textDecoration: 'line-through' }}>
-            ${(originalMultiple / 100).toFixed(2)} MXN
+          <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
+            {fmt(originalMultiple)} MXN
           </span>
         </div>
+
         {/* Divider */}
         <div style={{ height: 1, background: `${colors.orange}40`, marginBottom: 14 }} />
+
+        {/* Breakdown */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          {/* Per meal */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 15, color: colors.textMuted }}>Por platillo</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
+                {fmt(pricePerMeal)}
+              </span>
+              <span style={{ fontSize: 15, color: colors.orange }}>→</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: colors.white }}>
+                {fmt(discountedPerMeal)} c/u
+              </span>
+            </div>
+          </div>
+
+          {/* Per week */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <span style={{ fontSize: 15, color: colors.textMuted }}>Por semana</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
+                {fmt(total)}
+              </span>
+              <span style={{ fontSize: 15, color: colors.orange }}>→</span>
+              <span style={{ fontSize: 15, fontWeight: 700, color: colors.white }}>
+                {fmt(weeklyTotal)}
+              </span>
+            </div>
+          </div>
+
+        </div>
+
+        {/* Divider */}
+        <div style={{ height: 1, background: `${colors.orange}40`, marginBottom: 14 }} />
+
         {/* Membership total */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', gap: 12 }}>
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: colors.white, marginBottom: 8 }}>Total membresía:</div>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
               <span style={{
-                fontSize: 14, fontWeight: 700, color: colors.orange,
-                background: `${colors.orange}28`, borderRadius: 20, padding: '5px 13px',
+                fontSize: 13, fontWeight: 700, color: colors.orange,
+                background: `${colors.orange}28`, borderRadius: 20, padding: '4px 11px',
               }}>
                 −{membershipDiscountPct}% descuento
               </span>
               <span style={{
-                fontSize: 14, fontWeight: 700, color: '#10b981',
-                background: '#10b98122', borderRadius: 20, padding: '5px 13px',
+                fontSize: 13, fontWeight: 700, color: '#10b981',
+                background: '#10b98122', borderRadius: 20, padding: '4px 11px',
               }}>
                 ✓ Envío siempre gratis
               </span>
             </div>
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: colors.orange, flexShrink: 0 }}>
-            ${(membershipTotal / 100).toFixed(2)} MXN
+            {fmt(membershipTotal)} MXN
           </span>
         </div>
       </div>
