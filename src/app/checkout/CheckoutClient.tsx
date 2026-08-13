@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { useCartGroups } from '@/hooks/useCartGroups'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
+import { validateDiscount } from '@/app/actions/discounts'
+import { validateReferralCode, checkReferrerRewards } from '@/app/actions/referrals'
+import type { ValidatedDiscount } from '@/lib/types/discount'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { PackageGroup } from '@/hooks/useCartGroups'
@@ -13,6 +16,7 @@ import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { colors } from '@/lib/theme'
 import { checkMembershipMatch } from '@/lib/utils/membership'
 import LoginBanner from '@/components/LoginBanner'
+import ReferralBanner from '@/components/ReferralBanner'
 import { 
   isValidPostalCode,
   getZoneByPostalCode,
@@ -53,6 +57,16 @@ export default function CheckoutClient({
   const { packageGroups, individualItems, isEmpty } = useCartGroups()
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Descuentos
+  const [discountCode, setDiscountCode] = useState('')
+  const [appliedDiscount, setAppliedDiscount] = useState<ValidatedDiscount | null>(null)
+  const [discountError, setDiscountError] = useState('')
+  const [discountLoading, setDiscountLoading] = useState(false)
+  const [autoDiscountNotif, setAutoDiscountNotif] = useState<string | null>(null)
+  // Referidos
+  const [referrerCustomerId, setReferrerCustomerId] = useState<string | null>(null)
+  const [pendingReferrerRewards, setPendingReferrerRewards] = useState(0)
   
   // Tipo de envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
@@ -116,12 +130,50 @@ export default function CheckoutClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  // Descuentos automáticos al cargar — prioridad: recompensa referidor > descuento automático
+  useEffect(() => {
+    const subtotalNow = getTotal()
+    if (subtotalNow === 0) return
+    const customerId = prefill?.customerId ?? null
+
+    async function autoApply() {
+      // 1. Recompensas de referido (solo clientes con cuenta)
+      if (customerId) {
+        const { count, discount } = await checkReferrerRewards({ customerId, subtotal: subtotalNow })
+        if (discount) {
+          setPendingReferrerRewards(count)
+          setAppliedDiscount(discount)
+          setAutoDiscountNotif(discount.name)
+          return
+        }
+      }
+
+      // 2. Descuento automático (sin código)
+      const { discount } = await validateDiscount({
+        customerId,
+        subtotal: subtotalNow,
+        itemCount: items.reduce((n, i) => n + i.qty, 0),
+        shippingCost: shippingStandard,
+      })
+      if (discount) {
+        setAppliedDiscount(discount)
+        setAutoDiscountNotif(discount.name)
+      }
+    }
+
+    autoApply()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // Calcular total
   const subtotal = getTotal()
   // Miembros no pagan envío
   const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
   const shippingCost = membershipMode ? 0 : SHIPPING_COSTS[shippingType]
-  const total = subtotal + shippingCost
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.type === 'free_shipping' ? shippingCost : appliedDiscount.discountAmount
+    : 0
+  const total = subtotal + shippingCost - discountAmount
 
   // Validar pickup spot si es necesario
   const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
@@ -194,6 +246,66 @@ export default function CheckoutClient({
     }
   }
 
+  async function handleApplyDiscount() {
+    const code = discountCode.trim()
+    if (!code) return
+    setDiscountError('')
+    setDiscountLoading(true)
+    const customerId = prefill?.customerId ?? null
+    try {
+      // 1. Buscar en tabla de descuentos
+      const { discount, error: dErr } = await validateDiscount({
+        customerId,
+        code,
+        subtotal,
+        itemCount: totalQty,
+        shippingCost,
+      })
+      if (discount) {
+        setAppliedDiscount(discount)
+        setReferrerCustomerId(null)
+        setDiscountError('')
+        return
+      }
+
+      // 2. Si no encontró descuento, intentar como código de referido
+      const { discount: refDiscount, referrerCustomerId: refId, error: refErr } = await validateReferralCode({
+        code,
+        customerId,
+        subtotal,
+      })
+
+      if (refDiscount && refId) {
+        setAppliedDiscount(refDiscount)
+        setReferrerCustomerId(refId)
+        setDiscountError('')
+      } else if (refErr === 'referral_needs_account') {
+        setDiscountError('Crea una cuenta para usar códigos de referido')
+        setAppliedDiscount(null)
+      } else if (refErr) {
+        setDiscountError(refErr)
+        setAppliedDiscount(null)
+      } else if (dErr) {
+        // Tampoco era un referido — mostrar error del descuento
+        setDiscountError(dErr)
+        setAppliedDiscount(null)
+      } else {
+        setDiscountError('Código no encontrado')
+        setAppliedDiscount(null)
+      }
+    } finally {
+      setDiscountLoading(false)
+    }
+  }
+
+  function handleRemoveDiscount() {
+    setAppliedDiscount(null)
+    setReferrerCustomerId(null)
+    setDiscountCode('')
+    setDiscountError('')
+  }
+
+
   const handleMembershipCheckout = async () => {
     if (!validatePhone(customerPhone)) {
       setError('Teléfono inválido (debe ser 10 dígitos)')
@@ -237,6 +349,8 @@ export default function CheckoutClient({
           unitPrice: item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
+        discountId: appliedDiscount?.id ?? null,
+        discountAmount,
       })
 
       if (result.error) throw new Error(result.error)
@@ -305,6 +419,9 @@ export default function CheckoutClient({
           : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
 
       // 2. Crear customer + orden en el servidor
+      const isReferralDiscount = appliedDiscount?.id.startsWith('referral:') || appliedDiscount?.id.startsWith('referrer_reward:')
+      const isReferrerReward = appliedDiscount?.id.startsWith('referrer_reward:') ?? false
+
       const checkoutResult = await processCheckout({
         customerId: prefill?.customerId,
         customerName,
@@ -321,38 +438,36 @@ export default function CheckoutClient({
           unitPrice: item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
+        // Descuentos normales usan discountId; referidos solo monto
+        discountId: isReferralDiscount ? null : (appliedDiscount?.id ?? null),
+        discountAmount,
+        referrerCustomerId: referrerCustomerId ?? null,
+        isReferrerReward,
       })
 
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
       // 3. Crear preferencia de pago en MercadoPago
-      const mpItems = [
-        ...items.map(item => ({
+      // Si hay descuento, colapsamos a un item para evitar precio negativo
+      let mpItems: Array<{ name: string; unit_price: number; quantity: number }>
+
+      if (discountAmount > 0) {
+        mpItems = [{ name: 'Pedido Muscle Meals', unit_price: total, quantity: 1 }]
+      } else {
+        mpItems = items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
           unit_price: item.unitPrice,
-          quantity: item.qty
+          quantity: item.qty,
         }))
-      ]
 
-      if (shippingCost > 0) {
-        mpItems.push({
-          name: 'Envío Estándar',
-          unit_price: shippingCost,
-          quantity: 1
-        })
-      } else if (shippingType === 'priority') {
-        mpItems.push({
-          name: 'Envío Prioritario (A cotizar)',
-          unit_price: 0,
-          quantity: 1
-        })
-      } else if (shippingType === 'pickup') {
-        const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
-        mpItems.push({
-          name: `Recoger en: ${spot?.name || 'Pickup Spot'}`,
-          unit_price: 0,
-          quantity: 1
-        })
+        if (shippingCost > 0) {
+          mpItems.push({ name: 'Envío Estándar', unit_price: shippingCost, quantity: 1 })
+        } else if (shippingType === 'priority') {
+          mpItems.push({ name: 'Envío Prioritario (A cotizar)', unit_price: 0, quantity: 1 })
+        } else if (shippingType === 'pickup') {
+          const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
+          mpItems.push({ name: `Recoger en: ${spot?.name || 'Pickup Spot'}`, unit_price: 0, quantity: 1 })
+        }
       }
 
       const result = await createPaymentPreference({
@@ -442,7 +557,62 @@ export default function CheckoutClient({
             membershipMode={membershipMode}
             membershipWeeks={membershipMode ? membershipWeeks : undefined}
             membershipDiscountPct={membershipMode ? membershipDiscountPct : undefined}
+            appliedDiscount={appliedDiscount}
+            discountAmount={discountAmount}
           />
+
+          {/* Notificación descuento automático */}
+          {autoDiscountNotif && (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98118', border: '1px solid #10b98145', borderRadius: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
+                  🎁 {appliedDiscount?.id.startsWith('referrer_reward:') ? 'Recompensa por referido aplicada' : `¡${autoDiscountNotif} aplicado automáticamente!`}
+                </span>
+                {appliedDiscount?.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
+                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
+                    Tienes {pendingReferrerRewards - 1} recompensa{pendingReferrerRewards - 1 > 1 ? 's' : ''} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
+                  </span>
+                )}
+              </div>
+              <button onClick={() => setAutoDiscountNotif(null)} style={{ background: 'transparent', border: 'none', color: '#10b98180', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'inherit', flexShrink: 0 }}>×</button>
+            </div>
+          )}
+
+          {/* Código promo / referido */}
+          {!appliedDiscount ? (
+            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
+              <input
+                value={discountCode}
+                onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError('') }}
+                onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
+                placeholder="Código de descuento o referido"
+                disabled={discountLoading}
+                style={{ flex: 1, background: '#242424', border: `1px solid ${discountError ? '#ef4444' : '#555'}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
+              />
+              <button
+                onClick={handleApplyDiscount}
+                disabled={discountLoading || !discountCode.trim()}
+                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : '#2a2a2a', color: discountCode.trim() ? '#111' : '#555', cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit' }}
+              >
+                {discountLoading ? '…' : 'Aplicar'}
+              </button>
+            </div>
+          ) : (
+            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98115', border: '1px solid #10b98140', borderRadius: 8 }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>✓ {appliedDiscount.name}</span>
+                {appliedDiscount.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
+                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
+                    +{pendingReferrerRewards - 1} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
+                  </span>
+                )}
+              </div>
+              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: '1px solid #ef444460', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '4px 10px', fontFamily: 'inherit', transition: 'all 0.15s', flexShrink: 0 }}>Quitar</button>
+            </div>
+          )}
+          {discountError && (
+            <p style={{ color: '#ef4444', fontSize: 13, margin: '6px 0 0 2px' }}>{discountError}</p>
+          )}
         </div>
 
         <ShippingSelector
@@ -573,6 +743,7 @@ export default function CheckoutClient({
       </div>
     </main>
     <LoginBanner />
+    <ReferralBanner />
     </>
   )
 }
@@ -600,7 +771,7 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct }: {
+function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct, appliedDiscount, discountAmount }: {
   packageGroups: PackageGroup[]
   individualItems: CartItem[]
   subtotal: number
@@ -610,6 +781,8 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
   membershipMode?: boolean
   membershipWeeks?: number
   membershipDiscountPct?: number
+  appliedDiscount: ValidatedDiscount | null
+  discountAmount: number
 }) {
   const rowStyle: React.CSSProperties = {
     display: 'flex',
@@ -649,7 +822,7 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
         {/* Subtotal */}
         <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
           <span>Subtotal{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:</span>
-          <span>${(total / 100).toFixed(0)} MXN</span>
+          <span>${((membershipMode ? total : subtotal) / 100).toFixed(2)} MXN</span>
         </div>
 
         {/* Envío */}
@@ -658,18 +831,26 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
             Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
           </span>
           <span style={{ textAlign: 'right', color: membershipMode ? '#10b981' : undefined }}>
-            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(0)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
+            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(2)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
             {!membershipMode && shippingType === 'priority' && (
               <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Estimado: $100-200)</span>
             )}
           </span>
         </div>
 
+        {/* Descuento */}
+        {appliedDiscount && discountAmount > 0 && (
+          <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12, color: '#10b981' }}>
+            <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.name}):</span>
+            <span style={{ fontWeight: 700 }}>-${(discountAmount / 100).toFixed(2)} MXN</span>
+          </div>
+        )}
+
         {/* Total */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-            ${(total / 100).toFixed(0)} MXN
+            ${(total / 100).toFixed(2)} MXN
           </span>
         </div>
       </div>
@@ -689,7 +870,7 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
         alignItems: 'center'
       }}>
         <strong style={{ color: colors.orange }}>{pkg.packageName} · x{pkg.totalMeals}</strong>
-        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(0)} MXN</strong>
+        <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</strong>
       </div>
 
       {/* Package items — merged by mealId+sizeId */}
@@ -719,10 +900,10 @@ function PackageSummaryCard({ package: pkg }: { package: PackageGroup }) {
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <span style={{ fontSize: 12, color: colors.textMuted }}>
-                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
               </span>
               <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+                ${(item.unitPrice * item.qty / 100).toFixed(2)}
               </span>
             </div>
           </div>
@@ -757,10 +938,10 @@ function IndividualItemSummary({ item, showBorder }: {
       </div>
       <div style={{ textAlign: 'right' }}>
         <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
-          ${(item.unitPrice / 100).toFixed(0)} MXN c/u
+          ${(item.unitPrice / 100).toFixed(2)} MXN c/u
         </p>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold', color: colors.white }}>
-          ${(item.unitPrice * item.qty / 100).toFixed(0)} MXN
+          ${(item.unitPrice * item.qty / 100).toFixed(2)} MXN
         </p>
       </div>
     </div>
@@ -1159,7 +1340,7 @@ function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPi
                   Envío Estándar
                 </span>
                 <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: membershipMode ? '#10b981' : colors.white }}>
-                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(0)} MXN`}
+                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(2)} MXN`}
                 </span>
               </div>
               <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>

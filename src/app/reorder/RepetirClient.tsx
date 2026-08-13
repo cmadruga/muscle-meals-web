@@ -218,7 +218,7 @@ export default function RepetirClient({
           }}>
             <span style={{ fontWeight: 'bold', color: colors.orange }}>{pkgLabel}</span>
             <span style={{ fontWeight: 'bold', color: colors.white }}>
-              ${(totalPkg! / 100).toFixed(0)} MXN
+              ${(totalPkg! / 100).toFixed(2)} MXN
             </span>
           </div>
         )}
@@ -246,10 +246,10 @@ export default function RepetirClient({
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <span style={{ fontSize: 13, color: colors.textMuted }}>
-                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
               </span>
               <span style={{ fontSize: 14, fontWeight: 600, color: item.isSkipped ? colors.textMuted : colors.white, marginLeft: 10 }}>
-                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+                ${(item.unitPrice * item.qty / 100).toFixed(2)}
               </span>
             </div>
           </div>
@@ -488,7 +488,7 @@ export default function RepetirClient({
                             {size.protein_qty}P · {size.carb_qty}C · {size.veg_qty}V
                           </span>
                           <span style={{ fontSize: 11, color: isSelected ? '#a855f7' : colors.textMuted }}>
-                            ${(size.price / 100).toFixed(0)} c/u
+                            ${(size.price / 100).toFixed(2)} c/u
                           </span>
                         </button>
                       )
@@ -560,7 +560,7 @@ export default function RepetirClient({
                     Precio regular × {membershipWeeks} sem.
                   </span>
                   <span style={{ fontSize: 13, color: colors.textMuted, textDecoration: 'line-through' }}>
-                    ${(totalPrice * membershipWeeks / 100).toFixed(0)} MXN
+                    ${(totalPrice * membershipWeeks / 100).toFixed(2)} MXN
                   </span>
                 </div>
                 <div style={{ height: 1, background: `${colors.orange}40`, marginBottom: 14 }} />
@@ -584,7 +584,7 @@ export default function RepetirClient({
                     </div>
                   </div>
                   <span style={{ fontSize: 26, fontWeight: 700, color: colors.orange, flexShrink: 0 }}>
-                    ${(membershipTotal / 100).toFixed(0)} MXN
+                    ${(membershipTotal / 100).toFixed(2)} MXN
                   </span>
                 </div>
               </div>
@@ -601,7 +601,7 @@ export default function RepetirClient({
                   {isMembershipMatch ? (
                     <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
-                        ${(totalPrice / 100).toFixed(0)} MXN
+                        ${(totalPrice / 100).toFixed(2)} MXN
                       </span>
                       <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
                         $0 MXN
@@ -609,7 +609,7 @@ export default function RepetirClient({
                     </div>
                   ) : (
                     <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-                      ${(totalPrice / 100).toFixed(0)} MXN
+                      ${(totalPrice / 100).toFixed(2)} MXN
                     </span>
                   )}
                 </div>

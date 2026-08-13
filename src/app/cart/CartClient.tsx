@@ -9,6 +9,7 @@ import type { CartItem } from '@/lib/store/cart'
 import type { PackageGroup } from '@/hooks/useCartGroups'
 import { colors } from '@/lib/theme'
 import LoginBanner from '@/components/LoginBanner'
+import ReferralBanner from '@/components/ReferralBanner'
 import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { validateCart } from '@/app/actions/checkout'
 import { checkMembershipMatch } from '@/lib/utils/membership'
@@ -306,7 +307,7 @@ export default function CartClient({
                       {size.protein_qty}P · {size.carb_qty}C · {size.veg_qty}V
                     </span>
                     <span style={{ fontSize: 11, color: isSelected ? '#a855f7' : colors.textMuted }}>
-                      ${(size.price / 100).toFixed(0)} c/u
+                      ${(size.price / 100).toFixed(2)} c/u
                     </span>
                   </button>
                 )
@@ -423,6 +424,7 @@ export default function CartClient({
     )}
 
     <LoginBanner />
+    <ReferralBanner />
 
     <LoginModal
       isOpen={membershipLoginOpen}
@@ -513,7 +515,7 @@ function PackageCard({ package: pkg, onRemove, onEdit }: {
         </span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <span style={{ fontWeight: 'bold', color: colors.white }}>
-            ${(pkg.totalPrice / 100).toFixed(0)} MXN
+            ${(pkg.totalPrice / 100).toFixed(2)} MXN
           </span>
           <button
             onClick={onEdit}
@@ -565,10 +567,10 @@ function PackageCard({ package: pkg, onRemove, onEdit }: {
             </div>
             <div style={{ textAlign: 'right', flexShrink: 0 }}>
               <span style={{ fontSize: 13, color: colors.textMuted }}>
-                ×{item.qty} · ${(item.unitPrice / 100).toFixed(0)} c/u
+                ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
               </span>
               <span style={{ fontSize: 14, fontWeight: 600, color: colors.white, marginLeft: 10 }}>
-                ${(item.unitPrice * item.qty / 100).toFixed(0)}
+                ${(item.unitPrice * item.qty / 100).toFixed(2)}
               </span>
             </div>
           </div>
@@ -605,10 +607,10 @@ function IndividualItemCard({ item, onUpdateQty, onRemove }: {
 
       <div className="cart-item-price">
         <p style={{ margin: '0 0 4px 0', fontSize: 14, color: colors.textMuted }}>
-          ${(item.unitPrice / 100).toFixed(0)} MXN c/u
+          ${(item.unitPrice / 100).toFixed(2)} MXN c/u
         </p>
         <p style={{ margin: 0, fontSize: 16, fontWeight: 'bold', color: colors.white }}>
-          ${((item.unitPrice * item.qty) / 100).toFixed(0)} MXN
+          ${((item.unitPrice * item.qty) / 100).toFixed(2)} MXN
         </p>
       </div>
 
@@ -703,7 +705,7 @@ function CartSummary({
             Precio regular × {membershipWeeks} sem.
           </span>
           <span style={{ fontSize: 13, color: colors.textMuted, textDecoration: 'line-through' }}>
-            ${(originalMultiple / 100).toFixed(0)} MXN
+            ${(originalMultiple / 100).toFixed(2)} MXN
           </span>
         </div>
         {/* Divider */}
@@ -728,7 +730,7 @@ function CartSummary({
             </div>
           </div>
           <span style={{ fontSize: 26, fontWeight: 700, color: colors.orange, flexShrink: 0 }}>
-            ${(membershipTotal / 100).toFixed(0)} MXN
+            ${(membershipTotal / 100).toFixed(2)} MXN
           </span>
         </div>
       </div>
@@ -748,7 +750,7 @@ function CartSummary({
         {isMembershipMatch ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
             <span style={{ fontSize: 20, color: colors.textMuted, textDecoration: 'line-through' }}>
-              ${(total / 100).toFixed(0)} MXN
+              ${(total / 100).toFixed(2)} MXN
             </span>
             <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
               $0 MXN
@@ -756,7 +758,7 @@ function CartSummary({
           </div>
         ) : (
           <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-            ${(total / 100).toFixed(0)} MXN
+            ${(total / 100).toFixed(2)} MXN
           </span>
         )}
       </div>

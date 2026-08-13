@@ -121,6 +121,19 @@ export async function POST(request: NextRequest) {
         console.log(`✅ Membresía activada: cliente ${order.customer_id} · ${order.membership_weeks} sem.`)
       }
 
+      // Referido: si la orden tiene referrer → crear registro en referral_uses (recompensa pendiente para el referidor)
+      if (order.referrer_customer_id && order.customer_id) {
+        const { createAdminClient: adminForReferral } = await import('@/lib/supabase/admin')
+        const adminRef = adminForReferral()
+        const { error: refErr } = await adminRef.from('referral_uses').insert({
+          referrer_customer_id: order.referrer_customer_id,
+          referee_customer_id: order.customer_id,
+          order_id: order.id,
+        })
+        if (refErr) console.error('⚠️ Error creando referral_use:', refErr)
+        else console.log(`🎁 Referral registrado: referidor ${order.referrer_customer_id}`)
+      }
+
       console.log(`✅ Orden ${order.order_number} marcada como pagada`)
 
     } else if (payment.status === 'pending' || payment.status === 'in_process') {

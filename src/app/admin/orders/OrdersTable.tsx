@@ -32,7 +32,7 @@ const STATUS_COLORS: Record<OrderStatus, string> = {
 }
 
 function formatAmount(centavos: number): string {
-  return `$${(centavos / 100).toFixed(0)}`
+  return `$${(centavos / 100).toFixed(2)}`
 }
 
 const SHIPPING_LABELS: Record<string, string> = {
