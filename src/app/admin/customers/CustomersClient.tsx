@@ -433,8 +433,8 @@ function CustomerCard({ customer, isHighlight, highlightRef, onConfigClick, onDe
   onDetailClick: () => void
 }) {
   const isGuest = customer.user_id === null
-  const paidOrders = customer.orders.filter(o => o.status === 'paid').length
-  const guestPaid = customer.guestOrders.filter(o => o.status === 'paid').length
+  const paidOrders = customer.orders.filter(o => o.status === 'paid' || o.status === 'admin').length
+  const guestPaid = customer.guestOrders.filter(o => o.status === 'paid' || o.status === 'admin').length
 
   return (
     <div
