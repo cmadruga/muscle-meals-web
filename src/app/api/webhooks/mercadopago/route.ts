@@ -70,6 +70,14 @@ export async function POST(request: NextRequest) {
     console.log(`💳 Pago ${dataId} | status: ${payment.status} | orden: ${ourOrderId}`)
 
     if (payment.status === 'approved') {
+      const existingOrder = await getOrderById(ourOrderId)
+      if (!existingOrder) return NextResponse.json({ received: true })
+
+      if (existingOrder.status === 'paid') {
+        console.log(`⚠️ Webhook duplicado ignorado — orden ${ourOrderId} ya estaba pagada (payment: ${dataId})`)
+        return NextResponse.json({ received: true })
+      }
+
       await updateOrderStatus(ourOrderId, 'paid')
       await updatePaymentGatewayId(ourOrderId, dataId)
       const { deductExtraStockForOrder } = await import('@/lib/db/extra-stock')
