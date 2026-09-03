@@ -1,5 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { buildReferralCode } from '@/lib/utils/referrals'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { colors } from '@/lib/theme'
@@ -34,11 +35,50 @@ export default async function CuentaPage() {
 
   const admin = createAdminClient()
 
-  const { data: customer } = await admin
+  let { data: customer } = await admin
     .from('customers')
     .select('*')
     .eq('user_id', user.id)
     .maybeSingle()
+
+  // Fallback: if the auth callback wasn't called (e.g. email confirmation flow on local dev),
+  // ensure a customer row exists before rendering the page.
+  if (!customer && user.email) {
+    // Try to link an existing row by email first
+    const { data: byEmail } = await admin
+      .from('customers')
+      .select('*')
+      .eq('email', user.email)
+      .maybeSingle()
+
+    if (byEmail) {
+      await admin.from('customers').update({ user_id: user.id }).eq('id', byEmail.id)
+      customer = { ...byEmail, user_id: user.id }
+    } else {
+      const name =
+        user.user_metadata?.full_name ||
+        user.user_metadata?.name ||
+        user.email.split('@')[0]
+
+      const baseCode = buildReferralCode(user.email)
+      let code = baseCode
+      let n = 2
+      while (true) {
+        const { data: conflict } = await admin
+          .from('customers').select('id').eq('referral_code', code).maybeSingle()
+        if (!conflict) break
+        code = baseCode + n++
+      }
+
+      const { data: created } = await admin
+        .from('customers')
+        .insert({ full_name: name, email: user.email, user_id: user.id, referral_code: code })
+        .select('*')
+        .single()
+
+      customer = created ?? null
+    }
+  }
 
   // Fetch last order + membership size names in parallel, then fetch items
   const membershipItemsRaw = (customer?.membership_items ?? null) as { size_id: string; qty: number }[] | null
