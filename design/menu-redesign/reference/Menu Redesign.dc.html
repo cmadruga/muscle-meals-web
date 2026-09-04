@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0908;font-family:Barlow,system-ui,sans-serif}
+a{color:#F79138;text-decoration:none}a:hover{color:#ffab5e}
+summary{list-style:none;cursor:pointer}
+summary::-webkit-details-marker{display:none}
+details[open] summary [data-caret]{transform:rotate(180deg)}
+details[open] summary [data-lbl-closed]{display:none}
+details:not([open]) summary [data-lbl-open]{display:none}
+@font-face{font-family:'Franchise';src:local('Franchise Bold'),local('Franchise');font-weight:700;font-display:swap}
+.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(255,255,255,.07)}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}
+.dv-tid{font:700 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#F79138;color:#17140f;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:700 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#F5F1EC;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.3 Barlow,sans-serif;color:rgba(245,241,236,.5)}
+.dv-card{background:#0f0d0c url(assets/fondo.jpg) center/1100px repeat;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden}
+.dv-opt:target .dv-oid{background:#F79138;color:#17140f}
+.dv-next{margin:26px 0 0;font:12px/1.6 Barlow,sans-serif;color:rgba(245,241,236,.45)}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Tamaño personalizado · integrado en la misma vista</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Desktop · se despliega debajo del selector, no es modal</div>
+<div class="dv-card" style="width:940px;padding:26px 26px 28px">
+  <div style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC;margin-bottom:12px">1 · Tu tamaño</div>
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">
+    <div style="padding:15px 15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer">
+          <div style="font:700 24px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Low Calorie</div>
+          <div style="margin-top:6px;font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">$145 c/u · $140 en paquete</div>
+        </div>
+    <div style="padding:15px 15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer">
+          <div style="font:700 24px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Fit</div>
+          <div style="margin-top:6px;font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">$155 c/u · $150 en paquete</div>
+        </div>
+    <div style="padding:15px 15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer">
+          <div style="font:700 24px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Protein+</div>
+          <div style="margin-top:6px;font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">$165 c/u · $160 en paquete</div>
+        </div>
+    <div style="padding:15px 15px 14px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1);text-align:center;cursor:pointer">
+      <div style="font:700 22px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">+ Personalizado</div>
+      <div style="margin-top:6px;font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Define tus gramos</div>
+    </div>
+  </div>
+
+  <div style="margin-top:14px;border:1px solid rgba(247,145,56,.4);border-radius:12px;background:rgba(247,145,56,.04);padding:24px 24px 20px">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px">
+      <h2 style="margin:0;font:700 30px/.95 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Crear tamaño personalizado</h2>
+      <span style="font:500 13px/1 Barlow,sans-serif;color:#F79138;cursor:pointer">Usar FIT como base</span>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 230px;gap:12px;margin-bottom:16px">
+      <label style="display:block;position:relative">
+        <span style="position:absolute;top:9px;left:14px;font:600 10px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.42)">Nombre del tamaño</span>
+        <input value="Pal bulk" style="width:100%;box-sizing:border-box;padding:25px 14px 9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#F5F1EC;font-size:15px">
+      </label>
+      <div>
+        <div style="font:600 10px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.42);margin-bottom:7px">Se pesa en</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:9px;background:rgba(255,255,255,.05)">
+          <span style="padding:10px 0;text-align:center;border-radius:6px;background:#F79138;color:#17140f;font:700 12.5px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase">Crudo</span>
+          <span style="padding:10px 0;text-align:center;border-radius:6px;color:rgba(245,241,236,.6);font:600 12.5px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase;cursor:pointer">Cocido</span>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin:0 0 22px;font:400 12.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.5)">La marca en cada barra es la cantidad del tamaño FIT, como referencia. Los ajustes van de 5 en 5 gramos.</p>
+
+    <div style="margin-bottom:22px">
+            <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#F79138">Proteína</div>
+            <div style="display:grid;grid-template-columns:1fr 240px 132px;align-items:center;gap:18px;padding:16px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+            <div>
+              <div style="font:600 14.5px/1.2 Barlow,sans-serif;color:#F5F1EC">Pechuga de Pollo</div>
+              <div style="margin-top:3px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 180g</div>
+            </div>
+            <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:50%;border-radius:3px;background:#F79138"></span>
+              <span style="position:absolute;left:50%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:45%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:45%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);justify-self:end">
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">−</span>
+              <span style="min-width:52px;text-align:center;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">200 g</span>
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">+</span>
+            </div>
+          </div><div style="display:grid;grid-template-columns:1fr 240px 132px;align-items:center;gap:18px;padding:16px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+            <div>
+              <div style="font:600 14.5px/1.2 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida</div>
+              <div style="margin-top:3px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 180g</div>
+            </div>
+            <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              
+              <span style="position:absolute;left:0%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:rgba(245,241,236,.55);box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:45%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:45%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);justify-self:end">
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">−</span>
+              <span style="min-width:52px;text-align:center;font:700 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">0 g</span>
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">+</span>
+            </div>
+          </div>
+          </div>
+    <div style="margin-bottom:22px">
+            <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#e8c07d">Carbo</div>
+            <div style="display:grid;grid-template-columns:1fr 240px 132px;align-items:center;gap:18px;padding:16px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+            <div>
+              <div style="font:600 14.5px/1.2 Barlow,sans-serif;color:#F5F1EC">Arroz Blanco</div>
+              <div style="margin-top:3px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 55g</div>
+            </div>
+            <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:30%;border-radius:3px;background:#e8c07d"></span>
+              <span style="position:absolute;left:30%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:27.5%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:27.5%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);justify-self:end">
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">−</span>
+              <span style="min-width:52px;text-align:center;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">60 g</span>
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">+</span>
+            </div>
+          </div><div style="display:grid;grid-template-columns:1fr 240px 132px;align-items:center;gap:18px;padding:16px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+            <div>
+              <div style="font:600 14.5px/1.2 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</div>
+              <div style="margin-top:3px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 55g</div>
+            </div>
+            <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              
+              <span style="position:absolute;left:0%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:rgba(245,241,236,.55);box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:27.5%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:27.5%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);justify-self:end">
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">−</span>
+              <span style="min-width:52px;text-align:center;font:700 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">0 g</span>
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">+</span>
+            </div>
+          </div>
+          </div>
+    <div style="margin-bottom:22px">
+            <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#7ac77a">Verdura</div>
+            <div style="display:grid;grid-template-columns:1fr 240px 132px;align-items:center;gap:18px;padding:16px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+            <div>
+              <div style="font:600 14.5px/1.2 Barlow,sans-serif;color:#F5F1EC">Mezcla de Vegetales</div>
+              <div style="margin-top:3px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 70g</div>
+            </div>
+            <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:40%;border-radius:3px;background:#7ac77a"></span>
+              <span style="position:absolute;left:40%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:35%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:35%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);justify-self:end">
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">−</span>
+              <span style="min-width:52px;text-align:center;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">80 g</span>
+              <span style="width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 15px/1 Barlow;cursor:pointer">+</span>
+            </div>
+          </div>
+          </div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:20px;padding:16px 18px;border-radius:11px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);margin-bottom:14px">
+      <div style="display:flex;align-items:baseline;gap:10px">
+        <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Precio</span>
+        <span style="font:700 30px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">$135</span>
+        <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">MXN por platillo</span>
+      </div>
+      <div style="display:flex;align-items:baseline;gap:9px">
+        <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">En paquete</span>
+        <span style="font:700 24px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">$130</span>
+        <span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">desde 5 platillos</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 200px;gap:10px">
+      <button style="padding:17px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.09em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.22)" style-hover="background:#ffa252">Crear y usar este tamaño</button>
+      <button style="padding:17px 0;border:1px solid rgba(255,255,255,.16);border-radius:10px;background:transparent;color:rgba(245,241,236,.7);font:600 14px/1 Barlow,sans-serif;cursor:pointer" style-hover="background:rgba(255,255,255,.06)">Cancelar</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Móvil · mismo panel en línea, precio pegado abajo</div>
+<div class="dv-card" style="width:390px;border-radius:22px;position:relative;height:980px">
+  <div style="padding:18px 18px 200px;height:980px;box-sizing:border-box;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <h2 style="margin:0;font:700 28px/.95 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tamaño personalizado</h2>
+      <span style="width:34px;height:34px;flex:none;border-radius:9px;background:rgba(255,255,255,.06);color:rgba(245,241,236,.65);font:400 18px/34px Barlow;text-align:center;cursor:pointer">×</span>
+    </div>
+    <label style="display:block;position:relative;margin-bottom:12px">
+      <span style="position:absolute;top:9px;left:14px;font:600 10px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.42)">Nombre del tamaño</span>
+      <input value="Pal bulk" style="width:100%;box-sizing:border-box;padding:25px 14px 9px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:9px;color:#F5F1EC;font-size:16px">
+    </label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;padding:3px;border-radius:9px;background:rgba(255,255,255,.05);margin-bottom:8px">
+      <span style="padding:12px 0;text-align:center;border-radius:6px;background:#F79138;color:#17140f;font:700 13px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase">Crudo</span>
+      <span style="padding:12px 0;text-align:center;border-radius:6px;color:rgba(245,241,236,.6);font:600 13px/1 Barlow,sans-serif;letter-spacing:.08em;text-transform:uppercase">Cocido</span>
+    </div>
+    <p style="margin:0 0 6px;font:400 12.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.5)">La marca en la barra es la cantidad FIT. Ajustes de 5 en 5 gramos.</p>
+
+    <div style="margin-top:14px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#F79138">Proteína</div>
+    <div style="padding:20px 0 13px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><span style="font:600 15px/1.2 Barlow,sans-serif;color:#F5F1EC">Pechuga de Pollo</span><span style="font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">200 g</span></div>
+      <div style="margin-bottom:5px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 180g</div>
+      <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:50%;border-radius:3px;background:#F79138"></span>
+              <span style="position:absolute;left:50%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:45%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:45%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+    </div>
+    <div style="padding:20px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><span style="font:600 15px/1.2 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida</span><span style="font:700 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">0 g</span></div>
+      <div style="margin-bottom:5px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 180g</div>
+      <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              
+              <span style="position:absolute;left:0%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:rgba(245,241,236,.55);box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:45%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:45%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+    </div>
+    <div style="margin-top:14px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#e8c07d">Carbo</div>
+    <div style="padding:20px 0 13px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><span style="font:600 15px/1.2 Barlow,sans-serif;color:#F5F1EC">Arroz Blanco</span><span style="font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">60 g</span></div>
+      <div style="margin-bottom:5px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 55g</div>
+      <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:30%;border-radius:3px;background:#e8c07d"></span>
+              <span style="position:absolute;left:30%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:27.5%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:27.5%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+    </div>
+    <div style="padding:20px 0 13px;border-top:1px solid rgba(255,255,255,.06)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><span style="font:600 15px/1.2 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</span><span style="font:700 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">0 g</span></div>
+      <div style="margin-bottom:5px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 55g</div>
+      <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              
+              <span style="position:absolute;left:0%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:rgba(245,241,236,.55);box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:27.5%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:27.5%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+    </div>
+    <div style="margin-top:14px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#7ac77a">Verdura</div>
+    <div style="padding:20px 0 13px;border-top:1px solid rgba(255,255,255,.06);margin-top:8px">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:6px"><span style="font:600 15px/1.2 Barlow,sans-serif;color:#F5F1EC">Mezcla de Vegetales</span><span style="font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">80 g</span></div>
+      <div style="margin-bottom:5px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">Referencia FIT: 70g</div>
+      <div style="position:relative;height:18px;display:flex;align-items:center">
+              <div style="width:100%;height:6px;border-radius:3px;background:rgba(255,255,255,.1)"></div>
+              <span style="position:absolute;left:0;height:6px;width:40%;border-radius:3px;background:#7ac77a"></span>
+              <span style="position:absolute;left:40%;width:18px;height:18px;margin-left:-9px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 5px rgba(0,0,0,.6);cursor:grab"></span>
+              <span style="position:absolute;left:35%;top:-3px;width:1px;height:12px;background:rgba(245,241,236,.4)"></span>
+              <span style="position:absolute;left:35%;top:-17px;transform:translateX(-50%);font:600 9px/1 Barlow,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:rgba(245,241,236,.4)">FIT</span>
+            </div>
+    </div>
+  </div>
+  <div style="position:absolute;left:0;right:0;bottom:0;padding:16px 18px 18px;background:rgba(12,10,9,.97);border-top:1px solid rgba(255,255,255,.1)">
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">$130 en paquete <span style="color:rgba(245,241,236,.4)">desde 5</span></span>
+      <span style="font:700 30px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">$135</span>
+    </div>
+    <button style="width:100%;padding:18px 0;border:0;border-radius:12px;background:#F79138;color:#17140f;font:700 21px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.09em;text-transform:uppercase;cursor:pointer">Crear y usar este tamaño</button>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Sin modal: el panel se despliega en línea debajo del selector y desaparece al cancelar, para que el usuario siga viendo LOW / FIT / PROTEIN+ como referencia mientras ajusta. Fuera los tags de calorías y macros (dependen de la receta); solo queda el precio, unitario y de paquete. Todos los sliders son idénticos, con la marca FIT sobre la barra. Prueba: «muestra el estado con un tamaño ya guardado» · «sigue con /cart y /checkout»</p>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">/menu — Arma tu semana · flujo unificado</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Desktop · arriba de todo, selector completo (siempre visible sin scroll)</div>
+<div class="dv-card" style="width:1280px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 26px;height:64px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:22px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;width:auto;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55);cursor:pointer">← Volver al inicio</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="position:relative;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.4 10.6h9.9l2.1-7.4H6.1"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17.5" cy="19" r="1.5"/></svg></div>
+      <button style="display:flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:transparent;color:#F5F1EC;font:600 13px/1 Barlow,sans-serif;cursor:pointer" style-hover="background:rgba(255,255,255,.07)"><span style="width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 10px/20px Barlow;text-align:center">A</span>Ana</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 372px">
+    <div style="padding:30px 28px 40px;border-right:1px solid rgba(255,255,255,.08)">
+      <h1 style="margin:0 0 6px;font:700 54px/.88 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Arma tu semana</h1>
+      <p style="margin:0 0 26px;font:400 15px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);max-width:56ch;text-wrap:pretty">Elige tu tamaño, agrega los platillos que quieras y mira el total en vivo. Desde 5 platillos el precio baja a paquete automáticamente. Entregas todos los domingos de 9am a 4pm.</p>
+
+      <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:12px">
+        <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu tamaño</span>
+        <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">se aplica a lo que agregues después</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:32px">
+        <div style="padding:15px 15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+          <div style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Low Calorie</div>
+          <div style="margin-top:5px;font:400 12.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">160g proteína · 45g carbs · 80g vegetal</div>
+          <div style="margin-top:9px;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$145 <span style="color:rgba(245,241,236,.4);font-weight:400">c/u · $140 en paquete</span></div>
+        </div>
+        <div style="padding:15px 15px 14px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1);cursor:pointer;position:relative">
+          <span style="position:absolute;top:-8px;right:11px;padding:3px 7px;border-radius:4px;background:#F79138;color:#17140f;font:700 9.5px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase">El más pedido</span>
+          <div style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Fit</div>
+          <div style="margin-top:5px;font:400 12.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.6)">180g proteína · 55g carbs · 70g vegetal</div>
+          <div style="margin-top:9px;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$155 <span style="color:rgba(245,241,236,.4);font-weight:400">c/u · $150 en paquete</span></div>
+        </div>
+        <div style="padding:15px 15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+          <div style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Protein+</div>
+          <div style="margin-top:5px;font:400 12.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">220g proteína · 70g carbs · 70g vegetal</div>
+          <div style="margin-top:9px;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$165 <span style="color:rgba(245,241,236,.4);font-weight:400">c/u · $160 en paquete</span></div>
+        </div>
+        <div style="padding:15px 15px 14px;border:1px dashed rgba(255,255,255,.22);border-radius:11px;background:transparent;cursor:pointer;display:flex;flex-direction:column;justify-content:space-between" style-hover="border-color:#F79138">
+          <div style="font:700 22px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:rgba(245,241,236,.8)">+ Personalizado</div>
+          <div style="margin-top:9px;font:400 12.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Define tus gramos</div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Los platillos</span>
+        <div style="display:flex;gap:7px">
+          <span style="padding:7px 12px;border-radius:20px;background:#F5F1EC;color:#17140f;font:600 12px/1 Barlow,sans-serif">Todos</span>
+          <span style="padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:500 12px/1 Barlow,sans-serif;cursor:pointer">Pollo</span>
+          <span style="padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:500 12px/1 Barlow,sans-serif;cursor:pointer">Res</span>
+          <span style="padding:7px 12px;border-radius:20px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:500 12px/1 Barlow,sans-serif;cursor:pointer">Pescado</span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start">
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta a la Vinagreta</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga de pollo sazonada, pasta con vinagreta de miel y mostaza, arúgula y tomate cherry.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">538</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">48</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">47</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">16</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Paprika</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Vinagre de Jerez</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Mostaza</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Miel</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arúgula</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate Cherry</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta Bolognesa</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Carne molida con pasta pluma, espinaca, ricotta y salsa boloñesa de tomate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">532</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">49</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta Pluma</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Espinaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ricotta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Albahaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pollo BBQ con Arroz</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga a la parrilla con salsa BBQ, arroz blanco y mezcla de vegetales.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">545</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">60</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa BBQ</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Blanco</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Chícharo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Elote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden;opacity:.5">
+          <div style="height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="padding:5px 10px;border-radius:5px;background:rgba(0,0,0,.6);font:700 10px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F5F1EC">Agotado</span></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Res con Papa</div>
+              <span style="font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5);flex:none">Vuelve el lunes</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Bistec de res en su jugo con papa asada y ejotes al vapor.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">610</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">52</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">58</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">18</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Bistec de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Papa</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ejote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Romero</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Salmón Teriyaki</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Salmón glaseado en teriyaki con arroz jazmín y brócoli.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">590</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">44</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">55</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">22</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salmón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa Teriyaki</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Jazmín</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Brócoli</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajonjolí</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Jengibre</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Bowl Asiático</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pollo salteado con fideo de arroz, col morada y salsa de cacahuate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">575</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">46</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">64</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">15</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Fideo de Arroz</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Col Morada</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cacahuate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Soya</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Limón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cilantro</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li></ul></details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:26px 22px;background:#0c0a09;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:20px">
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu semana</span>
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">0 platillos</span>
+      </div>
+      <div style="border:1px dashed rgba(255,255,255,.16);border-radius:12px;padding:30px 22px;text-align:center">
+        <img src="assets/mascota.png" alt="" style="width:104px;height:auto;display:block;margin:0 auto 12px">
+        <div style="font:700 20px/1.05 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Empieza a armar</div>
+        <p style="margin:8px 0 0;font:400 13.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Toca un platillo y aparecerá aquí. Puedes repetirlo y mezclar tamaños.</p>
+      </div>
+      <div style="margin-top:16px;padding:15px;border-radius:11px;background:rgba(247,145,56,.07);border:1px solid rgba(247,145,56,.18)">
+        <div style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138">Mas platillos, mas ahorro</div>
+        <p style="margin:7px 0 0;font:400 13px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.65)">Al llegar a 5 platillos cada platillo baja al precio de paquete. No necesitas hacer nada.</p>
+      </div>
+      <div style="margin-top:auto;padding-top:22px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:14px">
+          <span style="font:500 14px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total</span>
+          <span style="font:700 30px/1 'Franchise','Big Shoulders Display',sans-serif;color:rgba(245,241,236,.35)">$0</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button style="width:100%;padding:16px 0;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:transparent;color:rgba(245,241,236,.28);font:700 18px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:not-allowed">Agregar al carrito</button>
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:rgba(255,255,255,.07);color:rgba(245,241,236,.3);font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:not-allowed">Ir a pagar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Desktop · con scroll (barra de tamaño pegada) · 3 platillos, sin descuento</div>
+<div class="dv-card" style="width:1280px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 26px;height:64px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:22px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;width:auto;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55);cursor:pointer">← Volver al inicio</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="position:relative;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.4 10.6h9.9l2.1-7.4H6.1"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17.5" cy="19" r="1.5"/></svg><span style="position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#F79138;color:#17140f;font:700 10px/17px Barlow;text-align:center">3</span></div>
+      <button style="display:flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:transparent;color:#F5F1EC;font:600 13px/1 Barlow,sans-serif;cursor:pointer"><span style="width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 10px/20px Barlow;text-align:center">A</span>Ana</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 372px">
+    <div style="padding:26px 28px 40px;border-right:1px solid rgba(255,255,255,.08)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:13px 16px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,241,236,.5)">Agregando en</span>
+          <div style="display:flex;gap:6px">
+            <span style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Low Calorie</span>
+            <span style="padding:8px 14px;border-radius:8px;background:#F79138;color:#17140f;font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase">Fit</span>
+            <span style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Protein+</span>
+            <span style="padding:8px 14px;border-radius:8px;background:transparent;border:1px dashed rgba(255,255,255,.2);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">+ Personalizado</span>
+          </div>
+        </div>
+        <span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">180g proteína · 55g carbs · 70g vegetal</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start">
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">2</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta a la Vinagreta</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga de pollo sazonada, pasta con vinagreta de miel y mostaza, arúgula y tomate cherry.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">538</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">48</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">47</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">16</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Paprika</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Vinagre de Jerez</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Mostaza</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Miel</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arúgula</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate Cherry</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">1</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta Bolognesa</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Carne molida con pasta pluma, espinaca, ricotta y salsa boloñesa de tomate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">532</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">49</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta Pluma</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Espinaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ricotta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Albahaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pollo BBQ con Arroz</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga a la parrilla con salsa BBQ, arroz blanco y mezcla de vegetales.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">545</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">60</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa BBQ</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Blanco</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Chícharo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Elote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Res con Papa</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Bistec de res en su jugo con papa asada y ejotes al vapor.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">610</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">52</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">58</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">18</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Bistec de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Papa</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ejote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Romero</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Salmón Teriyaki</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Salmón glaseado en teriyaki con arroz jazmín y brócoli.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">590</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">44</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">55</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">22</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salmón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa Teriyaki</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Jazmín</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Brócoli</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajonjolí</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Jengibre</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Bowl Asiático</div>
+              <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pollo salteado con fideo de arroz, col morada y salsa de cacahuate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">575</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">46</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">64</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">15</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Fideo de Arroz</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Col Morada</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cacahuate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Soya</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Limón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cilantro</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li></ul></details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:26px 22px;background:#0c0a09;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:18px">
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu semana</span>
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">3 platillos</span>
+      </div>
+
+      <div style="padding:14px 15px;border-radius:11px;background:rgba(247,145,56,.08);border:1px solid rgba(247,145,56,.22);margin-bottom:20px">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px">
+          <span style="font:600 13.5px/1.3 Barlow,sans-serif;color:#F5F1EC">Te faltan 2 para precio de paquete</span>
+          <span style="font:700 13px/1 Barlow,sans-serif;color:#F79138">3/5</span>
+        </div>
+        <div style="height:6px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden"><span style="display:block;width:60%;height:100%;background:#F79138"></span></div>
+        <p style="margin:9px 0 0;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6)">Ahorrarías $25 y el paquete se activa solo.</p>
+      </div>
+
+      <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.45);margin-bottom:10px">Fit · 180g proteína</div>
+      <div style="display:flex;flex-direction:column;gap:9px;margin-bottom:20px">
+        <div style="display:flex;align-items:center;gap:11px;padding:10px;border-radius:10px;background:rgba(255,255,255,.035)">
+          <div style="width:42px;height:42px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.25 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:rgba(245,241,236,.5)">$155 c/u</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 14px/1 Barlow;cursor:pointer">−</span>
+            <span style="font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">2</span>
+            <span style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 14px/1 Barlow;cursor:pointer">+</span>
+          </div>
+          <span style="min-width:52px;text-align:right;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$310</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:11px;padding:10px;border-radius:10px;background:rgba(255,255,255,.035)">
+          <div style="width:42px;height:42px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.25 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:rgba(245,241,236,.5)">$155 c/u</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 14px/1 Barlow;cursor:pointer">−</span>
+            <span style="font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">1</span>
+            <span style="width:24px;height:24px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 14px/1 Barlow;cursor:pointer">+</span>
+          </div>
+          <span style="min-width:52px;text-align:right;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$155</span>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="display:flex;justify-content:space-between;font:400 13.5px/1.9 Barlow,sans-serif;color:rgba(245,241,236,.55)"><span>Subtotal (3)</span><span>$465</span></div>
+        <div style="display:flex;justify-content:space-between;font:400 13.5px/1.9 Barlow,sans-serif;color:rgba(245,241,236,.4)"><span>Descuento paquete</span><span>—</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin:10px 0 14px">
+          <span style="font:500 14px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Total</span>
+          <span style="font:700 32px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">$465</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button style="width:100%;padding:16px 0;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:#F5F1EC;font:700 18px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:rgba(255,255,255,.07)">Agregar al carrito</button>
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.24)" style-hover="background:#ffa252">Ir a pagar</button>
+        </div>
+        <p style="margin:10px 0 0;text-align:center;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.45)">Entrega el domingo 9am–4pm · envío $49</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Desktop · con scroll · 6 platillos, descuento activo y tamaños mezclados</div>
+<div class="dv-card" style="width:1280px">
+  <div style="display:flex;align-items:center;justify-content:space-between;padding:0 26px;height:64px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:22px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;width:auto;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55);cursor:pointer">← Volver al inicio</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="position:relative;width:36px;height:36px;border-radius:9px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7)"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2.2l2.4 10.6h9.9l2.1-7.4H6.1"/><circle cx="9.5" cy="19" r="1.5"/><circle cx="17.5" cy="19" r="1.5"/></svg><span style="position:absolute;top:-4px;right:-4px;min-width:17px;height:17px;border-radius:9px;background:#F79138;color:#17140f;font:700 10px/17px Barlow;text-align:center">6</span></div>
+      <button style="display:flex;align-items:center;gap:9px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px;background:transparent;color:#F5F1EC;font:600 13px/1 Barlow,sans-serif;cursor:pointer"><span style="width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 10px/20px Barlow;text-align:center">A</span>Ana</button>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 372px">
+    <div style="padding:26px 28px 40px;border-right:1px solid rgba(255,255,255,.08)">
+      <div style="display:flex;align-items:center;gap:11px;padding:12px 16px;border-radius:11px;background:rgba(122,199,122,.08);border:1px solid rgba(122,199,122,.28);margin-bottom:18px">
+        <span style="width:22px;height:22px;flex:none;border-radius:50%;background:#7ac77a;color:#0f0d0c;font:700 12px/22px Barlow;text-align:center">✓</span>
+        <span style="font:600 14px/1.35 Barlow,sans-serif;color:#F5F1EC">Precio de paquete activo — cada platillo bajó al precio con descuento.</span>
+        <span style="margin-left:auto;font:700 13.5px/1 Barlow,sans-serif;color:#7ac77a">Ahorras $30</span>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:13px 16px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08)">
+        <div style="display:flex;align-items:center;gap:12px">
+          <span style="font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(245,241,236,.5)">Agregando en</span>
+          <div style="display:flex;gap:6px">
+            <span style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Low Calorie</span>
+            <span style="padding:8px 14px;border-radius:8px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Fit</span>
+            <span style="padding:8px 14px;border-radius:8px;background:#F79138;color:#17140f;font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase">Protein+</span>
+            <span style="padding:8px 14px;border-radius:8px;background:transparent;border:1px dashed rgba(255,255,255,.2);color:rgba(245,241,236,.6);font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">+ Personalizado</span>
+          </div>
+        </div>
+        <span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.42)">220g proteína · 70g carbs · 70g vegetal</span>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;align-items:start">
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">3</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta a la Vinagreta</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga de pollo sazonada, pasta con vinagreta de miel y mostaza, arúgula y tomate cherry.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">538</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">48</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">47</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">16</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Paprika</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Vinagre de Jerez</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Mostaza</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Miel</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arúgula</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate Cherry</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta Bolognesa</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Carne molida con pasta pluma, espinaca, ricotta y salsa boloñesa de tomate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">532</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">49</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta Pluma</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Espinaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ricotta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Albahaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pollo BBQ con Arroz</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga a la parrilla con salsa BBQ, arroz blanco y mezcla de vegetales.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">545</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">60</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa BBQ</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Blanco</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Chícharo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Elote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Res con Papa</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Bistec de res en su jugo con papa asada y ejotes al vapor.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">610</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">52</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">58</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">18</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Bistec de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Papa</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ejote</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pimienta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Romero</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">2</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Salmón Teriyaki</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Salmón glaseado en teriyaki con arroz jazmín y brócoli.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">590</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">44</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">55</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">22</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salmón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Salsa Teriyaki</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arroz Jazmín</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Brócoli</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajonjolí</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Jengibre</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:132px;border-bottom:1px solid rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">1</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:13px 14px 12px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 21px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Bowl Asiático</div>
+              <div style="display:flex;align-items:baseline;gap:6px;flex:none"><span style="font:600 14.5px/1 Barlow,sans-serif;color:#7ac77a">$160</span><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$165</span></div>
+            </div>
+            <p style="margin:7px 0 11px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pollo salteado con fideo de arroz, col morada y salsa de cacahuate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">575</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">46</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">64</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">15</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Fideo de Arroz</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Col Morada</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Zanahoria</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cacahuate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Soya</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Limón</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cilantro</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Sésamo</li></ul></details>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:26px 22px;background:#0c0a09;display:flex;flex-direction:column">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu semana</span>
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">6 platillos</span>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:11px;background:rgba(122,199,122,.1);border:1px solid rgba(122,199,122,.3);margin-bottom:20px">
+        <span style="width:20px;height:20px;flex:none;border-radius:50%;background:#7ac77a;color:#0f0d0c;font:700 11px/20px Barlow;text-align:center">✓</span>
+        <div>
+          <div style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#7ac77a">Precio de paquete</div>
+          <div style="margin-top:3px;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.65)">Cada platillo bajó al precio de paquete.</div>
+        </div>
+      </div>
+
+      <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.45);margin-bottom:9px">Fit · 180g proteína · 4 platillos</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)">
+          <div style="width:38px;height:38px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.25 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$150 c/u <span style="color:rgba(245,241,236,.45)">· Fit</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">−</span>
+            <span style="font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">3</span>
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">+</span>
+          </div>
+          <span style="min-width:48px;text-align:right;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$450</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)">
+          <div style="width:38px;height:38px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.25 Barlow,sans-serif;color:#F5F1EC">Bowl Asiático</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$150 c/u <span style="color:rgba(245,241,236,.45)">· Fit</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">−</span>
+            <span style="font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">1</span>
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">+</span>
+          </div>
+          <span style="min-width:48px;text-align:right;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$150</span>
+        </div>
+      </div>
+
+      <div style="font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.45);margin-bottom:9px">Protein+ · 220g proteína · 2 platillos</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.035)">
+          <div style="width:38px;height:38px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14px/1.25 Barlow,sans-serif;color:#F5F1EC">Salmón Teriyaki</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$160 c/u <span style="color:rgba(245,241,236,.45)">· Protein+</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:7px">
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">−</span>
+            <span style="font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">2</span>
+            <span style="width:23px;height:23px;border-radius:6px;background:rgba(255,255,255,.07);display:flex;align-items:center;justify-content:center;color:rgba(245,241,236,.7);font:600 13px/1 Barlow;cursor:pointer">+</span>
+          </div>
+          <span style="min-width:48px;text-align:right;font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">$320</span>
+        </div>
+      </div>
+
+      <div style="margin-top:auto;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="display:flex;justify-content:space-between;font:400 13.5px/1.9 Barlow,sans-serif;color:rgba(245,241,236,.55)"><span>Subtotal (6)</span><span style="text-decoration:line-through;color:rgba(245,241,236,.4)">$950</span></div>
+        <div style="display:flex;justify-content:space-between;font:400 13.5px/1.9 Barlow,sans-serif;color:#7ac77a"><span>Descuento paquete</span><span>−$30</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin:10px 0 14px">
+          <span style="font:500 14px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Total</span>
+          <span style="font:700 34px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">$920</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button style="width:100%;padding:16px 0;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:transparent;color:#F5F1EC;font:700 18px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:rgba(255,255,255,.07)">Agregar al carrito</button>
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.24)" style-hover="background:#ffa252">Ir a pagar</button>
+        </div>
+        <p style="margin:10px 0 0;text-align:center;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.45)">Entrega el domingo · envío $49 (gratis con Membership)</p>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="dv-opt" id="1d">
+<div class="dv-olabel"><a class="dv-oid" href="#1d">1d</a>Móvil · barra flotante + drawer del carrito</div>
+<div style="display:flex;gap:20px">
+  <div class="dv-card" style="width:390px;border-radius:22px;position:relative;height:1240px">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 18px;height:56px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">← Inicio</span>
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;width:auto;display:block">
+      <div style="width:28px;height:28px;border-radius:50%;background:#F79138;color:#17140f;font:700 11px/28px Barlow;text-align:center">A</div>
+    </div>
+    <div style="padding:20px 18px 120px;height:1184px;box-sizing:border-box;overflow:hidden">
+      <h1 style="margin:0 0 6px;font:700 40px/.9 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Arma tu semana</h1>
+      <p style="margin:0 0 18px;font:400 14px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Desde 5 platillos baja a precio de paquete. Entregas los domingos.</p>
+      <div style="display:flex;gap:7px;overflow:hidden;margin-bottom:8px;white-space:nowrap">
+        <span style="padding:10px 13px;border-radius:9px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 17px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Low Cal</span>
+        <span style="padding:10px 15px;border-radius:9px;background:#F79138;color:#17140f;font:700 17px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase">Fit</span>
+        <span style="padding:10px 15px;border-radius:9px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.6);font:700 17px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap">Protein+</span>
+        <span style="padding:10px 15px;border-radius:9px;border:1px dashed rgba(255,255,255,.2);color:rgba(245,241,236,.6);font:700 17px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase">+</span>
+      </div>
+      <div style="margin:0 0 18px;padding:4px 14px 10px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="min-width:0">
+          <div style="font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Proteína</div>
+          <div style="margin-top:4px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.45)">Pechuga de Pollo, Carne Molida</div>
+        </div>
+        <span style="flex:none;font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">180g</span>
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.06)">
+        <div style="min-width:0">
+          <div style="font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#e8c07d">Carbo</div>
+          <div style="margin-top:4px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.45)">Pasta, Arroz Blanco</div>
+        </div>
+        <span style="flex:none;font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">55g</span>
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:11px 0">
+        <div style="min-width:0">
+          <div style="font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#7ac77a">Verdura</div>
+          <div style="margin-top:4px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.45)">Espinaca, Mix de Zanahoria, Elote, Papa y Chícharo, Brócoli</div>
+        </div>
+        <span style="flex:none;font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">70g</span>
+      </div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;padding:11px 0 4px;border-top:1px solid rgba(255,255,255,.1)">
+        <span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">$150 en paquete desde 5</span>
+        <span style="font:600 15px/1 Barlow,sans-serif;color:#F5F1EC">$155 c/u</span>
+      </div>
+    </div>
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="border:1px solid #F79138;border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:120px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><div style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:2px;padding:3px;border-radius:9px;background:rgba(12,10,9,.86);border:1px solid rgba(247,145,56,.5)"><span style="width:26px;height:26px;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#F79138;font:600 15px/1 Barlow;cursor:pointer">−</span><span style="min-width:20px;text-align:center;font:700 14px/1 Barlow,sans-serif;color:#F5F1EC">2</span><span style="width:26px;height:26px;border-radius:6px;background:#F79138;display:flex;align-items:center;justify-content:center;color:#17140f;font:600 15px/1 Barlow;cursor:pointer">+</span></div></div>
+          <div style="padding:12px 13px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 22px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta a la Vinagreta</div>
+              <span style="font:600 15px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 13px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Pechuga de pollo sazonada, pasta con vinagreta de miel y mostaza, arúgula y tomate cherry.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">538</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">48</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">47</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">16</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pechuga de Pollo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Paprika</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla en Polvo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Vinagre de Jerez</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Mostaza</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Miel</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Arúgula</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate Cherry</li></ul></details>
+          </div>
+        </div>
+        <div style="border:1px solid rgba(255,255,255,.09);border-radius:12px;background:#191614;overflow:hidden">
+          <div style="position:relative;height:120px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(255,255,255,.07);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 6px,transparent 6px 12px)"><span style="font:400 10px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.35)">foto del platillo</span><button style="position:absolute;top:9px;right:9px;display:flex;align-items:center;gap:6px;padding:9px 14px;border:0;border-radius:9px;background:#F79138;color:#17140f;font:700 14px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer" style-hover="background:#ffa252">+ Agregar</button></div>
+          <div style="padding:12px 13px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px">
+              <div style="font:700 22px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pasta Bolognesa</div>
+              <span style="font:600 15px/1 Barlow,sans-serif;color:#F5F1EC;flex:none">$155</span>
+            </div>
+            <p style="margin:7px 0 11px;font:400 13px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55);text-wrap:pretty">Carne molida con pasta pluma, espinaca, ricotta y salsa boloñesa de tomate.</p>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">532</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Calorías</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">50</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Proteína</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">49</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Carbos</div></div><div style="padding:7px 0 6px;border:1px solid rgba(255,255,255,.1);border-radius:8px;background:rgba(255,255,255,.03);text-align:center"><div style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">12</div><div style="margin-top:3px;font:600 9px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Grasas</div></div></div>
+            <details style="margin-top:11px;border-top:1px solid rgba(255,255,255,.08)"><summary style="display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 0 2px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#F79138"><span data-caret style="display:inline-block;font-size:9px;transition:transform .15s">▼</span><span data-lbl-closed>Ingredientes</span><span data-lbl-open>Ocultar</span></summary><ul style="display:grid;grid-template-columns:repeat(2,1fr);gap:2px 14px;margin:10px 0 4px;padding:0 0 0 15px"><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Carne Molida de Res</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Pasta Pluma</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Espinaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ricotta</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Tomate</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Cebolla</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Ajo</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Albahaca</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Aceite de Oliva</li><li style="font:400 12px/1.55 Barlow,sans-serif;color:rgba(245,241,236,.62)">Sal en Grano</li></ul></details>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 14px 16px;background:rgba(12,10,9,.97);border-top:1px solid rgba(255,255,255,.1);backdrop-filter:blur(8px)">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="flex:1;height:5px;border-radius:3px;background:rgba(255,255,255,.1);overflow:hidden"><span style="display:block;width:60%;height:100%;background:#F79138"></span></div>
+        <span style="font:500 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6);white-space:nowrap">2 más y baja a paquete</span>
+      </div>
+      <button style="width:100%;display:flex;align-items:center;justify-content:space-between;padding:15px 18px;border:0;border-radius:12px;background:#F79138;cursor:pointer">
+        <span style="display:flex;align-items:center;gap:9px">
+          <span style="min-width:24px;height:24px;padding:0 6px;border-radius:12px;background:rgba(23,20,15,.22);color:#17140f;font:700 13px/24px Barlow;text-align:center">3</span>
+          <span style="font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#17140f">Ver mi semana</span>
+        </span>
+        <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#17140f">$465</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="dv-card" style="width:390px;border-radius:22px;background:rgba(10,9,8,.6)">
+    <div style="height:190px;position:relative;background:repeating-linear-gradient(45deg,rgba(255,255,255,.035) 0 7px,transparent 7px 14px);display:flex;align-items:center;justify-content:center">
+      <span style="font:400 10.5px/1 ui-monospace,monospace;letter-spacing:.08em;color:rgba(245,241,236,.3)">menú detrás</span>
+    </div>
+    <div style="background:#191614;border-radius:22px 22px 0 0;border-top:1px solid rgba(255,255,255,.1);padding:12px 18px 20px;margin-top:-14px">
+      <div style="width:44px;height:4px;border-radius:2px;background:rgba(255,255,255,.18);margin:0 auto 18px"></div>
+      <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:16px">
+        <span style="font:700 28px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu semana</span>
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">6 platillos</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:11px;background:rgba(122,199,122,.1);border:1px solid rgba(122,199,122,.3);margin-bottom:18px">
+        <span style="width:20px;height:20px;flex:none;border-radius:50%;background:#7ac77a;color:#0f0d0c;font:700 11px/20px Barlow;text-align:center">✓</span>
+        <span style="font:600 13.5px/1.35 Barlow,sans-serif;color:#F5F1EC">Precio de paquete activo · ahorras $30</span>
+      </div>
+      <div style="font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.45);margin-bottom:9px">Fit · 4 platillos</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.04)">
+          <div style="width:40px;height:40px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14.5px/1.25 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$150 c/u · ×3</div>
+          </div>
+          <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC">$450</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.04)">
+          <div style="width:40px;height:40px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 14.5px/1.25 Barlow,sans-serif;color:#F5F1EC">Bowl Asiático</div>
+            <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$150 c/u · ×1</div>
+          </div>
+          <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC">$150</span>
+        </div>
+      </div>
+      <div style="font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.45);margin-bottom:9px">Protein+ · 2 platillos</div>
+      <div style="display:flex;align-items:center;gap:11px;padding:9px 10px;border-radius:10px;background:rgba(255,255,255,.04);margin-bottom:16px">
+        <div style="width:40px;height:40px;flex:none;border-radius:8px;border:1px dashed rgba(245,241,236,.2);background:repeating-linear-gradient(45deg,rgba(255,255,255,.05) 0 5px,transparent 5px 10px)"></div>
+        <div style="flex:1;min-width:0">
+          <div style="font:600 14.5px/1.25 Barlow,sans-serif;color:#F5F1EC">Salmón Teriyaki</div>
+          <div style="font:400 12.5px/1.3 Barlow,sans-serif;color:#7ac77a">$160 c/u · ×2</div>
+        </div>
+        <span style="font:600 14.5px/1 Barlow,sans-serif;color:#F5F1EC">$320</span>
+      </div>
+      <div style="padding-top:14px;border-top:1px solid rgba(255,255,255,.08)">
+        <div style="display:flex;justify-content:space-between;font:400 13.5px/1.8 Barlow,sans-serif;color:#7ac77a"><span>Descuento paquete</span><span>−$30</span></div>
+        <div style="display:flex;align-items:baseline;justify-content:space-between;margin:8px 0 14px">
+          <span style="font:500 14px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Total</span>
+          <span style="font:700 32px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F5F1EC">$920</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:9px">
+          <button style="width:100%;padding:16px 0;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:transparent;color:#F5F1EC;font:700 19px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Agregar al carrito</button>
+          <button style="width:100%;padding:19px 0;border:0;border-radius:12px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Ir a pagar</button>
+        </div>
+        <button style="width:100%;margin-top:8px;padding:14px 0;border:0;border-radius:12px;background:transparent;color:rgba(245,241,236,.6);font:500 14px/1 Barlow,sans-serif;cursor:pointer">Seguir agregando platillos</button>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+</div>
+<p class="dv-next">Datos reales tomados de tus assets: paquetes Low Calorie / Fit / Protein+ con sus macros y precios ($145/$155/$165 por unidad; $140/$150/$160 en paquete), entregas domingo 9am–4pm, envío $49. Faltan 4 archivos que no llegaron (nombres con acento se rompieron): Título_CómoFunciona, Título_Menu, Personalización, Título_NuestrosPaquetes. Cada card trae descripción, macros en boxes y desglose de ingredientes que abre/cierra. Los dos primeros platillos usan datos reales de tu screenshot; los otros cuatro son placeholder — mándame el catálogo con ingredientes y los cambio. Nota de assets: los slots dicen qué archivo va en cada uno. Los títulos («ARMA TU SEMANA») hoy están puestos en font — si prefieres usar <strong style="color:rgba(245,241,236,.7)">Título_Menu.png</strong> como imagen, dímelo y los cambio a slot de imagen. Comportamiento del selector: el bloque completo de <a class="dv-oid" href="#1a">1a</a> vive siempre arriba y no se colapsa al agregar; la barra compacta de <a class="dv-oid" href="#1b">1b</a>/<a class="dv-oid" href="#1c">1c</a> es un elemento aparte que se pega arriba solo cuando el completo sale de vista al hacer scroll. Decisiones abiertas: si el panel de tamaño personalizado va como modal o inline · si mostramos el precio tachado antes de activar el descuento. Prueba: «diseña el panel de tamaño personalizado» · «sigue con /cart y /checkout» · «el sidebar sticky al hacer scroll»</p>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}"></script>
+</body>
+</html>
