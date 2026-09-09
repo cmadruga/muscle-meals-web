@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCartStore } from '@/lib/store/cart'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
 import { validateDiscount } from '@/app/actions/discounts'
@@ -11,22 +11,47 @@ import type { MembershipDiscounts } from '@/lib/db/settings'
 import type { CartItem } from '@/lib/store/cart'
 import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
-import { colors } from '@/lib/theme'
 import { checkMembershipMatch } from '@/lib/utils/membership'
 import LoginBanner from '@/components/LoginBanner'
 import ReferralBanner from '@/components/ReferralBanner'
-import { 
+import {
   isValidPostalCode,
   getZoneByPostalCode,
   buildFullAddress,
-  validateCP, 
+  validateCP,
   validatePhone,
   formatPhoneForWhatsApp,
-  type Address 
+  type Address
 } from '@/lib/address-validation'
+import Image from 'next/image'
+import Link from 'next/link'
 
-// Tipos de envío
-type ShippingType = 'standard' | 'priority' | 'pickup'
+// ── Tokens ────────────────────────────────────────────────────────────────────
+const C = {
+  page:    '#0a0908',
+  panel:   '#0c0a09',
+  card:    '#191614',
+  orange:  '#F79138',
+  orangeHover: '#ffa252',
+  onOrange: '#17140f',
+  text:    '#F5F1EC',
+  textSub: 'rgba(245,241,236,.6)',
+  textDim: 'rgba(245,241,236,.45)',
+  textFaint: 'rgba(245,241,236,.4)',
+  success: '#7ac77a',
+  errBorder: '#ff8080',
+  errText:   '#ff9b9b',
+  border:  'rgba(255,255,255,.1)',
+  borderSub: 'rgba(255,255,255,.08)',
+  cardBg:  'rgba(255,255,255,.03)',
+}
+const F = {
+  display: `'Franchise','Big Shoulders Display',sans-serif`,
+  body:    'Barlow,system-ui,sans-serif',
+}
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type ShippingType = 'standard' | 'pickup' | 'priority'
 
 type MembershipInfo = {
   is_member: boolean
@@ -36,6 +61,7 @@ type MembershipInfo = {
   membership_items: { size_id: string; qty: number }[] | null
 }
 
+// ── Main component ─────────────────────────────────────────────────────────────
 export default function CheckoutClient({
   pickupSpots,
   prefill,
@@ -65,24 +91,20 @@ export default function CheckoutClient({
   // Referidos
   const [referrerCustomerId, setReferrerCustomerId] = useState<string | null>(null)
   const [pendingReferrerRewards, setPendingReferrerRewards] = useState(0)
-  
-  // Tipo de envío
+
+  // Envío
   const [shippingType, setShippingType] = useState<ShippingType>('standard')
   const [selectedPickupSpot, setSelectedPickupSpot] = useState<string>('')
-  
-  // Datos del cliente (pre-llenados si hay sesión activa)
+
+  // Contacto
   const [customerName, setCustomerName] = useState(prefill?.name ?? '')
   const customerEmail = prefill?.email ?? ''
   const [customerPhone, setCustomerPhone] = useState(prefill?.phone ?? '')
   const [countryCode, setCountryCode] = useState<'+52' | '+1'>('+52')
-  
-  // Dirección guardada vs nueva
-  const savedAddress = prefill?.address ?? null
-  const [addressOption, setAddressOption] = useState<'saved' | 'new'>(
-    savedAddress ? 'saved' : 'new'
-  )
 
-  // Dirección separada
+  // Dirección
+  const savedAddress = prefill?.address ?? null
+  const [addressOption, setAddressOption] = useState<'saved' | 'new'>(savedAddress ? 'saved' : 'new')
   const [calle, setCalle] = useState('')
   const [numeroExterior, setNumeroExterior] = useState('')
   const [numeroInterior, setNumeroInterior] = useState('')
@@ -91,25 +113,17 @@ export default function CheckoutClient({
 
   const isPostalCodeValid = validateCP(codigoPostal) && isValidPostalCode(codigoPostal)
   const zone = isPostalCodeValid ? getZoneByPostalCode(codigoPostal) : null
-  // ciudad y estado siempre derivados del CP (no editables)
   const ciudad = zone ?? ''
   const estado = 'Nuevo León'
 
-  // Validación automática
   const isAddressComplete = Boolean(
-    calle.trim() &&
-    numeroExterior.trim() &&
-    colonia.trim() &&
-    isPostalCodeValid
+    calle.trim() && numeroExterior.trim() && colonia.trim() && isPostalCodeValid
   )
-
   const addressValidated = shippingType === 'pickup'
     ? true
-    : addressOption === 'saved'
-      ? true
-      : isAddressComplete
-  
-  // Compra de membresía — se inicializa desde localStorage (intent guardado en carrito)
+    : addressOption === 'saved' ? true : isAddressComplete
+
+  // Membresía
   const [membershipMode, setMembershipMode] = useState(false)
   const [membershipWeeks, setMembershipWeeks] = useState<4 | 8 | 12>(4)
 
@@ -128,7 +142,6 @@ export default function CheckoutClient({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Cuando membresía activa, limpiar cualquier descuento — no se combinan
   useEffect(() => {
     if (membershipMode) {
       setAppliedDiscount(null)
@@ -138,23 +151,16 @@ export default function CheckoutClient({
     }
   }, [membershipMode])
 
-  // Descuentos automáticos al cargar — prioridad: recompensa referidor > descuento automático
+  // Auto-descuentos al cargar
   useEffect(() => {
     const subtotalNow = getTotal()
     if (subtotalNow === 0) return
     const customerId = prefill?.customerId ?? null
-
     async function autoApply() {
-      // Si hay intención de membresía activa, no aplicar ningún descuento
       try {
         const stored = localStorage.getItem('mm_membership_intent')
-        if (stored) {
-          const intent = JSON.parse(stored)
-          if (intent.enabled) return
-        }
+        if (stored) { const intent = JSON.parse(stored); if (intent.enabled) return }
       } catch {}
-
-      // 1. Recompensas de referido (solo clientes con cuenta)
       if (customerId) {
         const { count, discount } = await checkReferrerRewards({ customerId, subtotal: subtotalNow })
         if (discount) {
@@ -164,31 +170,24 @@ export default function CheckoutClient({
           return
         }
       }
-
-      // 2. Descuento automático (sin código)
       const { discount } = await validateDiscount({
         customerId,
         subtotal: subtotalNow,
         itemCount: items.reduce((n, i) => n + i.qty, 0),
         shippingCost: shippingStandard,
       })
-      if (discount) {
-        setAppliedDiscount(discount)
-        setAutoDiscountNotif(discount.name)
-      }
+      if (discount) { setAppliedDiscount(discount); setAutoDiscountNotif(discount.name) }
     }
-
     autoApply()
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  // Calcular total
-  const subtotalIndividual = getTotal()         // suma a precios individuales (para mostrar tachado)
-  const subtotal = getDiscountedTotal()         // suma efectiva con descuento paquete
+  // ── Pricing ─────────────────────────────────────────────────────────────────
+  const subtotalIndividual = getTotal()
+  const subtotal = getDiscountedTotal()
   const totalQty = items.reduce((n, i) => n + i.qty, 0)
   const isPackageActive = totalQty >= 5
-  const packageDiscountAmount = subtotalIndividual - subtotal   // 0 si <5 platillos
-  // Miembros no pagan envío
+  const packageDiscountAmount = subtotalIndividual - subtotal
   const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
   const shippingCost = membershipMode ? 0 : SHIPPING_COSTS[shippingType]
   const discountAmount = appliedDiscount
@@ -196,10 +195,15 @@ export default function CheckoutClient({
     : 0
   const total = subtotal + shippingCost - discountAmount
 
-  // Validar pickup spot si es necesario
-  const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
+  const discountMap: Record<number, number> = {
+    4:  membershipDiscounts?.w4  ?? 10,
+    8:  membershipDiscounts?.w8  ?? 13,
+    12: membershipDiscounts?.w12 ?? 15,
+  }
+  const membershipDiscountPct = discountMap[membershipWeeks]
+  const membershipTotal = Math.round(subtotal * membershipWeeks * (1 - membershipDiscountPct / 100))
 
-  // Flow A — membresía exacta
+  // ── Membership flow ──────────────────────────────────────────────────────────
   const isMembershipMatch = Boolean(
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
@@ -208,56 +212,109 @@ export default function CheckoutClient({
       membership
     )
   )
-
-  // Precio de compra de membresía
   const canPurchaseMembership = Boolean(
     prefill?.customerId &&
     (!membership?.is_member || (membership.membership_weeks_left ?? 0) === 0)
   )
-  const discountMap: Record<number, number> = {
-    4: membershipDiscounts?.w4 ?? 10,
-    8: membershipDiscounts?.w8 ?? 13,
-    12: membershipDiscounts?.w12 ?? 15,
+
+  // ── Validación ───────────────────────────────────────────────────────────────
+  const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
+  const phoneValid = validatePhone(customerPhone) && customerPhone.replace(/\D/g, '').length <= 10
+  const nameValid = customerName.trim().length > 0
+
+  const ctaDisabledReason = (): string | null => {
+    if (!nameValid) return 'Completa tu nombre'
+    if (!phoneValid) return 'Teléfono inválido (10 dígitos)'
+    if (shippingType === 'pickup' && !selectedPickupSpot) return 'Elige un pickup spot'
+    if (!addressValidated) {
+      if (shippingType !== 'pickup' && addressOption === 'new' && codigoPostal.length === 5 && !isPostalCodeValid)
+        return 'CP fuera del area de entrega'
+      return 'Completa la direccion'
+    }
+    return null
   }
-  const membershipDiscountPct = discountMap[membershipWeeks]
-  const membershipTotal = Math.round(subtotal * membershipWeeks * (1 - membershipDiscountPct / 100))
+  const ctaReason = ctaDisabledReason()
+  const ctaDisabled = isProcessing || ctaReason !== null
+
+  // ── Handlers ─────────────────────────────────────────────────────────────────
+  async function handleApplyDiscount() {
+    const code = discountCode.trim()
+    if (!code) return
+    setDiscountError('')
+    setDiscountLoading(true)
+    const customerId = prefill?.customerId ?? null
+    try {
+      const { discount, error: dErr } = await validateDiscount({
+        customerId, code, subtotal,
+        itemCount: totalQty, shippingCost,
+      })
+      if (discount) { setAppliedDiscount(discount); setReferrerCustomerId(null); setDiscountError(''); return }
+      const { discount: refDiscount, referrerCustomerId: refId, error: refErr } = await validateReferralCode({
+        code, customerId, subtotal,
+      })
+      if (refDiscount && refId) {
+        setAppliedDiscount(refDiscount); setReferrerCustomerId(refId); setDiscountError('')
+      } else if (refErr === 'referral_needs_account') {
+        setDiscountError('Crea una cuenta para usar códigos de referido'); setAppliedDiscount(null)
+      } else if (refErr) {
+        setDiscountError(refErr); setAppliedDiscount(null)
+      } else if (dErr) {
+        setDiscountError(dErr); setAppliedDiscount(null)
+      } else {
+        setDiscountError('Código no encontrado'); setAppliedDiscount(null)
+      }
+    } finally { setDiscountLoading(false) }
+  }
+
+  function handleRemoveDiscount() {
+    setAppliedDiscount(null); setReferrerCustomerId(null)
+    setDiscountCode(''); setDiscountError('')
+  }
+
+  function getFullAddress() {
+    if (shippingType === 'pickup') return null
+    if (addressOption === 'saved') return savedAddress
+    return buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
+  }
+
+  const handleMembershipCheckout = async () => {
+    setIsProcessing(true); setError(null)
+    try {
+      const result = await processMembershipOrder({
+        customerId: prefill?.customerId,
+        customerName, customerPhone: formatPhoneForWhatsApp(customerPhone, countryCode),
+        customerAddress: getFullAddress(),
+        totalAmount: total, shippingType,
+        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
+        shippingCost,
+        items: items.map(item => ({
+          mealId: item.mealId, mealName: item.mealName, sizeId: item.sizeId, sizeName: item.sizeName,
+          qty: item.qty, unitPrice: item.unitPrice, packageInstanceId: item.packageInstanceId,
+        })),
+        discountId: appliedDiscount?.id ?? null, discountAmount,
+      })
+      if (result.error) throw new Error(result.error)
+      window.location.href = `/order-success?our_order_id=${result.orderId}&value=${total}`
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Error al procesar la orden')
+      setIsProcessing(false)
+    }
+  }
 
   const handleMembershipPurchase = async () => {
-    if (!validatePhone(customerPhone)) { setError('Teléfono inválido (debe ser 10 dígitos)'); return }
-    if (!customerName.trim()) { setError('Por favor ingresa tu nombre completo'); return }
-    if (!addressValidated) { setError('Por favor completa la dirección'); return }
-    if (!prefill?.customerId) { setError('Necesitas iniciar sesión para comprar una membresía'); return }
-
-    setIsProcessing(true)
-    setError(null)
-
+    setIsProcessing(true); setError(null)
     try {
-      const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
-      const fullAddress = shippingType === 'pickup'
-        ? null
-        : addressOption === 'saved'
-          ? savedAddress
-          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
-
       const result = await purchaseMembership({
-        customerId: prefill.customerId,
-        customerName,
-        customerPhone: whatsappPhone,
-        customerAddress: fullAddress,
-        shippingType,
+        customerId: prefill!.customerId!,
+        customerName, customerPhone: formatPhoneForWhatsApp(customerPhone, countryCode),
+        customerAddress: getFullAddress(), shippingType,
         pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
         membershipWeeks,
         items: items.map(item => ({
-          mealId: item.mealId,
-          mealName: item.mealName,
-          sizeId: item.sizeId,
-          sizeName: item.sizeName,
-          qty: item.qty,
-          unitPrice: item.unitPrice,
-          packageInstanceId: item.packageInstanceId,
+          mealId: item.mealId, mealName: item.mealName, sizeId: item.sizeId, sizeName: item.sizeName,
+          qty: item.qty, unitPrice: item.unitPrice, packageInstanceId: item.packageInstanceId,
         })),
       })
-
       if (result.error) throw new Error(result.error)
       if (result.checkoutUrl) window.location.href = result.checkoutUrl
     } catch (err) {
@@ -266,214 +323,40 @@ export default function CheckoutClient({
     }
   }
 
-  async function handleApplyDiscount() {
-    const code = discountCode.trim()
-    if (!code) return
-    setDiscountError('')
-    setDiscountLoading(true)
-    const customerId = prefill?.customerId ?? null
-    try {
-      // 1. Buscar en tabla de descuentos
-      const { discount, error: dErr } = await validateDiscount({
-        customerId,
-        code,
-        subtotal,
-        itemCount: totalQty,
-        shippingCost,
-      })
-      if (discount) {
-        setAppliedDiscount(discount)
-        setReferrerCustomerId(null)
-        setDiscountError('')
-        return
-      }
-
-      // 2. Si no encontró descuento, intentar como código de referido
-      const { discount: refDiscount, referrerCustomerId: refId, error: refErr } = await validateReferralCode({
-        code,
-        customerId,
-        subtotal,
-      })
-
-      if (refDiscount && refId) {
-        setAppliedDiscount(refDiscount)
-        setReferrerCustomerId(refId)
-        setDiscountError('')
-      } else if (refErr === 'referral_needs_account') {
-        setDiscountError('Crea una cuenta para usar códigos de referido')
-        setAppliedDiscount(null)
-      } else if (refErr) {
-        setDiscountError(refErr)
-        setAppliedDiscount(null)
-      } else if (dErr) {
-        // Tampoco era un referido — mostrar error del descuento
-        setDiscountError(dErr)
-        setAppliedDiscount(null)
-      } else {
-        setDiscountError('Código no encontrado')
-        setAppliedDiscount(null)
-      }
-    } finally {
-      setDiscountLoading(false)
-    }
-  }
-
-  function handleRemoveDiscount() {
-    setAppliedDiscount(null)
-    setReferrerCustomerId(null)
-    setDiscountCode('')
-    setDiscountError('')
-  }
-
-
-  const handleMembershipCheckout = async () => {
-    if (!validatePhone(customerPhone)) {
-      setError('Teléfono inválido (debe ser 10 dígitos)')
-      return
-    }
-    if (!customerName.trim()) {
-      setError('Por favor ingresa tu nombre completo')
-      return
-    }
-    if (!addressValidated) {
-      setError('Por favor completa la dirección')
-      return
-    }
-
-    setIsProcessing(true)
-    setError(null)
-
-    try {
-      const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
-      const fullAddress = shippingType === 'pickup'
-        ? null
-        : addressOption === 'saved'
-          ? savedAddress
-          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
-
-      const result = await processMembershipOrder({
-        customerId: prefill?.customerId,
-        customerName,
-        customerPhone: whatsappPhone,
-        customerAddress: fullAddress,
-        totalAmount: total,
-        shippingType,
-        pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
-        shippingCost,
-        items: items.map(item => ({
-          mealId: item.mealId,
-          mealName: item.mealName,
-          sizeId: item.sizeId,
-          sizeName: item.sizeName,
-          qty: item.qty,
-          unitPrice: item.unitPrice,
-          packageInstanceId: item.packageInstanceId,
-        })),
-        discountId: appliedDiscount?.id ?? null,
-        discountAmount,
-      })
-
-      if (result.error) throw new Error(result.error)
-
-      window.location.href = `/order-success?our_order_id=${result.orderId}&value=${total}`
-    } catch (err) {
-      console.error('Error membership checkout:', err)
-      setError(err instanceof Error ? err.message : 'Error al procesar la orden')
-      setIsProcessing(false)
-    }
-  }
-
   const handleCheckout = async () => {
-    // Validar teléfono
-    if (customerPhone.replace(/\D/g, '').length > 10) {
-      setError('Ingresa solo los 10 dígitos sin prefijo de país (ej: 8112345678)')
-      return
-    }
-    if (!validatePhone(customerPhone)) {
-      setError('Teléfono inválido (debe ser 10 dígitos)')
-      return
-    }
-    
-    // Validar campos básicos
-    if (!customerName.trim()) {
-      setError('Por favor ingresa tu nombre completo')
-      return
-    }
-    
-    if (!addressValidated) {
-      setError('Por favor completa todos los campos de la dirección con un código postal válido')
-      return
-    }
-
-    if (isEmpty) {
-      setError('El carrito está vacío')
-      return
-    }
-
-    setIsProcessing(true)
-    setError(null)
-
+    setIsProcessing(true); setError(null)
     try {
-      // 0. Validar carrito contra estado actual del servidor
       const validation = await validateCart(items.map(item => ({
-        mealId: item.mealId,
-        mealName: item.mealName,
-        sizeId: item.sizeId,
-        sizeName: item.sizeName,
-        qty: item.qty,
-        unitPrice: item.unitPrice,
-        packageInstanceId: item.packageInstanceId,
+        mealId: item.mealId, mealName: item.mealName, sizeId: item.sizeId, sizeName: item.sizeName,
+        qty: item.qty, unitPrice: item.unitPrice, packageInstanceId: item.packageInstanceId,
       })))
-      if (!validation.valid) {
-        setError(validation.errors[0].message)
-        setIsProcessing(false)
-        return
-      }
+      if (!validation.valid) { setError(validation.errors[0].message); setIsProcessing(false); return }
 
-      // 1. Crear o actualizar cliente
       const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
-      const fullAddress = shippingType === 'pickup'
-        ? null
-        : addressOption === 'saved'
-          ? savedAddress
-          : buildFullAddress({ calle, numeroExterior, numeroInterior, colonia, codigoPostal, ciudad, estado } as Address)
-
-      // 2. Crear customer + orden en el servidor
       const isReferralDiscount = appliedDiscount?.id.startsWith('referral:') || appliedDiscount?.id.startsWith('referrer_reward:')
       const isReferrerReward = appliedDiscount?.id.startsWith('referrer_reward:') ?? false
 
       const checkoutResult = await processCheckout({
         customerId: prefill?.customerId,
-        customerName,
-        customerPhone: whatsappPhone,
-        customerAddress: fullAddress,
-        totalAmount: total,
-        shippingType,
+        customerName, customerPhone: whatsappPhone,
+        customerAddress: getFullAddress(),
+        totalAmount: total, shippingType,
         pickupSpotId: shippingType === 'pickup' ? selectedPickupSpot : null,
         shippingCost,
         items: items.map(item => ({
-          mealId: item.mealId,
-          sizeId: item.sizeId,
-          qty: item.qty,
-          // Usar precio efectivo: paquete si ≥5 platillos, individual si no
+          mealId: item.mealId, sizeId: item.sizeId, qty: item.qty,
           unitPrice: isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
-        // Descuentos normales usan discountId; referidos solo monto
         discountId: isReferralDiscount ? null : (appliedDiscount?.id ?? null),
         discountAmount,
         referrerCustomerId: referrerCustomerId ?? null,
         isReferrerReward,
       })
-
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
-      // 3. Crear preferencia de pago en MercadoPago
-      // Si hay descuento, colapsamos a un item para evitar precio negativo
       let mpItems: Array<{ name: string; unit_price: number; quantity: number }>
-
       if (discountAmount > 0 || packageDiscountAmount > 0) {
-        // Colapsamos a un item para evitar precio negativo o complicaciones de desglose
         mpItems = [{ name: 'Pedido Muscle Meals', unit_price: total, quantity: 1 }]
       } else {
         mpItems = items.map(item => ({
@@ -481,28 +364,20 @@ export default function CheckoutClient({
           unit_price: isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice,
           quantity: item.qty,
         }))
-
-        if (shippingCost > 0) {
-          mpItems.push({ name: 'Envío Estándar', unit_price: shippingCost, quantity: 1 })
-        } else if (shippingType === 'priority') {
-          mpItems.push({ name: 'Envío Prioritario (A cotizar)', unit_price: 0, quantity: 1 })
-        } else if (shippingType === 'pickup') {
+        if (shippingCost > 0) mpItems.push({ name: 'Envío Estándar', unit_price: shippingCost, quantity: 1 })
+        else if (shippingType === 'priority') mpItems.push({ name: 'Envío Prioritario (A cotizar)', unit_price: 0, quantity: 1 })
+        else if (shippingType === 'pickup') {
           const spot = pickupSpots.find(s => s.id === selectedPickupSpot)
           mpItems.push({ name: `Recoger en: ${spot?.name || 'Pickup Spot'}`, unit_price: 0, quantity: 1 })
         }
       }
 
       const result = await createPaymentPreference({
-        orderId: checkoutResult.orderId,
-        customerName,
-        customerEmail,
-        customerPhone: whatsappPhone,
-        // totalAmount: total,
-        items: mpItems
+        orderId: checkoutResult.orderId, customerName, customerEmail,
+        customerPhone: whatsappPhone, items: mpItems,
       })
-
       if (result.success && result.checkoutUrl) {
-        trackInitiateCheckout(total, items.reduce((n, i) => n + i.qty, 0))
+        trackInitiateCheckout(total, totalQty)
         window.location.href = result.checkoutUrl
       } else {
         setError(result.error || 'Error al procesar el pago')
@@ -515,1276 +390,1207 @@ export default function CheckoutClient({
     }
   }
 
-  if (isEmpty) {
-    return <EmptyCheckoutView />
+  function handleCTA() {
+    if (isMembershipMatch) return handleMembershipCheckout()
+    if (membershipMode && canPurchaseMembership) return handleMembershipPurchase()
+    return handleCheckout()
   }
 
+  // CTA label
+  const ctaLabel = isProcessing
+    ? 'Procesando…'
+    : isMembershipMatch   ? 'Confirmar con membresia'
+    : membershipMode      ? 'Activar membresia'
+    :                       'Proceder al pago'
+
+  // ── Empty state ───────────────────────────────────────────────────────────────
+  if (isEmpty) {
+    return (
+      <main style={{
+        minHeight: '100vh', background: C.page, color: C.text,
+        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+        padding: '60px 24px', gap: 16, textAlign: 'center',
+      }}>
+        <div style={{ fontSize: 48, color: C.orange, fontFamily: F.display, letterSpacing: '.05em' }}>[ ]</div>
+        <h2 style={{ fontFamily: F.display, fontSize: 32, textTransform: 'uppercase', margin: 0, color: C.text }}>
+          Tu carrito esta vacio
+        </h2>
+        <p style={{ fontFamily: F.body, color: C.textSub, margin: 0 }}>Agrega platillos para continuar</p>
+        <Link href="/menu" style={{
+          marginTop: 8, fontFamily: F.display, fontSize: 20, textTransform: 'uppercase',
+          letterSpacing: '.1em', color: C.onOrange, background: C.orange,
+          padding: '14px 28px', borderRadius: 10, textDecoration: 'none',
+        }}>
+          Ver menu →
+        </Link>
+      </main>
+    )
+  }
+
+  // ── Page ──────────────────────────────────────────────────────────────────────
   return (
     <>
-    <main style={{
-      minHeight: '100vh',
-      background: colors.black,
-      color: colors.white,
-      padding: '40px 24px 100px'
-    }}>
-      <div style={{ maxWidth: 700, margin: '0 auto' }}>
-        {/* Order Summary */}
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ 
-            fontSize: 32, 
-            marginBottom: 24,
-            textTransform: 'uppercase',
-            letterSpacing: 2
-          }}>
-            <span style={{ color: colors.orange }}>Checkout</span>
-          </h1>
-          <h2 style={{
-            fontSize: 20,
-            marginBottom: 16,
-            color: colors.textSecondary,
-            fontWeight: 'normal'
-          }}>
-            Detalle de la orden
-          </h2>
+    <style>{`
+      .co-page { background: ${C.page}; min-height: 100vh; padding: 30px 28px 60px; }
+      .co-grid { display: grid; grid-template-columns: 1fr 392px; gap: 26px; align-items: start; }
+      @media (max-width: 900px) {
+        .co-page { padding: 20px 18px 140px; }
+        .co-grid { grid-template-columns: 1fr; }
+        .co-sidebar { display: none; }
+        .co-mobile-bar { display: flex !important; }
+        .co-mobile-summary { display: block !important; }
+        .co-shipping-grid { grid-template-columns: 1fr !important; }
+      }
+      .co-mobile-bar { display: none; }
+      .co-mobile-summary { display: none; }
+      @media (max-width: 640px) {
+        .co-pickup-row { flex-direction: column; align-items: flex-start !important; }
+      }
+    `}</style>
 
-          {/* Delivery date */}
-          <div style={{
-            padding: '12px 16px',
-            background: '#10b98112',
-            border: '2px solid #10b981',
-            borderRadius: 10,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-            marginBottom: 16,
-          }}>
-            <span style={{ fontSize: 20 }}>📅</span>
-            <div>
-              <p style={{ margin: 0, fontWeight: 700, color: '#10b981', fontSize: 14 }}>
-                Entrega: {deliveryDateStr ?? '—'}
-              </p>
-              <p style={{ margin: '2px 0 0', fontSize: 12, color: colors.textMuted }}>
-                Entregamos cada domingo · Pedidos cortados el viernes a mediodía
-              </p>
-            </div>
+    <main className="co-page" style={{ color: C.text }}>
+
+      {/* H1 + subcopy */}
+      <h1 style={{
+        fontFamily: F.display, fontSize: 54, lineHeight: .88,
+        fontWeight: 700, textTransform: 'uppercase', color: C.text,
+        margin: '0 0 6px', letterSpacing: 0,
+      }}>
+        Checkout
+      </h1>
+      <p style={{
+        fontFamily: F.body, fontSize: 15, lineHeight: 1.5,
+        color: C.textSub, maxWidth: '56ch', margin: '0 0 26px',
+      }}>
+        Revisa tu pedido y completa tu información para continuar.
+      </p>
+
+      {/* Banda de membresía — full width */}
+      <MembershipBand
+        mode={membershipMode}
+        weeks={membershipWeeks}
+        discountMap={discountMap}
+        canPurchase={canPurchaseMembership && !isMembershipMatch}
+        subtotal={subtotal}
+        totalQty={totalQty}
+        onToggle={() => setMembershipMode(m => !m)}
+        onWeeksChange={setMembershipWeeks}
+      />
+
+      {/* Resumen colapsado móvil (encima de las secciones) */}
+      <MobileSummaryCollapsible
+        items={items}
+        isPackageActive={isPackageActive}
+        subtotalIndividual={subtotalIndividual}
+        subtotal={subtotal}
+        packageDiscountAmount={packageDiscountAmount}
+        shippingCost={shippingCost}
+        shippingType={shippingType}
+        total={membershipMode && canPurchaseMembership ? membershipTotal : total}
+        membershipMode={membershipMode && canPurchaseMembership}
+        membershipWeeks={membershipWeeks}
+        membershipDiscountPct={membershipDiscountPct}
+        appliedDiscount={appliedDiscount}
+        discountAmount={discountAmount}
+        discountCode={discountCode}
+        discountError={discountError}
+        discountLoading={discountLoading}
+        onCodeChange={code => { setDiscountCode(code); setDiscountError('') }}
+        onApplyDiscount={handleApplyDiscount}
+        onRemoveDiscount={handleRemoveDiscount}
+        autoDiscountNotif={autoDiscountNotif}
+        onDismissAutoNotif={() => setAutoDiscountNotif(null)}
+        pendingReferrerRewards={pendingReferrerRewards}
+      />
+
+      {/* Membresía activa — state card */}
+      {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
+        <div style={{
+          padding: '13px 16px', marginBottom: 20,
+          background: isMembershipMatch ? 'rgba(247,145,56,.07)' : 'rgba(255,255,255,.03)',
+          border: `1px solid ${isMembershipMatch ? C.orange : 'rgba(255,255,255,.12)'}`,
+          borderRadius: 11, fontFamily: F.body,
+        }}>
+          <div style={{ fontWeight: 700, fontSize: 14, color: isMembershipMatch ? C.orange : C.text, marginBottom: isMembershipMatch ? 3 : 0 }}>
+            Membresía activa · {membership.membership_weeks_left} {membership.membership_weeks_left === 1 ? 'semana' : 'semanas'} restantes
           </div>
+          {isMembershipMatch
+            ? <div style={{ fontSize: 12, color: C.textSub }}>Tu pedido de esta semana está cubierto — sin cobro adicional</div>
+            : <div style={{ fontSize: 12, color: C.textDim }}>Cubre {membership.membership_qty} platillos en tu tamaño de membresía. Tu carrito actual no coincide exactamente.</div>
+          }
+        </div>
+      )}
 
-          <OrderSummary
-            items={items}
-            subtotalIndividual={subtotalIndividual}
-            subtotal={subtotal}
-            packageDiscountAmount={packageDiscountAmount}
-            isPackageActive={isPackageActive}
-            shippingCost={shippingCost}
-            shippingType={shippingType}
-            total={membershipMode ? membershipTotal : total}
-            membershipMode={membershipMode}
-            membershipWeeks={membershipMode ? membershipWeeks : undefined}
-            membershipDiscountPct={membershipMode ? membershipDiscountPct : undefined}
-            appliedDiscount={appliedDiscount}
-            discountAmount={discountAmount}
+      {/* Grid 2 cols */}
+      <div className="co-grid">
+
+        {/* ── Left column ───────────────────────────────────────────────── */}
+        <div>
+
+          {/* 1 · Tu entrega */}
+          <SectionLabel n="1" title="Tu entrega"
+            hint={membershipMode ? `cada domingo durante ${membershipWeeks} semanas` : 'entregamos cada domingo'}
           />
 
-          {/* Notificación descuento automático */}
-          {autoDiscountNotif && (
-            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98118', border: '1px solid #10b98145', borderRadius: 8 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ color: '#10b981', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
-                  🎁 {appliedDiscount?.id.startsWith('referrer_reward:') ? 'Recompensa por referido aplicada' : `¡${autoDiscountNotif} aplicado automáticamente!`}
-                </span>
-                {appliedDiscount?.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
-                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
-                    Tienes {pendingReferrerRewards - 1} recompensa{pendingReferrerRewards - 1 > 1 ? 's' : ''} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
-                  </span>
-                )}
-              </div>
-              <button onClick={() => setAutoDiscountNotif(null)} style={{ background: 'transparent', border: 'none', color: '#10b98180', cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', fontFamily: 'inherit', flexShrink: 0 }}>×</button>
-            </div>
+          <DateBanner
+            deliveryDateStr={deliveryDateStr}
+            shippingType={shippingType}
+            membershipMode={membershipMode && canPurchaseMembership}
+            membershipWeeks={membershipWeeks}
+          />
+
+          <ShippingCards
+            selected={shippingType}
+            onSelect={setShippingType}
+            shippingStandard={shippingStandard}
+            membershipMode={membershipMode && canPurchaseMembership}
+          />
+
+          <ShippingDetail
+            type={shippingType}
+            pickupSpots={pickupSpots}
+            selectedSpot={selectedPickupSpot}
+            onSelectSpot={setSelectedPickupSpot}
+          />
+
+          {/* 2 · Contacto y dirección */}
+          <SectionLabel
+            n="2"
+            title={shippingType === 'pickup' ? 'Contacto' : 'Contacto y direccion'}
+            hint={shippingType === 'pickup' ? 'recoges tú, no pedimos dirección' : undefined}
+            style={{ marginTop: 32 }}
+          />
+
+          <ContactFields
+            name={customerName} phone={customerPhone} countryCode={countryCode}
+            onNameChange={setCustomerName} onPhoneChange={setCustomerPhone}
+            onCountryCodeChange={setCountryCode}
+            shippingType={shippingType}
+            disabled={isProcessing}
+          />
+
+          {shippingType !== 'pickup' && (
+            <AddressSection
+              savedAddress={savedAddress}
+              addressOption={addressOption}
+              onAddressOptionChange={setAddressOption}
+              calle={calle} numeroExterior={numeroExterior} numeroInterior={numeroInterior}
+              colonia={colonia} codigoPostal={codigoPostal} zone={zone}
+              onCalleChange={setCalle} onNumExtChange={setNumeroExterior}
+              onNumIntChange={setNumeroInterior} onColoniaChange={setColonia}
+              onCPChange={p => { if (p.length <= 5) setCodigoPostal(p) }}
+              disabled={isProcessing}
+            />
           )}
 
-          {/* Código promo / referido */}
-          {membershipMode ? (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <input
-                disabled
-                value=""
-                onChange={() => {}}
-                placeholder="Membresía activa — no aplican más descuentos"
-                style={{ flex: 1, background: '#1a1a1a', border: '1px solid #333', borderRadius: 8, padding: '10px 14px', color: '#555', fontSize: 14, outline: 'none', fontFamily: 'inherit', cursor: 'not-allowed' }}
-              />
-              <button
-                disabled
-                style={{ padding: '10px 20px', borderRadius: 8, border: 'none', background: '#2a2a2a', color: '#555', cursor: 'not-allowed', fontSize: 14, fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'inherit' }}
-              >
-                Aplicar
-              </button>
+          {error && (
+            <div style={{
+              marginTop: 16, padding: '12px 14px',
+              background: 'rgba(255,128,128,.07)',
+              border: `1px solid rgba(255,128,128,.35)`, borderRadius: 9,
+              fontFamily: F.body, fontSize: 13.5, color: C.errText, lineHeight: 1.4,
+            }}>
+              {error}
             </div>
-          ) : !appliedDiscount ? (
-            <div style={{ marginTop: 12, display: 'flex', gap: 8 }}>
-              <input
-                value={discountCode}
-                onChange={e => { setDiscountCode(e.target.value.toUpperCase()); setDiscountError('') }}
-                onKeyDown={e => e.key === 'Enter' && handleApplyDiscount()}
-                placeholder="Código de descuento o referido"
-                disabled={discountLoading}
-                style={{ flex: 1, minWidth: 0, background: '#242424', border: `1.5px solid ${discountError ? '#ef4444' : colors.orange}`, borderRadius: 8, padding: '10px 14px', color: '#fff', fontSize: 14, outline: 'none', fontFamily: 'inherit' }}
-              />
-              <button
-                onClick={handleApplyDiscount}
-                disabled={discountLoading || !discountCode.trim()}
-                style={{ padding: '10px 40px', borderRadius: 8, border: 'none', background: discountCode.trim() ? colors.orange : `${colors.orange}40`, color: discountCode.trim() ? '#111' : colors.orange, cursor: discountCode.trim() ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, whiteSpace: 'nowrap', transition: 'all 0.15s', fontFamily: 'inherit', flexShrink: 0 }}
-              >
-                {discountLoading ? '…' : 'Aplicar'}
-              </button>
-            </div>
-          ) : (
-            <div style={{ marginTop: 12, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: '#10b98115', border: '1px solid #10b98140', borderRadius: 8 }}>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <span style={{ color: '#10b981', fontSize: 14, fontWeight: 600, fontFamily: 'inherit' }}>✓ {appliedDiscount.name}</span>
-                {appliedDiscount.id.startsWith('referrer_reward:') && pendingReferrerRewards > 1 && (
-                  <span style={{ color: '#10b98199', fontSize: 12, fontFamily: 'inherit' }}>
-                    +{pendingReferrerRewards - 1} más disponible{pendingReferrerRewards - 1 > 1 ? 's' : ''} para próximos pedidos
-                  </span>
-                )}
-              </div>
-              <button onClick={handleRemoveDiscount} style={{ background: 'transparent', border: '1px solid #ef444460', borderRadius: 6, color: '#ef4444', cursor: 'pointer', fontSize: 13, fontWeight: 600, padding: '4px 10px', fontFamily: 'inherit', transition: 'all 0.15s', flexShrink: 0 }}>Quitar</button>
-            </div>
-          )}
-          {discountError && (
-            <p style={{ color: '#ef4444', fontSize: 13, margin: '6px 0 0 2px' }}>{discountError}</p>
           )}
         </div>
 
-        <ShippingSelector
-          selectedType={shippingType}
-          onTypeChange={setShippingType}
-          selectedPickupSpot={selectedPickupSpot}
-          onPickupSpotChange={setSelectedPickupSpot}
-          pickupSpots={pickupSpots}
-          disabled={isProcessing}
-          shippingStandard={shippingStandard}
-          membershipMode={membershipMode}
-        />
-
-        <CustomerForm
-          name={customerName}
-          phone={customerPhone}
-          countryCode={countryCode}
-          calle={calle}
-          numeroExterior={numeroExterior}
-          numeroInterior={numeroInterior}
-          colonia={colonia}
-          codigoPostal={codigoPostal}
-          onNameChange={setCustomerName}
-          onPhoneChange={setCustomerPhone}
-          onCountryCodeChange={setCountryCode}
-          onCalleChange={setCalle}
-          onNumeroExteriorChange={setNumeroExterior}
-          onNumeroInteriorChange={setNumeroInterior}
-          onColoniaChange={setColonia}
-          onCodigoPostalChange={setCodigoPostal}
-          zone={zone}
-          showAddress={shippingType !== 'pickup'}
-          savedAddress={savedAddress}
-          addressOption={addressOption}
-          onAddressOptionChange={setAddressOption}
-          disabled={isProcessing}
-          error={error}
-        />
-
-        {error && (
-          <div style={{
-            color: 'white',
-            background: colors.error,
-            padding: 16,
-            borderRadius: 8,
-          }}>
-            {error}
-          </div>
-        )}
-
-
-        {/* Membresía activa — Flow A */}
-        {membership?.is_member && (membership.membership_weeks_left ?? 0) > 0 && (
-          <div style={{
-            padding: '14px 18px',
-            marginBottom: 16,
-            background: isMembershipMatch ? `${colors.orange}18` : `${colors.grayLight}`,
-            border: `2px solid ${isMembershipMatch ? colors.orange : colors.grayLight}`,
-            borderRadius: 10,
-            fontSize: 13,
-          }}>
-            <div style={{ fontWeight: 700, color: isMembershipMatch ? colors.orange : colors.white, marginBottom: isMembershipMatch ? 4 : 0 }}>
-              Membresía activa · {membership.membership_weeks_left} {membership.membership_weeks_left === 1 ? 'semana' : 'semanas'} restantes
-            </div>
-            {isMembershipMatch
-              ? <div style={{ color: colors.textSecondary, fontSize: 12 }}>Tu pedido de esta semana está cubierto — sin cobro adicional</div>
-              : <div style={{ color: colors.textMuted, fontSize: 12 }}>Cubre {membership.membership_qty} platillos en tu tamaño de membresía. Tu carrito actual no coincide exactamente.</div>
-            }
-          </div>
-        )}
-
-        {isMembershipMatch ? (
-          <button
-            onClick={handleMembershipCheckout}
-            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
-            className={(!isProcessing && addressValidated) ? 'franchise-stroke' : undefined}
-            style={{
-              width: '100%',
-              padding: '18px 24px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              background: colors.orange,
-              color: colors.white,
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 22,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase',
-              opacity: isProcessing ? 0.6 : 1,
-              transition: 'all 0.2s',
-            }}
-          >
-            {isProcessing ? 'Procesando…' : 'Confirmar con membresía'}
-          </button>
-        ) : membershipMode ? (
-          <button
-            onClick={handleMembershipPurchase}
-            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
-            className={(!isProcessing && addressValidated) ? 'franchise-stroke' : undefined}
-            style={{
-              width: '100%',
-              padding: '18px 24px',
-              cursor: isProcessing ? 'not-allowed' : 'pointer',
-              background: colors.orange,
-              color: colors.white,
-              border: 'none',
-              borderRadius: 8,
-              fontFamily: 'Franchise, sans-serif',
-              fontSize: 22,
-              letterSpacing: 0,
-              lineHeight: 1,
-              textTransform: 'uppercase',
-              opacity: isProcessing ? 0.6 : 1,
-              transition: 'all 0.2s',
-            }}
-          >
-            {isProcessing ? 'Procesando…' : 'Activar membresía'}
-          </button>
-        ) : (
-          <PaymentButton
-            onClick={handleCheckout}
-            disabled={isProcessing || !addressValidated || !customerName.trim() || !validatePhone(customerPhone) || customerPhone.replace(/\D/g, '').length > 10 || !isPickupSpotValid}
-            isProcessing={isProcessing}
-            addressValidated={addressValidated}
+        {/* ── Sidebar (desktop only) ────────────────────────────────────── */}
+        <aside className="co-sidebar" style={{ position: 'sticky', top: 80 }}>
+          <CheckoutSidebar
+            items={items}
+            isPackageActive={isPackageActive}
+            subtotalIndividual={subtotalIndividual}
+            subtotal={subtotal}
+            packageDiscountAmount={packageDiscountAmount}
+            shippingCost={shippingCost}
+            shippingType={shippingType}
+            total={membershipMode && canPurchaseMembership ? membershipTotal : total}
+            membershipMode={membershipMode && canPurchaseMembership}
+            membershipWeeks={membershipWeeks}
+            membershipDiscountPct={membershipDiscountPct}
+            appliedDiscount={appliedDiscount}
+            discountAmount={discountAmount}
+            discountCode={discountCode}
+            discountError={discountError}
+            discountLoading={discountLoading}
+            onCodeChange={code => { setDiscountCode(code); setDiscountError('') }}
+            onApplyDiscount={handleApplyDiscount}
+            onRemoveDiscount={handleRemoveDiscount}
+            autoDiscountNotif={autoDiscountNotif}
+            onDismissAutoNotif={() => setAutoDiscountNotif(null)}
+            pendingReferrerRewards={pendingReferrerRewards}
+            ctaLabel={ctaLabel}
+            ctaDisabled={ctaDisabled}
+            ctaReason={ctaReason}
+            onCTA={handleCTA}
           />
-        )}
+        </aside>
       </div>
     </main>
+
+    {/* Barra fija móvil */}
+    <MobileBar
+      total={membershipMode && canPurchaseMembership ? membershipTotal : total}
+      membershipMode={membershipMode && canPurchaseMembership}
+      shippingType={shippingType}
+      membershipWeeks={membershipWeeks}
+      ctaLabel={ctaLabel}
+      ctaDisabled={ctaDisabled}
+      ctaReason={ctaReason}
+      onCTA={handleCTA}
+    />
+
     <LoginBanner />
     <ReferralBanner />
     </>
   )
 }
 
-// Componentes de presentación
-function EmptyCheckoutView() {
+// ── MembershipBand ─────────────────────────────────────────────────────────────
+function MembershipBand({
+  mode, weeks, discountMap, canPurchase, subtotal, totalQty,
+  onToggle, onWeeksChange,
+}: {
+  mode: boolean; weeks: 4 | 8 | 12; discountMap: Record<number, number>
+  canPurchase: boolean; subtotal: number; totalQty: number
+  onToggle: () => void; onWeeksChange: (w: 4 | 8 | 12) => void
+}) {
+  if (!canPurchase) return null
+
+  const pct = discountMap[weeks]
+  const perMealOriginal = totalQty > 0 ? subtotal / totalQty : 0
+  const perMealDiscounted = Math.round(perMealOriginal * (1 - pct / 100))
+  const weeklyOriginal = subtotal
+  const weeklyDiscounted = Math.round(subtotal * (1 - pct / 100))
+  const membershipTotal = Math.round(subtotal * weeks * (1 - pct / 100))
+  const fmt = (c: number) => `$${(c / 100).toFixed(2)}`
+
   return (
-    <main style={{ 
-      textAlign: 'center', 
-      padding: '60px 24px',
-      minHeight: '100vh',
-      background: colors.black,
-      color: colors.white,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center'
+    <div style={{
+      display: 'flex', borderRadius: 12, overflow: 'hidden', marginBottom: 30,
+      border: `1px solid ${mode ? C.orange : 'rgba(247,145,56,.45)'}`,
+      background: mode ? 'rgba(247,145,56,.07)' : 'rgba(247,145,56,.05)',
     }}>
-      <div style={{ fontSize: 64, marginBottom: 24, color: colors.orange }}>[ ]</div>
-      <h2 style={{ fontSize: 28, marginBottom: 12 }}>
-        El carrito está <span style={{ color: colors.orange }}>vacío</span>
-      </h2>
-      <p style={{ color: colors.textMuted }}>Agrega items para continuar</p>
-    </main>
+      {/* Imagen (solo desktop) */}
+      <div className="co-memb-img" style={{ width: 200, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
+        <Image
+          src="/media/membership-lockup.png"
+          alt=""
+          fill
+          style={{ objectFit: 'cover' }}
+          sizes="200px"
+        />
+      </div>
+
+      <div style={{ flex: 1, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
+        {/* Header row */}
+        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
+          <div>
+            <div style={{ fontFamily: F.display, fontSize: 28, lineHeight: .95, fontWeight: 700,
+              textTransform: 'uppercase', color: mode ? C.orange : C.text, marginBottom: 6 }}>
+              {mode ? 'Membresia activada' : '¿Pides cada semana?'}
+            </div>
+            {!mode && (
+              <p style={{ fontFamily: F.body, fontSize: 13.5, lineHeight: 1.5, color: C.textSub, margin: '0 0 8px' }}>
+                Convierte tu pedido en membresía y paga menos cada semana.
+              </p>
+            )}
+            {/* Chips */}
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              <Chip color={C.orange} bg="rgba(247,145,56,.14)">{`Desde -10%`}</Chip>
+              <Chip color={C.success} bg="rgba(122,199,122,.14)">Envio siempre gratis</Chip>
+              <Chip color="rgba(245,241,236,.65)" bg="rgba(255,255,255,.06)">Cancelas cuando quieras</Chip>
+            </div>
+          </div>
+          {/* Toggle */}
+          <button
+            onClick={onToggle}
+            aria-label={mode ? 'Desactivar membresía' : 'Activar membresía'}
+            style={{
+              width: 58, height: 32, borderRadius: 16, padding: 3, flexShrink: 0,
+              background: mode ? C.orange : 'rgba(255,255,255,.14)',
+              border: 'none', cursor: 'pointer', position: 'relative',
+              transition: 'background .2s',
+            }}
+          >
+            <div style={{
+              width: 26, height: 26, borderRadius: '50%', background: C.text,
+              boxShadow: '0 1px 4px rgba(0,0,0,.5)',
+              position: 'absolute', top: 3,
+              left: mode ? 29 : 3,
+              transition: 'left .2s',
+            }} />
+          </button>
+        </div>
+
+        {/* Selector de plazo (when active) */}
+        {mode && (
+          <>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
+              {([4, 8, 12] as const).map(w => (
+                <button key={w} onClick={() => onWeeksChange(w)} style={{
+                  padding: '11px 12px', borderRadius: 9, cursor: 'pointer',
+                  border: `1px solid ${weeks === w ? C.orange : 'rgba(255,255,255,.12)'}`,
+                  background: weeks === w ? 'rgba(247,145,56,.14)' : 'rgba(255,255,255,.03)',
+                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
+                }}>
+                  <span style={{ fontFamily: F.body, fontSize: 17, fontWeight: 700, color: weeks === w ? C.orange : C.text }}>
+                    {w} sem.
+                  </span>
+                  <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 500, color: weeks === w ? C.orange : C.textDim }}>
+                    −{discountMap[w]}%
+                  </span>
+                </button>
+              ))}
+            </div>
+
+            {/* Banda de 3 cifras */}
+            <div style={{
+              display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
+              gap: 1, background: 'rgba(247,145,56,.16)', borderRadius: 9, overflow: 'hidden',
+              marginTop: 4,
+            }}>
+              {[
+                { label: 'Por platillo', prev: fmt(perMealOriginal), next: fmt(perMealDiscounted) },
+                { label: 'Por semana',   prev: fmt(weeklyOriginal),  next: fmt(weeklyDiscounted) },
+                { label: `Total · ${weeks} sem.`, prev: fmt(weeklyOriginal * weeks), next: fmt(membershipTotal), accent: true },
+              ].map(({ label, prev, next, accent }) => (
+                <div key={label} style={{ padding: '13px 18px', background: 'rgba(20,17,15,.5)' }}>
+                  <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, letterSpacing: '.12em',
+                    textTransform: 'uppercase', color: C.textFaint, marginBottom: 4 }}>
+                    {label}
+                  </div>
+                  <div style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.4)',
+                    textDecoration: 'line-through', marginBottom: 2 }}>
+                    {prev}
+                  </div>
+                  <div style={{ fontFamily: F.body, fontSize: 17, fontWeight: 700,
+                    color: accent ? C.orange : C.text }}>
+                    {next}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
+        )}
+      </div>
+    </div>
   )
 }
 
-function OrderSummary({
-  items,
-  subtotalIndividual,
-  subtotal,
-  packageDiscountAmount,
-  isPackageActive,
-  shippingCost,
-  shippingType,
-  total,
-  membershipMode,
-  membershipWeeks,
-  membershipDiscountPct,
-  appliedDiscount,
-  discountAmount,
-}: {
-  items: CartItem[]
-  subtotalIndividual: number
-  subtotal: number
-  packageDiscountAmount: number
-  isPackageActive: boolean
-  shippingCost: number
-  shippingType: 'standard' | 'priority' | 'pickup'
-  total: number
-  membershipMode?: boolean
-  membershipWeeks?: number
-  membershipDiscountPct?: number
-  appliedDiscount: ValidatedDiscount | null
-  discountAmount: number
+function Chip({ children, color, bg }: { children: React.ReactNode; color: string; bg: string }) {
+  return (
+    <span style={{ padding: '5px 10px', borderRadius: 6, background: bg,
+      fontFamily: F.body, fontSize: 11.5, fontWeight: 600, color }}>
+      {children}
+    </span>
+  )
+}
+
+// ── SectionLabel ──────────────────────────────────────────────────────────────
+function SectionLabel({ n, title, hint, style: s }: {
+  n: string; title: string; hint?: string; style?: React.CSSProperties
 }) {
-  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)} MXN`
+  return (
+    <div style={{ marginBottom: 16, ...s }}>
+      <div style={{ fontFamily: F.display, fontSize: 15, fontWeight: 700,
+        letterSpacing: '.16em', textTransform: 'uppercase', color: C.text }}>
+        {n} · {title}
+      </div>
+      {hint && (
+        <div style={{ fontFamily: F.body, fontSize: 13, color: C.textDim, marginTop: 2 }}>
+          {hint}
+        </div>
+      )}
+    </div>
+  )
+}
 
-  // Agrupar items por sizeId, en el orden en que aparecen
-  const sizeOrder: string[] = []
-  const bySize = new Map<string, { sizeName: string; items: CartItem[] }>()
-  for (const item of items) {
-    if (!bySize.has(item.sizeId)) {
-      sizeOrder.push(item.sizeId)
-      bySize.set(item.sizeId, { sizeName: item.sizeName, items: [] })
-    }
-    bySize.get(item.sizeId)!.items.push(item)
+// ── DateBanner ────────────────────────────────────────────────────────────────
+function DateBanner({ deliveryDateStr, shippingType, membershipMode, membershipWeeks }: {
+  deliveryDateStr?: string; shippingType: ShippingType
+  membershipMode: boolean; membershipWeeks: number
+}) {
+  // Parse day number from deliveryDateStr (e.g. "domingo, 13 de septiembre")
+  const dayNum = deliveryDateStr?.match(/,\s*(\d+)/)?.[1] ?? '—'
+  const prefix = shippingType === 'pickup' ? 'Recoge:' : membershipMode ? 'Primera entrega:' : 'Entrega:'
+  const secondary = membershipMode
+    ? `Luego cada domingo durante ${membershipWeeks} semanas`
+    : 'Pedidos cortados el viernes a mediodía'
+
+  return (
+    <div style={{
+      padding: '14px 16px', borderRadius: 11,
+      border: '1px solid rgba(122,199,122,.35)', background: 'rgba(122,199,122,.07)',
+      display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16,
+    }}>
+      <div style={{
+        width: 38, height: 38, borderRadius: 9, flexShrink: 0,
+        background: 'rgba(122,199,122,.14)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontFamily: F.display, fontSize: 15, fontWeight: 700, color: C.success,
+      }}>
+        {dayNum}
+      </div>
+      <div>
+        <div style={{ fontFamily: F.body, fontSize: 15, fontWeight: 700, color: C.success }}>
+          {prefix} {deliveryDateStr ?? '—'}
+        </div>
+        <div style={{ fontFamily: F.body, fontSize: 12.5, color: 'rgba(245,241,236,.5)', marginTop: 2 }}>
+          {secondary}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── ShippingCards ─────────────────────────────────────────────────────────────
+function ShippingCards({ selected, onSelect, shippingStandard, membershipMode }: {
+  selected: ShippingType; onSelect: (t: ShippingType) => void
+  shippingStandard: number; membershipMode: boolean
+}) {
+  const options: { type: ShippingType; name: string; price: string; priceColor?: string; desc: string }[] = [
+    {
+      type: 'standard',
+      name: 'Estandar',
+      price: membershipMode ? 'Gratis' : `$${(shippingStandard / 100).toFixed(0)}`,
+      priceColor: membershipMode ? C.success : undefined,
+      desc: 'Domingo 9AM–4PM',
+    },
+    {
+      type: 'pickup',
+      name: 'Pickup',
+      price: 'Gratis',
+      priceColor: C.success,
+      desc: 'Sin costo, recoge tú',
+    },
+    {
+      type: 'priority',
+      name: 'Prioritario',
+      price: '$100–200',
+      priceColor: 'rgba(245,241,236,.75)',
+      desc: 'Horario y zona específica',
+    },
+  ]
+
+  return (
+    <div className="co-shipping-grid" style={{
+      display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12,
+    }}>
+      {options.map(({ type, name, price, priceColor, desc }) => {
+        const active = selected === type
+        const isStandardWithMembership = type === 'standard' && membershipMode
+        return (
+          <button
+            key={type}
+            onClick={() => onSelect(type)}
+            style={{
+              padding: 15, borderRadius: 11, cursor: 'pointer', textAlign: 'left',
+              border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`,
+              background: active ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)',
+              position: 'relative',
+            }}
+          >
+            {isStandardWithMembership && (
+              <div style={{
+                position: 'absolute', top: -8, right: 11,
+                padding: '3px 7px', borderRadius: 4, background: C.success,
+                fontFamily: F.body, fontSize: 9.5, fontWeight: 700,
+                letterSpacing: '.1em', textTransform: 'uppercase', color: '#14110f',
+              }}>
+                Incluido
+              </div>
+            )}
+            <div style={{ fontFamily: F.display, fontSize: 20, textTransform: 'uppercase',
+              color: active ? C.orange : C.text, marginBottom: 4 }}>
+              {name}
+            </div>
+            <div style={{ fontFamily: F.body, fontSize: 16, fontWeight: 700,
+              color: priceColor ?? C.text, marginBottom: 4 }}>
+              {price}
+            </div>
+            <div style={{ fontFamily: F.body, fontSize: 12, lineHeight: 1.35, color: C.textDim }}>
+              {desc}
+            </div>
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── ShippingDetail ────────────────────────────────────────────────────────────
+function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
+  type: ShippingType; pickupSpots: PickupSpot[]
+  selectedSpot: string; onSelectSpot: (id: string) => void
+}) {
+  const noSpot = type === 'pickup' && !selectedSpot
+
+  return (
+    <div style={{
+      padding: '15px 16px', borderRadius: 11, marginBottom: 28,
+      border: `1px solid ${noSpot ? 'rgba(255,128,128,.35)' : 'rgba(255,255,255,.09)'}`,
+      background: noSpot ? 'rgba(255,128,128,.04)' : 'rgba(255,255,255,.03)',
+    }}>
+      {type === 'standard' && (
+        <>
+          <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text, marginBottom: 6 }}>
+            Horario según tu zona
+          </div>
+          <div style={{ fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
+            Te escribimos el sábado por WhatsApp con la hora estimada de entrega del domingo.
+          </div>
+        </>
+      )}
+
+      {type === 'priority' && (
+        <>
+          <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text, marginBottom: 6 }}>
+            Envío a cotizar
+          </div>
+          <ul style={{ margin: 0, padding: '0 0 0 18px', fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 1.6 }}>
+            <li>Acuerda horario y zona específica</li>
+            <li>Confirma el costo de envío según tu ubicación</li>
+            <li>El envío se paga por separado (est. $100–200 MXN)</li>
+          </ul>
+        </>
+      )}
+
+      {type === 'pickup' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
+            <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text }}>
+              Elige tu pickup spot
+            </div>
+            {!selectedSpot && (
+              <span style={{ fontFamily: F.body, fontSize: 11.5, color: C.errText, fontWeight: 600 }}>
+                requerido
+              </span>
+            )}
+          </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {pickupSpots.map(spot => {
+              const active = selectedSpot === spot.id
+              return (
+                <button key={spot.id} onClick={() => onSelectSpot(spot.id)}
+                  style={{
+                    padding: '13px 15px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                    border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`,
+                    background: active ? 'rgba(247,145,56,.08)' : 'rgba(255,255,255,.03)',
+                    display: 'flex', alignItems: 'center', gap: 10,
+                  }}
+                >
+                  {/* Radio */}
+                  <div style={{
+                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                    border: `2px solid ${active ? C.orange : 'rgba(255,255,255,.3)'}`,
+                    background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}>
+                    {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.orange }} />}
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div className="co-pickup-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
+                      <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>{spot.name}</span>
+                      <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 500, color: active ? C.orange : C.textDim }}>{spot.schedule}</span>
+                    </div>
+                    <div style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.45, color: C.textSub, marginTop: 2 }}>
+                      {spot.address}
+                    </div>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── ContactFields ─────────────────────────────────────────────────────────────
+function ContactFields({ name, phone, countryCode, onNameChange, onPhoneChange, onCountryCodeChange, shippingType, disabled }: {
+  name: string; phone: string; countryCode: '+52' | '+1'
+  onNameChange: (v: string) => void; onPhoneChange: (v: string) => void
+  onCountryCodeChange: (v: '+52' | '+1') => void
+  shippingType: ShippingType; disabled: boolean
+}) {
+  const inp: React.CSSProperties = {
+    padding: 14, fontFamily: F.body, fontSize: 15, color: C.text,
+    background: 'rgba(255,255,255,.04)', borderRadius: 9,
+    border: '1px solid rgba(255,255,255,.12)', width: '100%', boxSizing: 'border-box',
   }
+  const label: React.CSSProperties = {
+    display: 'block', fontFamily: F.body, fontSize: 12, fontWeight: 600,
+    letterSpacing: '.04em', color: C.textSub, marginBottom: 6,
+  }
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 8 }}>
+      <div>
+        <label style={label}>Nombre completo *</label>
+        <input type="text" value={name} onChange={e => onNameChange(e.target.value)}
+          placeholder="Nombre y apellido" disabled={disabled} style={inp} />
+      </div>
+      <div>
+        <label style={label}>WhatsApp *</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '118px 1fr', gap: 8 }}>
+          <select value={countryCode} onChange={e => onCountryCodeChange(e.target.value as '+52' | '+1')}
+            disabled={disabled} style={{ ...inp, padding: '14px 10px' }}>
+            <option value="+52">🇲🇽 +52</option>
+            <option value="+1">🇺🇸 +1</option>
+          </select>
+          <input type="tel" value={phone}
+            onChange={e => {
+              const d = e.target.value.replace(/\D/g, '')
+              if (d.length <= 10) onPhoneChange(e.target.value)
+            }}
+            placeholder="10 dígitos" disabled={disabled} style={{ ...inp, fontSize: 16 }} />
+        </div>
+        <div style={{ fontFamily: F.body, fontSize: 12, color: C.textDim, marginTop: 5 }}>
+          {shippingType === 'pickup'
+            ? 'Te avisamos por WhatsApp cuando tu pedido esté listo para recoger'
+            : 'Recibirás la confirmación de pago por WhatsApp'}
+        </div>
+      </div>
+    </div>
+  )
+}
 
-  const rowStyle: React.CSSProperties = {
-    display: 'flex', justifyContent: 'space-between',
-    fontSize: 15, color: colors.textSecondary,
+// ── AddressSection ─────────────────────────────────────────────────────────────
+function AddressSection({
+  savedAddress, addressOption, onAddressOptionChange,
+  calle, numeroExterior, numeroInterior, colonia, codigoPostal, zone,
+  onCalleChange, onNumExtChange, onNumIntChange, onColoniaChange, onCPChange,
+  disabled,
+}: {
+  savedAddress: string | null; addressOption: 'saved' | 'new'
+  onAddressOptionChange: (v: 'saved' | 'new') => void
+  calle: string; numeroExterior: string; numeroInterior: string
+  colonia: string; codigoPostal: string; zone: string | null
+  onCalleChange: (v: string) => void; onNumExtChange: (v: string) => void
+  onNumIntChange: (v: string) => void; onColoniaChange: (v: string) => void
+  onCPChange: (v: string) => void; disabled: boolean
+}) {
+  const cpInvalid = codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal))
+
+  const inp: React.CSSProperties = {
+    padding: 14, fontFamily: F.body, fontSize: 15, color: C.text,
+    background: 'rgba(255,255,255,.04)', borderRadius: 9,
+    border: '1px solid rgba(255,255,255,.12)', width: '100%', boxSizing: 'border-box',
+  }
+  const label: React.CSSProperties = {
+    display: 'block', fontFamily: F.body, fontSize: 12, fontWeight: 600,
+    letterSpacing: '.04em', color: C.textSub, marginBottom: 6,
   }
 
   return (
-    <>
-      {/* Banner precio de paquete activo */}
-      {isPackageActive && (
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 10,
-          padding: '10px 16px', marginBottom: 12,
-          background: '#7ac77a18',
-          border: '1.5px solid #7ac77a',
-          borderRadius: 10,
-        }}>
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <circle cx="9" cy="9" r="9" fill="#7ac77a" />
-            <path d="M5 9l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          <span style={{
-            fontFamily: "'Franchise','Big Shoulders Display',sans-serif",
-            fontSize: 14, fontWeight: 700, letterSpacing: '0.05em',
-            color: '#7ac77a', textTransform: 'uppercase',
-          }}>
-            Precio de paquete activo
-          </span>
+    <div style={{ marginTop: 6, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+      <div style={{ fontFamily: F.display, fontSize: 13, fontWeight: 700, letterSpacing: '.16em',
+        textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>
+        Direccion de entrega
+      </div>
+
+      {/* Radios dirección guardada */}
+      {savedAddress && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          {([
+            { val: 'saved' as const, label: 'Usar dirección guardada', sub: savedAddress },
+            { val: 'new'   as const, label: 'Ingresar otra dirección',  sub: undefined },
+          ]).map(({ val, label: lbl, sub }) => (
+            <label key={val} style={{
+              display: 'flex', alignItems: 'flex-start', gap: 10, padding: '13px 15px',
+              borderRadius: 10, cursor: disabled ? 'default' : 'pointer',
+              border: `1px solid ${addressOption === val ? C.orange : 'rgba(255,255,255,.12)'}`,
+              background: addressOption === val ? 'rgba(247,145,56,.05)' : 'rgba(255,255,255,.03)',
+            }}>
+              <div style={{
+                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
+                border: `2px solid ${addressOption === val ? C.orange : 'rgba(255,255,255,.3)'}`,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {addressOption === val && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.orange }} />}
+              </div>
+              <div>
+                <input type="radio" name="addrOpt" value={val} checked={addressOption === val}
+                  onChange={() => onAddressOptionChange(val)} disabled={disabled} style={{ display: 'none' }} />
+                <div style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>{lbl}</div>
+                {sub && <div style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.4, color: C.textSub, marginTop: 2 }}>{sub}</div>}
+              </div>
+            </label>
+          ))}
         </div>
       )}
 
-      {/* Lista de items agrupados por talla */}
-      <div style={{
-        border: `1.5px solid rgba(245,241,236,.1)`,
-        borderRadius: 12,
-        overflow: 'hidden',
-        background: '#191614',
-        marginBottom: 16,
-      }}>
-        {sizeOrder.map((sizeId, gi) => {
-          const group = bySize.get(sizeId)!
-          const groupQty = group.items.reduce((s, i) => s + i.qty, 0)
-          return (
-            <div key={sizeId}>
-              {/* Size header */}
-              <div style={{
-                padding: '8px 16px',
-                background: 'rgba(245,241,236,.04)',
-                borderBottom: '1px solid rgba(245,241,236,.08)',
-                borderTop: gi > 0 ? '1px solid rgba(245,241,236,.08)' : 'none',
-              }}>
-                <span style={{
-                  fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
-                  textTransform: 'uppercase', color: 'rgba(245,241,236,.45)',
-                  fontFamily: 'Barlow,system-ui,sans-serif',
-                }}>
-                  {group.sizeName} · {groupQty} {groupQty === 1 ? 'meal' : 'meals'}
-                </span>
-              </div>
-
-              {/* Item rows */}
-              {group.items.map((item, idx) => {
-                const effectivePrice = isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice
-                const lineTotal = effectivePrice * item.qty
-                return (
-                  <div key={`${item.mealId}-${item.sizeId}-${idx}`} style={{
-                    padding: '12px 16px',
-                    borderBottom: idx < group.items.length - 1 ? '1px solid rgba(245,241,236,.06)' : 'none',
-                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
-                  }}>
-                    <div>
-                      <div style={{ fontSize: 15, fontWeight: 600, color: '#F5F1EC', marginBottom: 2 }}>
-                        {item.mealName}
-                      </div>
-                      <div style={{ fontSize: 13, color: '#7ac77a' }}>
-                        {fmt(effectivePrice)} c/u
-                      </div>
-                    </div>
-                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                      <div style={{ fontSize: 13, color: 'rgba(245,241,236,.45)', marginBottom: 2 }}>
-                        ×{item.qty}
-                      </div>
-                      <div style={{ fontSize: 15, fontWeight: 700, color: '#F5F1EC' }}>
-                        {fmt(lineTotal)}
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
+      {/* Formulario nueva dirección dentro del recuadro naranja */}
+      {(!savedAddress || addressOption === 'new') && (
+        <div style={{
+          padding: 18, borderRadius: 11,
+          border: '1px solid rgba(247,145,56,.28)', background: 'rgba(247,145,56,.03)',
+          display: 'flex', flexDirection: 'column', gap: 12,
+        }}>
+          <div>
+            <label style={label}>Calle *</label>
+            <input type="text" value={calle} onChange={e => onCalleChange(e.target.value)}
+              disabled={disabled} style={inp} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+            <div>
+              <label style={label}>Núm. exterior *</label>
+              <input type="text" value={numeroExterior} onChange={e => onNumExtChange(e.target.value)}
+                disabled={disabled} style={inp} />
             </div>
-          )
-        })}
-      </div>
-
-      {/* Desglose de totales */}
-      <div style={{
-        padding: '18px 20px',
-        background: '#191614',
-        border: `1.5px solid ${membershipMode ? colors.orange : 'rgba(245,241,236,.1)'}`,
-        borderRadius: 12,
-      }}>
-        {/* Subtotal — tachado si hay descuento paquete */}
-        <div style={{ ...rowStyle, marginBottom: 10 }}>
-          <span>Subtotal ({items.reduce((n,i) => n + i.qty, 0)}):</span>
-          {isPackageActive ? (
-            <span style={{ textDecoration: 'line-through', color: 'rgba(245,241,236,.35)' }}>
-              {fmt(subtotalIndividual)}
-            </span>
-          ) : (
-            <span>{fmt(subtotalIndividual)}</span>
+            <div>
+              <label style={label}>Núm. interior</label>
+              <input type="text" value={numeroInterior} onChange={e => onNumIntChange(e.target.value)}
+                placeholder="Opcional" disabled={disabled} style={inp} />
+            </div>
+          </div>
+          <div>
+            <label style={label}>Colonia *</label>
+            <input type="text" value={colonia} onChange={e => onColoniaChange(e.target.value)}
+              disabled={disabled} style={inp} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 12 }}>
+            <div>
+              <label style={label}>CP *</label>
+              <input type="text" value={codigoPostal}
+                onChange={e => onCPChange(e.target.value.replace(/\D/g, ''))}
+                disabled={disabled}
+                style={{ ...inp, borderColor: cpInvalid ? C.errBorder : 'rgba(255,255,255,.12)',
+                  background: cpInvalid ? 'rgba(255,128,128,.06)' : 'rgba(255,255,255,.04)' }} />
+            </div>
+            <div>
+              <label style={label}>Ciudad</label>
+              <input type="text" value={zone ?? ''} readOnly disabled={disabled}
+                placeholder="Se llena con el CP"
+                style={{ ...inp, opacity: zone ? 1 : 0.5, cursor: 'default',
+                  border: '1px solid rgba(255,255,255,.08)', background: 'rgba(255,255,255,.02)' }} />
+            </div>
+          </div>
+          {cpInvalid && (
+            <div style={{
+              padding: '11px 13px', borderRadius: 9,
+              border: '1px solid rgba(255,128,128,.35)', background: 'rgba(255,128,128,.07)',
+              display: 'flex', alignItems: 'flex-start', gap: 8,
+            }}>
+              <div style={{ width: 18, height: 18, borderRadius: '50%', background: C.errBorder,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexShrink: 0, fontFamily: F.body, fontSize: 11, color: '#fff', fontWeight: 700 }}>!</div>
+              <span style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.4, color: C.errText }}>
+                Entregamos solo en el área metropolitana de Monterrey. Revisa el CP o elige Pickup.
+              </span>
+            </div>
           )}
         </div>
-
-        {/* Descuento paquete */}
-        {packageDiscountAmount > 0 && (
-          <div style={{ ...rowStyle, marginBottom: 10, color: '#7ac77a' }}>
-            <span>Descuento paquete:</span>
-            <span style={{ fontWeight: 700 }}>−{fmt(packageDiscountAmount)}</span>
-          </div>
-        )}
-
-        {/* Separador */}
-        <div style={{ height: 1, background: 'rgba(245,241,236,.08)', margin: '10px 0' }} />
-
-        {/* Envío */}
-        <div style={{ ...rowStyle, marginBottom: 10 }}>
-          <span>
-            Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
-          </span>
-          <span style={{ color: membershipMode ? '#7ac77a' : undefined }}>
-            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? fmt(shippingCost) : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
-            {!membershipMode && shippingType === 'priority' && (
-              <span style={{ fontSize: 12, display: 'block', color: colors.orange, textAlign: 'right' }}>(Estimado: $100-200)</span>
-            )}
-          </span>
-        </div>
-
-        {/* Descuento código promo */}
-        {appliedDiscount && discountAmount > 0 && (
-          <div style={{ ...rowStyle, marginBottom: 10, color: '#10b981' }}>
-            <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.name}):</span>
-            <span style={{ fontWeight: 700 }}>−{fmt(discountAmount)}</span>
-          </div>
-        )}
-
-        {/* Separador */}
-        <div style={{ height: 1, background: 'rgba(245,241,236,.08)', margin: '10px 0' }} />
-
-        {/* Total */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 16, color: 'rgba(245,241,236,.6)' }}>
-            Total{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:
-          </span>
-          <span style={{ fontSize: 28, fontWeight: 700, color: colors.orange }}>
-            {fmt(total)}
-          </span>
-        </div>
-      </div>
-    </>
+      )}
+    </div>
   )
 }
 
-function CustomerForm({
-  name,
-  phone,
-  countryCode,
-  calle,
-  numeroExterior,
-  numeroInterior,
-  colonia,
-  codigoPostal,
-  onNameChange,
-  onPhoneChange,
-  onCountryCodeChange,
-  onCalleChange,
-  onNumeroExteriorChange,
-  onNumeroInteriorChange,
-  onColoniaChange,
-  onCodigoPostalChange,
-  zone,
-  showAddress,
-  savedAddress,
-  addressOption,
-  onAddressOptionChange,
-  disabled,
-  // error
-}: {
-  name: string
-  phone: string
-  countryCode: '+52' | '+1'
-  calle: string
-  numeroExterior: string
-  numeroInterior: string
-  colonia: string
-  codigoPostal: string
-  onNameChange: (value: string) => void
-  onPhoneChange: (value: string) => void
-  onCountryCodeChange: (v: '+52' | '+1') => void
-  onCalleChange: (value: string) => void
-  onNumeroExteriorChange: (value: string) => void
-  onNumeroInteriorChange: (value: string) => void
-  onColoniaChange: (value: string) => void
-  onCodigoPostalChange: (value: string) => void
-  zone: string | null
-  showAddress: boolean
-  savedAddress: string | null
-  addressOption: 'saved' | 'new'
-  onAddressOptionChange: (v: 'saved' | 'new') => void
-  disabled: boolean
-  error: string | null
-}) {
-  const inputStyle = {
-    width: '100%',
-    padding: 14,
-    fontSize: 16,
-    borderRadius: 8,
-    border: `2px solid ${colors.grayLight}`,
-    background: colors.grayDark,
-    color: colors.white,
-    boxSizing: 'border-box' as const
-  }
+// ── Sidebar ───────────────────────────────────────────────────────────────────
+type SidebarProps = {
+  items: CartItem[]
+  isPackageActive: boolean
+  subtotalIndividual: number
+  subtotal: number
+  packageDiscountAmount: number
+  shippingCost: number
+  shippingType: ShippingType
+  total: number
+  membershipMode: boolean
+  membershipWeeks: number
+  membershipDiscountPct: number
+  appliedDiscount: ValidatedDiscount | null
+  discountAmount: number
+  discountCode: string
+  discountError: string
+  discountLoading: boolean
+  onCodeChange: (c: string) => void
+  onApplyDiscount: () => void
+  onRemoveDiscount: () => void
+  autoDiscountNotif: string | null
+  onDismissAutoNotif: () => void
+  pendingReferrerRewards: number
+  ctaLabel: string
+  ctaDisabled: boolean
+  ctaReason: string | null
+  onCTA: () => void
+}
 
-  const labelStyle = {
-    display: 'block',
-    marginBottom: 8,
-    fontWeight: 'bold',
-    color: colors.white,
-    fontSize: 14
-  }
-
+function CheckoutSidebar(p: SidebarProps) {
+  const totalQty = p.items.reduce((n, i) => n + i.qty, 0)
   return (
-    <div style={{ marginBottom: 32 }}>
-      <h2 style={{
-        fontFamily: 'Franchise, sans-serif',
-        fontSize: 26,
-        letterSpacing: 0,
-        marginBottom: 20,
-        color: colors.white,
-        fontWeight: 'normal'
-      }}>
-        Información de contacto y envío
-      </h2>
-      
+    <div style={{
+      border: `1px solid ${p.membershipMode ? C.orange : 'rgba(255,255,255,.1)'}`,
+      borderRadius: 12, background: C.panel, overflow: 'hidden',
+    }}>
+      {/* Header */}
+      <div style={{ padding: '18px 18px 14px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+        <span style={{ fontFamily: F.display, fontSize: 26, textTransform: 'uppercase', color: C.text }}>
+          {p.membershipMode ? 'Tu membresia' : 'Tu pedido'}
+        </span>
+        <span style={{ fontFamily: F.body, fontSize: 13, color: C.textFaint }}>
+          {p.membershipMode ? `${p.membershipWeeks} semanas` : `${totalQty} platillo${totalQty !== 1 ? 's' : ''}`}
+        </span>
+      </div>
 
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        {/* Nombre */}
-        <div>
-          <label style={labelStyle}>
-            Nombre completo *
-          </label>
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => onNameChange(e.target.value)}
-            placeholder="Nombre y apellido"
-            disabled={disabled}
-            style={inputStyle}
-          />
+      {/* Order items grouped by size */}
+      <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive} />
+
+      {/* Auto-discount notification */}
+      {p.autoDiscountNotif && (
+        <div style={{ padding: '10px 18px', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          background: 'rgba(16,185,129,.06)', borderTop: '1px solid rgba(16,185,129,.12)' }}>
+          <span style={{ fontFamily: F.body, fontSize: 12.5, fontWeight: 600, color: '#10b981' }}>
+            🎁 {p.appliedDiscount?.id.startsWith('referrer_reward:') ? 'Recompensa por referido aplicada' : `¡${p.autoDiscountNotif} aplicado!`}
+          </span>
+          <button onClick={p.onDismissAutoNotif}
+            style={{ background: 'transparent', border: 'none', color: 'rgba(16,185,129,.5)',
+              cursor: 'pointer', fontSize: 16, lineHeight: 1, padding: '0 2px' }}>×</button>
         </div>
+      )}
 
-        {/* WhatsApp */}
-        <div>
-          <label style={labelStyle}>
-            WhatsApp (10 dígitos) *
-          </label>
+      {/* Discount code */}
+      <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+        {p.membershipMode ? (
+          <input disabled value="" onChange={() => {}}
+            placeholder="Con membresía activa no aplican más descuentos"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px',
+              background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.08)',
+              borderRadius: 9, fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.3)', cursor: 'not-allowed' }} />
+        ) : !p.appliedDiscount ? (
           <div style={{ display: 'flex', gap: 8 }}>
-            <select
-              value={countryCode}
-              onChange={e => onCountryCodeChange(e.target.value as '+52' | '+1')}
-              disabled={disabled}
-              style={{ ...inputStyle, width: 'auto', flexShrink: 0, paddingLeft: 10, paddingRight: 10 }}
-            >
-              <option value="+52">🇲🇽 +52</option>
-              <option value="+1">🇺🇸 +1</option>
-            </select>
-            <input
-              type="tel"
-              value={phone}
-              onChange={(e) => {
-                const raw = e.target.value
-                const digits = raw.replace(/\D/g, '')
-                if (digits.length <= 10) onPhoneChange(raw)
-              }}
-              placeholder="10 dígitos"
-              disabled={disabled}
-              style={{ ...inputStyle, flex: 1 }}
-            />
+            <input value={p.discountCode}
+              onChange={e => p.onCodeChange(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && p.onApplyDiscount()}
+              placeholder="Código de descuento"
+              style={{ flex: 1, minWidth: 0, padding: '10px 12px',
+                background: 'rgba(255,255,255,.04)', borderRadius: 9, fontFamily: F.body, fontSize: 13,
+                color: C.text, border: `1px solid ${p.discountError ? C.errBorder : 'rgba(247,145,56,.5)'}` }} />
+            <button onClick={p.onApplyDiscount} disabled={p.discountLoading || !p.discountCode.trim()}
+              style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
+                background: 'rgba(247,145,56,.1)', color: C.orange, cursor: 'pointer',
+                fontFamily: F.body, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+                opacity: p.discountCode.trim() ? 1 : 0.5 }}>
+              {p.discountLoading ? '…' : 'Aplicar'}
+            </button>
           </div>
-          <p style={{ fontSize: 12, color: colors.textMuted, marginTop: 4, marginBottom: 0 }}>
-            Recibirás confirmación de pago por WhatsApp
-          </p>
-        </div>
-
-        {showAddress && (<>
-        {/* Separador visual */}
-        <div style={{ height: 1, background: colors.grayLight, margin: '8px 0' }} />
-
-        <h3 style={{
-          fontSize: 16, color: colors.orange, marginBottom: 0, marginTop: 8,
-          textTransform: 'uppercase', letterSpacing: 1
-        }}>
-          📍 Dirección de entrega
-        </h3>
-
-        {/* Selector dirección guardada / nueva */}
-        {savedAddress && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            <label style={{
-              display: 'flex', alignItems: 'flex-start', gap: 12, cursor: disabled ? 'default' : 'pointer',
-              background: addressOption === 'saved' ? '#10b98112' : colors.grayDark,
-              border: `2px solid ${addressOption === 'saved' ? '#10b981' : colors.grayLight}`,
-              borderRadius: 10, padding: 14,
-            }}>
-              <input
-                type="radio"
-                name="addressOption"
-                value="saved"
-                checked={addressOption === 'saved'}
-                onChange={() => onAddressOptionChange('saved')}
-                disabled={disabled}
-                style={{ marginTop: 2, accentColor: '#10b981', flexShrink: 0 }}
-              />
-              <div>
-                <p style={{ margin: '0 0 2px', fontWeight: 700, fontSize: 14, color: colors.white }}>
-                  Usar dirección guardada
-                </p>
-                <p style={{ margin: 0, fontSize: 13, color: colors.textMuted, lineHeight: 1.4 }}>
-                  {savedAddress}
-                </p>
-              </div>
-            </label>
-
-            <label style={{
-              display: 'flex', alignItems: 'center', gap: 12, cursor: disabled ? 'default' : 'pointer',
-              background: addressOption === 'new' ? '#ffffff08' : colors.grayDark,
-              border: `2px solid ${addressOption === 'new' ? colors.orange : colors.grayLight}`,
-              borderRadius: 10, padding: 14,
-            }}>
-              <input
-                type="radio"
-                name="addressOption"
-                value="new"
-                checked={addressOption === 'new'}
-                onChange={() => onAddressOptionChange('new')}
-                disabled={disabled}
-                style={{ accentColor: colors.orange, flexShrink: 0 }}
-              />
-              <span style={{ fontSize: 14, color: colors.white, fontWeight: 600 }}>
-                Ingresar nueva dirección
-              </span>
-            </label>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+            padding: '8px 12px', background: 'rgba(122,199,122,.08)',
+            border: '1px solid rgba(122,199,122,.25)', borderRadius: 9 }}>
+            <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.success }}>
+              ✓ {p.appliedDiscount.name}
+            </span>
+            <button onClick={p.onRemoveDiscount}
+              style={{ background: 'transparent', border: '1px solid rgba(255,128,128,.4)', borderRadius: 6,
+                color: C.errText, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '3px 8px',
+                fontFamily: F.body }}>Quitar</button>
           </div>
         )}
-
-        {/* Form campos — solo si no hay guardada O eligen nueva */}
-        {(!savedAddress || addressOption === 'new') && (<>
-
-        {/* Calle */}
-        <div>
-          <label style={labelStyle}>
-            Calle *
-          </label>
-          <input
-            type="text"
-            value={calle}
-            onChange={(e) => onCalleChange(e.target.value)}
-            placeholder=""
-            disabled={disabled}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* Número exterior e interior */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div>
-            <label style={labelStyle}>
-              Núm. Exterior *
-            </label>
-            <input
-              type="text"
-              value={numeroExterior}
-              onChange={(e) => onNumeroExteriorChange(e.target.value)}
-              placeholder=""
-              disabled={disabled}
-              style={inputStyle}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>
-              Núm. Interior
-            </label>
-            <input
-              type="text"
-              value={numeroInterior}
-              onChange={(e) => onNumeroInteriorChange(e.target.value)}
-              placeholder="Opcional"
-              disabled={disabled}
-              style={inputStyle}
-            />
-          </div>
-        </div>
-
-        {/* Colonia */}
-        <div>
-          <label style={labelStyle}>
-            Colonia *
-          </label>
-          <input
-            type="text"
-            value={colonia}
-            onChange={(e) => onColoniaChange(e.target.value)}
-            placeholder=""
-            disabled={disabled}
-            style={inputStyle}
-          />
-        </div>
-
-        {/* CP y Ciudad */}
-        <div style={{ display: 'grid', gridTemplateColumns: '120px 1fr', gap: 12 }}>
-          <div>
-            <label style={labelStyle}>
-              CP *
-            </label>
-            <input
-              type="text"
-              value={codigoPostal}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '')
-                if (value.length <= 5) onCodigoPostalChange(value)
-              }}
-              placeholder=""
-              disabled={disabled}
-              style={{
-                ...inputStyle,
-                borderColor: codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal))
-                  ? '#ef4444'
-                  : colors.grayLight
-              }}
-            />
-          </div>
-          <div>
-            <label style={labelStyle}>
-              Ciudad
-            </label>
-            <input
-              type="text"
-              value={zone ?? ''}
-              readOnly
-              disabled={disabled}
-              placeholder="Se llena con el CP"
-              style={{
-                ...inputStyle,
-                opacity: zone ? 1 : 0.5,
-                cursor: 'default',
-                color: zone ? colors.white : colors.textMuted,
-              }}
-            />
-          </div>
-        </div>
-
-        {/* Error de CP fuera de zona */}
-        {codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal)) && (
-          <div style={{
-            background: '#ef444420',
-            border: '2px solid #ef4444',
-            borderRadius: 8,
-            padding: 12,
-            fontSize: 14,
-            color: '#ef4444',
-            textAlign: 'center'
-          }}>
-            CP fuera del área de entrega (solo Área Metropolitana de Monterrey)
-          </div>
+        {p.discountError && (
+          <div style={{ fontFamily: F.body, fontSize: 12, color: C.errText, marginTop: 5 }}>{p.discountError}</div>
         )}
-        </>)}
-        </>)}
+      </div>
+
+      {/* Totals */}
+      <SidebarTotals
+        subtotalIndividual={p.subtotalIndividual}
+        subtotal={p.subtotal}
+        packageDiscountAmount={p.packageDiscountAmount}
+        isPackageActive={p.isPackageActive}
+        shippingCost={p.shippingCost}
+        shippingType={p.shippingType}
+        total={p.total}
+        membershipMode={p.membershipMode}
+        membershipWeeks={p.membershipWeeks}
+        membershipDiscountPct={p.membershipDiscountPct}
+        appliedDiscount={p.appliedDiscount}
+        discountAmount={p.discountAmount}
+        selectedPickupSpots={undefined}
+      />
+
+      {/* CTA */}
+      <div style={{ padding: '0 18px 18px' }}>
+        <CTAButton label={p.ctaLabel} disabled={p.ctaDisabled} reason={p.ctaReason} onClick={p.onCTA} />
       </div>
     </div>
   )
 }
 
-function ShippingSelector({ selectedType, onTypeChange, selectedPickupSpot, onPickupSpotChange, pickupSpots, disabled, shippingStandard = 4900, membershipMode = false }: {
-  selectedType: 'standard' | 'priority' | 'pickup'
-  onTypeChange: (type: 'standard' | 'priority' | 'pickup') => void
-  selectedPickupSpot: string
-  onPickupSpotChange: (spotId: string) => void
-  pickupSpots: PickupSpot[]
-  disabled: boolean
-  shippingStandard?: number
-  membershipMode?: boolean
-}) {
-  return (
-    <div style={{ marginBottom: 32 }}>
-      <h2 style={{
-        fontFamily: 'Franchise, sans-serif',
-        fontSize: 26,
-        letterSpacing: 0,
-        marginBottom: 20,
-        color: colors.white,
-        fontWeight: 'normal'
-      }}>
-        Tipo de envío
-      </h2>
-
-
-
-      {/* Opciones de envío */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        {/* Envío Estándar */}
-        <button
-          onClick={() => onTypeChange('standard')}
-          disabled={disabled}
-          style={{
-            padding: 20,
-            background: selectedType === 'standard' ? colors.grayLight : colors.grayDark,
-            border: selectedType === 'standard' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
-            borderRadius: 12,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            textAlign: 'left'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              border: `2px solid ${selectedType === 'standard' ? colors.orange : colors.grayLight}`,
-              background: selectedType === 'standard' ? colors.orange : 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              {selectedType === 'standard' && (
-                <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: colors.black
-                }} />
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 4 }}>
-                <span style={{
-                  fontFamily: 'Franchise, sans-serif',
-                  fontSize: 20,
-                  letterSpacing: 0,
-                  color: colors.white,
-                }}>
-                  Envío Estándar
-                </span>
-                <span style={{ fontFamily: 'Franchise, sans-serif', fontSize: 20, letterSpacing: 0, color: membershipMode ? '#10b981' : colors.white }}>
-                  {membershipMode ? '— Gratis' : `- $${(shippingStandard / 100).toFixed(2)} MXN`}
-                </span>
-              </div>
-              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
-                Entrega en horario regular (Domingo 9AM - 4PM)
-              </div>
-
-              {/* Mensaje expandido cuando está seleccionado */}
-              {selectedType === 'standard' && (
-                <div style={{
-                  marginTop: 16,
-                  paddingTop: 16,
-                  borderTop: `2px solid ${colors.orange}`,
-                }}>
-                  <div style={{
-                    background: colors.black,
-                    padding: 16,
-                    borderRadius: 8,
-                    border: `1px solid ${colors.grayLight}`
-                  }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ fontSize: 22 }}>📅</div>
-                      <div style={{
-                        fontFamily: 'Franchise, sans-serif',
-                        fontSize: 16,
-                        letterSpacing: 0,
-                        color: colors.orange,
-                        textTransform: 'uppercase',
-                      }}>
-                        Horario Específico Dependiendo de Tu Zona
-                      </div>
-                    </div>
-                    
-                    <p style={{
-                      margin: '0 0 12px 0',
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 16,
-                      letterSpacing: 0,
-                      color: colors.white,
-                      lineHeight: 1.4
-                    }}>
-                      Nos estaremos <strong style={{ color: colors.orange }}>comunicando el día Sábado</strong> para darte una hora estimada de entrega para el Domingo.
-                    </p>
-
-                    <div style={{
-                      marginTop: 12,
-                      paddingTop: 12,
-                      borderTop: `1px solid ${colors.grayLight}`,
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 15,
-                      letterSpacing: 0,
-                      color: colors.textMuted,
-                      textAlign: 'center'
-                    }}>
-                      Entrega: <strong style={{ color: colors.orange }}>Domingo 9AM - 4PM</strong> · Horario específico según tu zona
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </button>
-
-        {/* Recoger en Pickup Spot */}
-        <button
-          onClick={() => onTypeChange('pickup')}
-          disabled={disabled}
-          style={{
-            padding: 20,
-            background: selectedType === 'pickup' ? colors.grayLight : colors.grayDark,
-            border: selectedType === 'pickup' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
-            borderRadius: 12,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            textAlign: 'left'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              border: `2px solid ${selectedType === 'pickup' ? colors.orange : colors.grayLight}`,
-              background: selectedType === 'pickup' ? colors.orange : 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              {selectedType === 'pickup' && (
-                <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: colors.black
-                }} />
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{
-                fontFamily: 'Franchise, sans-serif',
-                fontSize: 20,
-                letterSpacing: 0,
-                color: colors.white,
-                marginBottom: 4
-              }}>
-                Recoger en Pickup Spot - Gratis
-              </div>
-              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
-                Sin costo de envío, recoge tu pedido en el horario del local
-              </div>
-
-              {/* Selector de Pickup Spots expandido cuando está seleccionado */}
-              {selectedType === 'pickup' && (
-                <div style={{
-                  marginTop: 16,
-                  paddingTop: 16,
-                  borderTop: `2px solid ${colors.orange}`,
-                }}>
-                  <h3 style={{
-                    fontFamily: 'Franchise, sans-serif',
-                    fontSize: 18,
-                    letterSpacing: 0,
-                    color: colors.orange,
-                    marginTop: 0,
-                    marginBottom: 12,
-                    fontWeight: 'normal',
-                    textTransform: 'uppercase',
-                  }}>
-                    Selecciona tu Pickup Spot
-                  </h3>
-                  
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {pickupSpots.map(spot => (
-                      <div
-                        key={spot.id}
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          onPickupSpotChange(spot.id)
-                        }}
-                        style={{
-                          padding: 14,
-                          background: selectedPickupSpot === spot.id ? colors.black : colors.grayDark,
-                          border: selectedPickupSpot === spot.id ? `2px solid ${colors.orange}` : `1px solid ${colors.grayLight}`,
-                          borderRadius: 8,
-                          cursor: disabled ? 'not-allowed' : 'pointer',
-                          transition: 'all 0.2s',
-                          textAlign: 'left',
-                          opacity: disabled ? 0.5 : 1
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'start', gap: 10 }}>
-                          <div style={{
-                            width: 18,
-                            height: 18,
-                            borderRadius: '50%',
-                            border: `2px solid ${selectedPickupSpot === spot.id ? colors.orange : colors.grayLight}`,
-                            background: selectedPickupSpot === spot.id ? colors.orange : 'transparent',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0,
-                            marginTop: 2
-                          }}>
-                            {selectedPickupSpot === spot.id && (
-                              <div style={{
-                                width: 6,
-                                height: 6,
-                                borderRadius: '50%',
-                                background: colors.black
-                              }} />
-                            )}
-                          </div>
-                          <div style={{ flex: 1 }}>
-                            <div style={{
-                              fontFamily: 'Franchise, sans-serif',
-                              fontSize: 18,
-                              letterSpacing: 0,
-                              color: colors.white,
-                              marginBottom: 4
-                            }}>
-                              {spot.name}
-                            </div>
-                            <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.textMuted, marginBottom: 3 }}>
-                              {spot.address}
-                            </div>
-                            <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.orange }}>
-                              {spot.schedule}
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-
-                  {selectedPickupSpot === '' && (
-                    <div style={{
-                      marginTop: 12,
-                      padding: 10,
-                      background: '#ef444420',
-                      border: '1px solid #ef4444',
-                      borderRadius: 8,
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 14,
-                      letterSpacing: 0,
-                      color: '#ef4444',
-                      textAlign: 'center'
-                    }}>
-                      ⚠️ Por favor selecciona un pickup spot para continuar
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-        </button>
-
-        {/* Envío Prioritario */}
-        <button
-          onClick={() => onTypeChange('priority')}
-          disabled={disabled}
-          style={{
-            padding: 20,
-            background: selectedType === 'priority' ? colors.grayLight : colors.grayDark,
-            border: selectedType === 'priority' ? `3px solid ${colors.orange}` : `2px solid ${colors.grayLight}`,
-            borderRadius: 12,
-            cursor: disabled ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s',
-            textAlign: 'left'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{
-              width: 24,
-              height: 24,
-              borderRadius: '50%',
-              border: `2px solid ${selectedType === 'priority' ? colors.orange : colors.grayLight}`,
-              background: selectedType === 'priority' ? colors.orange : 'transparent',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}>
-              {selectedType === 'priority' && (
-                <div style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: '50%',
-                  background: colors.black
-                }} />
-              )}
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{
-                fontFamily: 'Franchise, sans-serif',
-                fontSize: 20,
-                letterSpacing: 0,
-                color: colors.white,
-                marginBottom: 4
-              }}>
-                Envío Prioritario - Pago por Separado
-              </div>
-              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 16, letterSpacing: 0, color: colors.textMuted }}>
-                Entrega en horario y zona específica
-              </div>
-              <div style={{ fontFamily: 'Franchise, sans-serif', fontSize: 14, letterSpacing: 0, color: colors.orange, marginTop: 4 }}>
-                Rango estimado: $100-200 dependiendo zona y horario
-              </div>
-              
-              {/* Mensaje expandido cuando está seleccionado */}
-              {selectedType === 'priority' && (
-                <div style={{
-                  marginTop: 16,
-                  paddingTop: 16,
-                  borderTop: `2px solid ${colors.orange}`,
-                }}>
-                  <div style={{
-                    background: colors.black,
-                    padding: 16,
-                    borderRadius: 8,
-                    border: `1px solid ${colors.grayLight}`
-                  }}>
-                    <div style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
-                      <div style={{ fontSize: 22 }}>📞</div>
-                      <div style={{
-                        fontFamily: 'Franchise, sans-serif',
-                        fontSize: 16,
-                        letterSpacing: 0,
-                        color: colors.orange,
-                        textTransform: 'uppercase',
-                      }}>
-                        Importante
-                      </div>
-                    </div>
-                    
-                    <p style={{
-                      margin: '0 0 12px 0',
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 16,
-                      letterSpacing: 0,
-                      color: colors.white,
-                      lineHeight: 1.4
-                    }}>
-                      Después de completar tu orden, <strong style={{ color: colors.orange }}>nos contactaremos contigo</strong> para:
-                    </p>
-
-                    <ul style={{
-                      margin: '0 0 12px 0',
-                      paddingLeft: 20,
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 15,
-                      letterSpacing: 0,
-                      color: colors.textSecondary,
-                      lineHeight: 1.6
-                    }}>
-                      <li>Acordar horario y zona de entrega específica</li>
-                      <li>Confirmar el costo de envío según tu ubicación</li>
-                      <li>Coordinar el <strong style={{ color: colors.white }}>pago por separado</strong> del envío</li>
-                    </ul>
-
-                    <div style={{
-                      marginTop: 12,
-                      paddingTop: 12,
-                      borderTop: `1px solid ${colors.grayLight}`,
-                      fontFamily: 'Franchise, sans-serif',
-                      fontSize: 15,
-                      letterSpacing: 0,
-                      color: colors.textMuted,
-                      textAlign: 'center'
-                    }}>
-                      Costo estimado: <strong style={{ color: colors.orange }}>$100-200 MXN</strong> · Se paga por separado
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </button>
-      </div>
-    </div>
-  )
-}
-
-
-function PaymentButton({ onClick, disabled, isProcessing, addressValidated }: {
-  onClick: () => void
-  disabled: boolean
-  isProcessing: boolean
-  addressValidated: boolean
-}) {
-  const getButtonText = () => {
-    if (isProcessing) return 'Procesando...'
-    if (!addressValidated) return '⚠️ Completa y valida la dirección primero'
-    return 'Proceder al pago'
+// ── Sidebar order items ───────────────────────────────────────────────────────
+function SidebarOrderItems({ items, isPackageActive }: { items: CartItem[]; isPackageActive: boolean }) {
+  const sizeOrder: string[] = []
+  const bySize = new Map<string, { sizeName: string; items: CartItem[] }>()
+  for (const item of items) {
+    if (!bySize.has(item.sizeId)) { sizeOrder.push(item.sizeId); bySize.set(item.sizeId, { sizeName: item.sizeName, items: [] }) }
+    bySize.get(item.sizeId)!.items.push(item)
   }
+  return (
+    <div>
+      {sizeOrder.map(sizeId => {
+        const group = bySize.get(sizeId)!
+        const groupQty = group.items.reduce((s, i) => s + i.qty, 0)
+        return (
+          <div key={sizeId}>
+            {/* Group header */}
+            <div style={{ padding: '9px 18px', background: 'rgba(255,255,255,.02)',
+              borderTop: '1px solid rgba(255,255,255,.05)' }}>
+              <span style={{ fontFamily: F.body, fontSize: 10.5, fontWeight: 600,
+                letterSpacing: '.16em', textTransform: 'uppercase', color: C.textFaint }}>
+                {group.sizeName} · {groupQty} platillo{groupQty !== 1 ? 's' : ''}
+              </span>
+            </div>
+            {/* Meal rows */}
+            {group.items.map((item, idx) => {
+              const effectivePrice = isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice
+              const lineTotal = effectivePrice * item.qty
+              return (
+                <div key={`${item.mealId}-${idx}`} style={{ padding: '11px 18px',
+                  borderTop: '1px solid rgba(255,255,255,.05)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                    <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>
+                      {item.mealName}
+                    </span>
+                    <span style={{ fontFamily: F.body, fontSize: 11.5, color: C.textFaint, flexShrink: 0, marginTop: 1 }}>
+                      ×{item.qty}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
+                    <span style={{ fontFamily: F.body, fontSize: 12.5,
+                      color: isPackageActive ? C.success : 'rgba(245,241,236,.5)' }}>
+                      ${(effectivePrice / 100).toFixed(2)} c/u
+                    </span>
+                    <span style={{ fontFamily: F.body, fontSize: 13.5, fontWeight: 700, color: C.text }}>
+                      ${(lineTotal / 100).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+// ── SidebarTotals ─────────────────────────────────────────────────────────────
+function SidebarTotals({
+  subtotalIndividual, subtotal, packageDiscountAmount, isPackageActive,
+  shippingCost, shippingType, total,
+  membershipMode, membershipWeeks, membershipDiscountPct,
+  appliedDiscount, discountAmount,
+  selectedPickupSpots,
+}: {
+  subtotalIndividual: number; subtotal: number; packageDiscountAmount: number; isPackageActive: boolean
+  shippingCost: number; shippingType: ShippingType; total: number
+  membershipMode: boolean; membershipWeeks: number; membershipDiscountPct: number
+  appliedDiscount: ValidatedDiscount | null; discountAmount: number
+  selectedPickupSpots?: string
+}) {
+  const fmt = (c: number) => `$${(c / 100).toFixed(2)}`
+  const row = (label: React.ReactNode, value: React.ReactNode, color?: string) => (
+    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0',
+      fontFamily: F.body, fontSize: 13.5 }}>
+      <span style={{ color: C.textSub }}>{label}</span>
+      <span style={{ color: color ?? C.text, fontWeight: 500 }}>{value}</span>
+    </div>
+  )
 
   return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={disabled ? undefined : 'franchise-stroke'}
-      style={{
-        width: '100%',
-        padding: '18px 24px',
-        cursor: disabled ? 'not-allowed' : 'pointer',
-        opacity: disabled ? 0.4 : 1,
-        background: disabled ? colors.grayLight : colors.orange,
-        color: disabled ? colors.textMuted : colors.white,
-        border: disabled ? `2px solid ${colors.grayLight}` : 'none',
-        borderRadius: 8,
-        fontFamily: 'Franchise, sans-serif',
-        fontSize: 22,
-        letterSpacing: 0,
+    <div style={{ padding: '16px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+      {membershipMode ? (
+        <>
+          {row('Semana:', fmt(subtotal))}
+          {row(`× ${membershipWeeks} semanas:`, `−${membershipDiscountPct}%`, C.success)}
+          {row('Envío incluido:', 'Gratis', C.success)}
+          {row(`Ahorro total:`, `−${fmt(subtotalIndividual * membershipWeeks - total)}`, C.success)}
+        </>
+      ) : (
+        <>
+          {/* Subtotal — tachado si descuento paquete */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontFamily: F.body, fontSize: 13.5 }}>
+            <span style={{ color: C.textSub }}>Subtotal:</span>
+            {isPackageActive ? (
+              <span style={{ color: 'rgba(245,241,236,.3)', textDecoration: 'line-through' }}>{fmt(subtotalIndividual)}</span>
+            ) : (
+              <span style={{ color: C.text, fontWeight: 500 }}>{fmt(subtotalIndividual)}</span>
+            )}
+          </div>
+          {packageDiscountAmount > 0 && row('Descuento por paquete:', `−${fmt(packageDiscountAmount)}`, C.success)}
+          {row(
+            shippingType === 'standard' ? 'Envío estándar:' : shippingType === 'pickup' ? 'Pickup:' : 'Envío prioritario:',
+            shippingCost > 0 ? fmt(shippingCost) : shippingType === 'priority' ? 'Pendiente' : 'Gratis',
+            shippingCost === 0 && shippingType !== 'priority' ? C.success : undefined,
+          )}
+          {appliedDiscount && discountAmount > 0 && row(
+            `${appliedDiscount.name}:`, `−${fmt(discountAmount)}`, C.success
+          )}
+        </>
+      )}
+
+      {/* Total */}
+      <div style={{ marginTop: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.1)',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.text }}>
+          {membershipMode ? 'Total hoy:' : 'Total:'}
+        </span>
+        <span style={{ fontFamily: F.display, fontSize: 34, color: C.orange }}>
+          {fmt(total)}
+        </span>
+      </div>
+    </div>
+  )
+}
+
+// ── CTAButton ─────────────────────────────────────────────────────────────────
+function CTAButton({ label, disabled, reason, onClick }: {
+  label: string; disabled: boolean; reason: string | null; onClick: () => void
+}) {
+  return (
+    <div>
+      <button onClick={onClick} disabled={disabled} style={{
+        width: '100%', padding: '18px 0', borderRadius: 10, cursor: disabled ? 'not-allowed' : 'pointer',
+        border: disabled ? '1px solid rgba(255,255,255,.1)' : 'none',
+        background: disabled ? 'rgba(255,255,255,.05)' : C.orange,
+        color: disabled ? 'rgba(245,241,236,.3)' : C.onOrange,
+        fontFamily: F.display, fontSize: 22, letterSpacing: '.1em', textTransform: 'uppercase',
+        boxShadow: disabled ? 'none' : '0 8px 26px rgba(247,145,56,.22)',
         lineHeight: 1,
-        textTransform: 'uppercase',
-        transition: 'all 0.2s'
-      }}
-    >
-      {getButtonText()}
-    </button>
+      }}>
+        {disabled && reason ? reason : label}
+      </button>
+      {!disabled && (
+        <div style={{ fontFamily: F.body, fontSize: 11.5, lineHeight: 1.45,
+          color: 'rgba(245,241,236,.4)', textAlign: 'center', marginTop: 8 }}>
+          Al continuar aceptas nuestros términos y condiciones.
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ── Mobile bar ─────────────────────────────────────────────────────────────────
+function MobileBar({ total, membershipMode, shippingType, membershipWeeks, ctaLabel, ctaDisabled, ctaReason, onCTA }: {
+  total: number; membershipMode: boolean; shippingType: ShippingType
+  membershipWeeks: number; ctaLabel: string; ctaDisabled: boolean; ctaReason: string | null; onCTA: () => void
+}) {
+  const barLabel = membershipMode
+    ? `Total hoy · ${membershipWeeks} semanas`
+    : shippingType === 'pickup' ? 'Pickup · sin costo de envío' : 'Total con envío'
+  const barLabelColor = shippingType === 'pickup' && !membershipMode ? C.success : 'rgba(245,241,236,.5)'
+
+  return (
+    <div className="co-mobile-bar" style={{
+      position: 'fixed', bottom: 0, left: 0, right: 0,
+      padding: '12px 16px 16px',
+      borderTop: '1px solid rgba(255,255,255,.1)',
+      background: 'rgba(12,10,9,.97)',
+      flexDirection: 'column', gap: 10, zIndex: 900,
+    }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <span style={{ fontFamily: F.body, fontSize: 12.5, color: barLabelColor }}>
+          {barLabel}
+        </span>
+        <span style={{ fontFamily: F.display, fontSize: 26, color: C.orange }}>
+          ${(total / 100).toFixed(2)}
+        </span>
+      </div>
+      <button onClick={onCTA} disabled={ctaDisabled} style={{
+        width: '100%', padding: '16px 0', borderRadius: 10,
+        cursor: ctaDisabled ? 'not-allowed' : 'pointer',
+        border: ctaDisabled ? '1px solid rgba(255,255,255,.1)' : 'none',
+        background: ctaDisabled ? 'rgba(255,255,255,.05)' : C.orange,
+        color: ctaDisabled ? 'rgba(245,241,236,.3)' : C.onOrange,
+        fontFamily: F.display, fontSize: 20, letterSpacing: '.1em', textTransform: 'uppercase',
+        lineHeight: 1,
+      }}>
+        {ctaDisabled && ctaReason ? ctaReason : ctaLabel}
+      </button>
+    </div>
+  )
+}
+
+// ── Mobile summary collapsible ────────────────────────────────────────────────
+type MobileSummaryProps = Omit<SidebarProps, 'ctaLabel' | 'ctaDisabled' | 'ctaReason' | 'onCTA'>
+
+function MobileSummaryCollapsible(p: MobileSummaryProps) {
+  const [open, setOpen] = useState(false)
+  const totalQty = p.items.reduce((n, i) => n + i.qty, 0)
+  const sizeNames = [...new Set(p.items.map(i => i.sizeName))].join(' y ')
+
+  return (
+    <div className="co-mobile-summary" style={{ marginBottom: 20 }}>
+      {/* Collapsed header */}
+      <button onClick={() => setOpen(o => !o)} style={{
+        width: '100%', padding: '14px 15px', borderRadius: open ? '12px 12px 0 0' : 12,
+        border: `1px solid ${open ? C.orange : 'rgba(255,255,255,.1)'}`,
+        background: 'rgba(255,255,255,.03)', cursor: 'pointer',
+        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+      }}>
+        <div style={{ textAlign: 'left' }}>
+          <div style={{ fontFamily: F.display, fontSize: 19, textTransform: 'uppercase', color: C.text }}>
+            Tu pedido
+          </div>
+          <div style={{ fontFamily: F.body, fontSize: 12, color: C.textSub, marginTop: 2 }}>
+            {totalQty} platillo{totalQty !== 1 ? 's' : ''} · {sizeNames}
+          </div>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span style={{ fontFamily: F.display, fontSize: 20, color: C.orange }}>
+            ${(p.total / 100).toFixed(2)}
+          </span>
+          <span style={{ color: C.textDim, fontSize: 14, transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+        </div>
+      </button>
+
+      {/* Expanded */}
+      {open && (
+        <div style={{ border: `1px solid ${C.orange}`, borderTop: 'none', borderRadius: '0 0 12px 12px',
+          background: C.panel, overflow: 'hidden' }}>
+          <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive} />
+          <SidebarTotals
+            subtotalIndividual={p.subtotalIndividual} subtotal={p.subtotal}
+            packageDiscountAmount={p.packageDiscountAmount} isPackageActive={p.isPackageActive}
+            shippingCost={p.shippingCost} shippingType={p.shippingType} total={p.total}
+            membershipMode={p.membershipMode} membershipWeeks={p.membershipWeeks}
+            membershipDiscountPct={p.membershipDiscountPct}
+            appliedDiscount={p.appliedDiscount} discountAmount={p.discountAmount}
+          />
+          {/* Discount code in mobile summary */}
+          <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+            {!p.appliedDiscount ? (
+              <div style={{ display: 'flex', gap: 8 }}>
+                <input value={p.discountCode} onChange={e => p.onCodeChange(e.target.value.toUpperCase())}
+                  onKeyDown={e => e.key === 'Enter' && p.onApplyDiscount()}
+                  placeholder="Código de descuento"
+                  style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 16,
+                    background: 'rgba(255,255,255,.04)', borderRadius: 9, fontFamily: F.body,
+                    color: C.text, border: `1px solid rgba(247,145,56,.5)` }} />
+                <button onClick={p.onApplyDiscount} disabled={p.discountLoading || !p.discountCode.trim()}
+                  style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
+                    background: 'rgba(247,145,56,.1)', color: C.orange, cursor: 'pointer',
+                    fontFamily: F.body, fontSize: 13, fontWeight: 600 }}>
+                  {p.discountLoading ? '…' : 'Aplicar'}
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '8px 12px', background: 'rgba(122,199,122,.08)',
+                border: '1px solid rgba(122,199,122,.25)', borderRadius: 9 }}>
+                <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.success }}>
+                  ✓ {p.appliedDiscount.name}
+                </span>
+                <button onClick={p.onRemoveDiscount}
+                  style={{ background: 'transparent', border: '1px solid rgba(255,128,128,.4)', borderRadius: 6,
+                    color: C.errText, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '3px 8px',
+                    fontFamily: F.body }}>Quitar</button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
