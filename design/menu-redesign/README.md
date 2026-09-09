@@ -108,10 +108,39 @@ con el unitario tachado, sidebar agrupado por tamaño, y el descuento como líne
 Verde de éxito: `#7ac77a`.
 
 ### 1d — Móvil (390px)
-Sin sidebar. Pills de tamaño en fila con scroll horizontal (sin wrap) + **una card debajo con
-el desglose del tamaño activo**, que cambia de contenido al seleccionar otro pill.
+Sin sidebar. Pills de tamaño en fila con scroll horizontal (sin wrap) + **una card compacta
+debajo con el desglose del tamaño activo** (detalle en `3b`), que cambia de contenido al
+seleccionar otro pill.
 Barra flotante pegada abajo (progreso, contador, total, `Ver mi semana`) que abre un drawer
 con el contenido del sidebar. Hit targets ≥ 44px.
+
+### 3b — Card de porciones (móvil) + sheet de info
+La card es **horizontal, dos líneas, ~86px de alto** (`padding:9px 11px 8px`,
+`border:1px solid rgba(255,255,255,.1)`, `radius:12px`, `background:rgba(255,255,255,.03)`):
+- Línea 1: tres porciones en fila (`gap:16px`), cada una con label Franchise 700 10px
+  `letter-spacing:.14em` uppercase del color del grupo (`#F79138` / `#e8c07d` / `#7ac77a`) y
+  el valor Franchise 700 19px `#F5F1EC` con la `g` en Barlow 600 11px `rgba(245,241,236,.5)`.
+  A la derecha, botón `i` de `40×40`, `radius:10px`.
+- Línea 2 (`border-top:1px solid rgba(255,255,255,.08)`, `margin-top:8px;padding-top:8px`):
+  `$155 c/u` Barlow 600 13.5px `#F5F1EC` a la izquierda y `$150 en paquete desde 5`
+  Barlow 400 12px `rgba(245,241,236,.5)` a la derecha.
+- **Sin ingredientes por porción** — eso vive en el modal.
+
+### 3a — Modal "Que son las porciones" (desktop)
+Modal de `640px` (`max-height:600px`, `radius:14px`, `background:#14110f`,
+`border:1px solid rgba(255,255,255,.1)`, `box-shadow:0 30px 80px rgba(0,0,0,.6)`) centrado
+sobre backdrop `rgba(8,7,6,.78)`. Header `padding:24px 26px 0` con título Franchise 700
+34px/.95 uppercase y `×` de `34×34`; intro Barlow 400 14px/1.55 `rgba(245,241,236,.6)`.
+Cuerpo scrolleable con un bloque por porción separado por `border-top:1px solid rgba(255,255,255,.07)`,
+`padding:16px 0`: nombre Franchise 700 13px `letter-spacing:.18em` en el color del grupo +
+`Se pesa en crudo` Barlow 500 12px `rgba(245,241,236,.42)`, descripción Barlow 400 13.5px/1.5
+`rgba(245,241,236,.55)`, e ingredientes como chips (`padding:5px 9px`, `radius:6px`,
+`background:rgba(255,255,255,.04)`, `border:1px solid rgba(255,255,255,.09)`, Barlow 500 12px
+`rgba(245,241,236,.7)`, `gap:6px`, wrap). Cierra con nota naranja `Todo se pesa en crudo`
+y footer con `Entendido` (`padding:15px 34px`, `#F79138`, Franchise 700 20px).
+En móvil (`3b`, panel derecho) es el mismo contenido como bottom sheet con handle de
+`38×4` y `Entendido` a ancho completo pegado abajo.
+⚠️ **El copy del modal es genérico y está por definir.**
 
 ### 2a / 2b — Tamaño personalizado (desktop / móvil)
 **No es modal**: se despliega en línea debajo del selector y empuja el grid hacia abajo.
@@ -248,7 +277,8 @@ En `reference/assets/` (los mismos de producción):
    descripción, macros e ingredientes reales; el resto es de ejemplo. Todo debe venir de la BD.
 
 ## Files
-- `screenshots/` — captura de cada estado a 2x, para revisar sin abrir el HTML.
+- `screenshots/` — `5a-web-tamano-personalizado.png`, `5b-web-tamano-base.png`,
+  `5c-movil.png` (selector + porciones, lo más reciente) y las capturas de cada estado a 2x, para revisar sin abrir el HTML.
   **Son apoyo, no fuente de verdad**: para medidas y colores usa el HTML (estilos inline).
   `1a-desktop-carrito-vacio.png` · `1b-desktop-3-platillos.png` ·
   `1c-desktop-6-platillos-descuento.png` · `1d-movil.png` ·
@@ -258,5 +288,7 @@ En `reference/assets/` (los mismos de producción):
 - `reference/Auth Redesign.dc.html` — login/registro (turno 1; tiene espacios reservados
   para logos).
 - `menu-spec.md` — spec de comportamiento **normativa**.
+- `UPDATE-porciones.md` — cambio incremental: nuevo bloque de porciones (`4a`) + modal de
+  info (`3a`/`3b`). **Sustituye lo que este README dice del bloque de porciones.**
 - `WORKFLOW.md` — cómo iterar con este handoff sin perder fidelidad.
 - `CLAUDE.md` — reglas para pegar en el `CLAUDE.md` del repo.

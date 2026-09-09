@@ -108,13 +108,59 @@ Con el carrito vacío ambos están deshabilitados.
   `Ver mi semana`.
 - Abre un drawer con el mismo contenido del sidebar. `Seguir agregando` lo cierra.
 - Cards en una columna, misma anatomía. Pills de tamaño en fila con scroll horizontal, sin wrap.
-- Debajo de los pills va **una sola card con el desglose del tamaño seleccionado** (proteína,
-  carbo y verdura con sus gramos e ingredientes, más el precio unitario y de paquete). Es el
-  equivalente móvil a las cuatro cards del desktop: en vez de mostrar los cuatro tamaños,
-  muestra solo el activo y su contenido cambia al seleccionar otro.
+- Debajo de los pills va **una sola card compacta con el desglose del tamaño seleccionado**
+  (ver `3b`). Es el equivalente móvil a las cuatro cards del desktop: en vez de mostrar los
+  cuatro tamaños, muestra solo el activo, y su contenido cambia al seleccionar otro.
+- Esa card es **horizontal y de dos líneas, ~86px de alto**: arriba las tres porciones en fila
+  (`PROTEINA 180g` · `CARBO 55g` · `VERDURA 70g`) con el botón `i` a la derecha; abajo, en una
+  línea, `$155 c/u` y `$150 en paquete desde 5`.
+- **No lista los ingredientes de cada porción** — igual que el desktop. Esa información vive
+  en el modal de porciones (§9).
 - Esa card sigue el mismo comportamiento que el selector en desktop: vive arriba, no se
   colapsa al agregar platillos, y al hacer scroll se sustituye por la barra compacta pegada.
 - Hit targets mínimo 44px (steppers, pills, toggle de ingredientes).
+
+## 10. Selector de tamaño y porciones
+
+Ver `5a`, `5b`, `5c` y `design_handoff_menu_redesign/UPDATE-porciones.md`.
+(`4a` y `4b` fueron exploración y quedan obsoletos.)
+
+- **Las cards de tamaño llevan solo el nombre** (+ badge). Los gramos y el precio viven en el
+  bloque de porciones de abajo, así que en la card duplicaban información.
+- Grid `auto-fit` en web y móvil: se reacomoda según el ancho y la cantidad de tamaños.
+  **Sin scroll horizontal en ningún breakpoint.**
+- Los tamaños personalizados son cards normales del mismo grid, con badge `Tuyo`, y se
+  seleccionan con un clic como cualquier otro.
+- El bloque de porciones describe el tamaño activo: **Proteína y Carbo siempre por ingrediente**
+  (aunque todos pesen lo mismo), **Verdura como un solo número** sin desglose ni glosa.
+- **Todas las porciones se pintan igual**: no hay estado "default", ni chip punteado, ni alerta.
+- El precio cierra el bloque en web y en móvil, y **el de paquete es el protagonista**: grande
+  y en verde `#7ac77a`; el unitario queda a la derecha como referencia secundaria y apagada.
+- Móvil **mantiene las tres columnas** de porciones, no las apila.
+- Badges: `★ El más pedido` (solo `★` en móvil) y `Custom` en los tamaños del usuario.
+- `Editar` y `Eliminar` aparecen junto al encabezado **solo con un tamaño personalizado activo**.
+  `Editar` abre el panel de creación (§ `2a`/`2b`) en línea y precargado — no es la forma de
+  cambiar de tamaño, para eso están las cards. Guardar-sobre-el-existente vs. crear-uno-nuevo
+  está **por definir**.
+
+## 9. Modal "Que son las porciones"
+
+Un solo contenido, dos presentaciones (`3a` desktop, `3b` móvil).
+
+- **Disparador**: botón `i · Que son las porciones` a la derecha del label `1 · Tu tamaño` en
+  desktop, y botón `i` de 40px dentro de la card de porciones en móvil. La barra compacta
+  sticky lleva el mismo `i` al final de su resumen de macros.
+- **Desktop**: modal centrado de 640px sobre backdrop `rgba(8,7,6,.78)`, cuerpo scrolleable,
+  cierra con `×`, `Entendido`, clic en el backdrop o `Esc`.
+- **Móvil**: bottom sheet con handle, mismo contenido, `Entendido` pegado abajo; cierra con
+  `×`, botón, swipe hacia abajo o tap en el backdrop.
+- **Contenido**: intro de una frase; un bloque por porción (proteína / carbo / verdura) con
+  nombre, la nota `Se pesa en crudo`, una descripción corta y **los ingredientes de esa porción
+  como chips**; y al final la nota naranja `Todo se pesa en crudo`.
+- Es informativo y **no depende del tamaño activo**: no muestra gramos, no cambia al cambiar de
+  tamaño y no tiene acciones más que cerrar.
+- Los ingredientes vienen del catálogo por categoría de porción, no del platillo seleccionado.
+- ⚠️ **El copy actual es genérico y está por definir con la marca.**
 
 ## 8. Tipografía
 
