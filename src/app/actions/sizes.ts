@@ -6,6 +6,24 @@ import { getCustomerByUserId } from '@/lib/db/customers'
 import type { Size } from '@/lib/types'
 import { calculateCustomSizePrice, CARB_BASE, PROTEIN_BASE } from '@/lib/utils/pricing'
 
+export async function deleteCustomSize(sizeId: string): Promise<{ error?: string }> {
+  const serverClient = await createClient()
+  const { data: { user } } = await serverClient.auth.getUser()
+  if (!user) return {} // efímero: nada que borrar en DB
+
+  const customer = await getCustomerByUserId(user.id)
+  if (!customer) return { error: 'Cliente no encontrado' }
+
+  const { error } = await createAdminClient()
+    .from('sizes')
+    .delete()
+    .eq('id', sizeId)
+    .eq('customer_id', customer.id) // seguridad: solo borra los propios
+
+  if (error) return { error: `Error al eliminar: ${error.message}` }
+  return {}
+}
+
 interface CreateCustomSizeData {
   name: string
   protein_qty: Record<string, number>

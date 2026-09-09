@@ -7,7 +7,8 @@ export interface CartItem {
   sizeId: string
   sizeName: string
   qty: number
-  unitPrice: number // en centavos
+  unitPrice: number // precio unitario en centavos
+  packagePrice?: number // precio de paquete en centavos (≥5 platillos)
   packageName?: string // Nombre del paquete (para display en checkout)
   packageInstanceId?: string // ID único de esta instancia del paquete en el carrito
 }
@@ -21,6 +22,7 @@ interface CartStore {
   replaceSizeId: (oldSizeId: string, newSizeId: string, newSizeName: string, newUnitPrice: number) => void
   clearCart: () => void
   getTotal: () => number
+  getDiscountedTotal: () => number
   getItemCount: () => number
 }
 
@@ -101,6 +103,19 @@ export const useCartStore = create<CartStore>()(
 
       getTotal: () => {
         return get().items.reduce((sum, item) => sum + (item.unitPrice * item.qty), 0)
+      },
+
+      /** Total aplicando descuento de paquete cuando hay ≥5 platillos individuales */
+      getDiscountedTotal: () => {
+        const items = get().items
+        const individualItems = items.filter(i => !i.packageInstanceId)
+        const totalIndividualQty = individualItems.reduce((s, i) => s + i.qty, 0)
+        const isPackage = totalIndividualQty >= 5
+        return items.reduce((sum, item) => {
+          if (item.packageInstanceId) return sum + item.unitPrice * item.qty
+          const price = isPackage && item.packagePrice ? item.packagePrice : item.unitPrice
+          return sum + price * item.qty
+        }, 0)
       },
 
       getItemCount: () => {
