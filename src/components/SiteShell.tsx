@@ -4,16 +4,18 @@ import { usePathname } from 'next/navigation'
 import Navbar from './Navbar'
 
 /**
- * Wrapper del layout raíz que oculta la Navbar pública en rutas /admin
+ * Wrapper del layout raíz.
+ * - /admin: sin Navbar, sin paddingTop
+ * - resto:  Navbar global (64px) + paddingTop 64px
  */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdmin = pathname.startsWith('/admin')
+  const isAdmin  = pathname.startsWith('/admin')
 
   return (
     <>
       {!isAdmin && <Navbar />}
-      <div style={{ paddingTop: isAdmin ? 0 : 60 }}>
+      <div style={{ paddingTop: isAdmin ? 0 : 64 }}>
         {isAdmin ? children : <div className="public-content">{children}</div>}
       </div>
     </>

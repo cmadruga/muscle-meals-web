@@ -21,13 +21,22 @@ html {
 }
 
 body {
-  font-family: 'Franchise', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  /* Barlow Condensed como fuente principal del sitio */
+  font-family: var(--font-condensed), 'Franchise', -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
   background: #151515;
   color: #FFFFFF;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Big Shoulders Display en titulares */
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-display), 'Franchise', sans-serif;
+}
+
+/* --font-display, --font-body, --font-condensed son inyectadas por next/font
+   via className en <html>. No es necesario definirlas aquí. */
 
 /* Estilos para select */
 select {
