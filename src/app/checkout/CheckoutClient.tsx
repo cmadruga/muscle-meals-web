@@ -2,14 +2,12 @@
 
 import { useState, useEffect } from 'react'
 import { useCartStore } from '@/lib/store/cart'
-import { useCartGroups } from '@/hooks/useCartGroups'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
 import { validateDiscount } from '@/app/actions/discounts'
 import { validateReferralCode, checkReferrerRewards } from '@/app/actions/referrals'
 import type { ValidatedDiscount } from '@/lib/types/discount'
 import { createPaymentPreference } from '@/app/actions/payment'
 import type { MembershipDiscounts } from '@/lib/db/settings'
-import type { PackageGroup } from '@/hooks/useCartGroups'
 import type { CartItem } from '@/lib/store/cart'
 import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
@@ -53,8 +51,8 @@ export default function CheckoutClient({
   shippingStandard?: number
   membershipDiscounts?: MembershipDiscounts | null
 }) {
-  const { items, getTotal } = useCartStore()
-  const { packageGroups, individualItems, isEmpty } = useCartGroups()
+  const { items, getTotal, getDiscountedTotal } = useCartStore()
+  const isEmpty = items.length === 0
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -185,7 +183,11 @@ export default function CheckoutClient({
   }, [])
 
   // Calcular total
-  const subtotal = getTotal()
+  const subtotalIndividual = getTotal()         // suma a precios individuales (para mostrar tachado)
+  const subtotal = getDiscountedTotal()         // suma efectiva con descuento paquete
+  const totalQty = items.reduce((n, i) => n + i.qty, 0)
+  const isPackageActive = totalQty >= 5
+  const packageDiscountAmount = subtotalIndividual - subtotal   // 0 si <5 platillos
   // Miembros no pagan envío
   const SHIPPING_COSTS = { standard: shippingStandard, priority: 0, pickup: 0 }
   const shippingCost = membershipMode ? 0 : SHIPPING_COSTS[shippingType]
@@ -198,7 +200,6 @@ export default function CheckoutClient({
   const isPickupSpotValid = shippingType !== 'pickup' || selectedPickupSpot !== ''
 
   // Flow A — membresía exacta
-  const totalQty = items.reduce((n, i) => n + i.qty, 0)
   const isMembershipMatch = Boolean(
     membership?.is_member &&
     (membership.membership_weeks_left ?? 0) > 0 &&
@@ -454,7 +455,8 @@ export default function CheckoutClient({
           mealId: item.mealId,
           sizeId: item.sizeId,
           qty: item.qty,
-          unitPrice: item.unitPrice,
+          // Usar precio efectivo: paquete si ≥5 platillos, individual si no
+          unitPrice: isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice,
           packageInstanceId: item.packageInstanceId,
         })),
         // Descuentos normales usan discountId; referidos solo monto
@@ -470,12 +472,13 @@ export default function CheckoutClient({
       // Si hay descuento, colapsamos a un item para evitar precio negativo
       let mpItems: Array<{ name: string; unit_price: number; quantity: number }>
 
-      if (discountAmount > 0) {
+      if (discountAmount > 0 || packageDiscountAmount > 0) {
+        // Colapsamos a un item para evitar precio negativo o complicaciones de desglose
         mpItems = [{ name: 'Pedido Muscle Meals', unit_price: total, quantity: 1 }]
       } else {
         mpItems = items.map(item => ({
           name: `${item.mealName} (${item.sizeName})`,
-          unit_price: item.unitPrice,
+          unit_price: isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice,
           quantity: item.qty,
         }))
 
@@ -567,9 +570,11 @@ export default function CheckoutClient({
           </div>
 
           <OrderSummary
-            packageGroups={packageGroups}
-            individualItems={individualItems}
+            items={items}
+            subtotalIndividual={subtotalIndividual}
             subtotal={subtotal}
+            packageDiscountAmount={packageDiscountAmount}
+            isPackageActive={isPackageActive}
             shippingCost={shippingCost}
             shippingType={shippingType}
             total={membershipMode ? membershipTotal : total}
@@ -806,10 +811,26 @@ function EmptyCheckoutView() {
   )
 }
 
-function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, shippingType, total, membershipMode, membershipWeeks, membershipDiscountPct, appliedDiscount, discountAmount }: {
-  packageGroups: PackageGroup[]
-  individualItems: CartItem[]
+function OrderSummary({
+  items,
+  subtotalIndividual,
+  subtotal,
+  packageDiscountAmount,
+  isPackageActive,
+  shippingCost,
+  shippingType,
+  total,
+  membershipMode,
+  membershipWeeks,
+  membershipDiscountPct,
+  appliedDiscount,
+  discountAmount,
+}: {
+  items: CartItem[]
+  subtotalIndividual: number
   subtotal: number
+  packageDiscountAmount: number
+  isPackageActive: boolean
   shippingCost: number
   shippingType: 'standard' | 'priority' | 'pickup'
   total: number
@@ -819,215 +840,177 @@ function OrderSummary({ packageGroups, individualItems, subtotal, shippingCost, 
   appliedDiscount: ValidatedDiscount | null
   discountAmount: number
 }) {
-  const rowStyle: React.CSSProperties = {
-    display: 'flex',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-    fontSize: 16,
-    color: colors.textSecondary,
+  const fmt = (cents: number) => `$${(cents / 100).toFixed(2)} MXN`
+
+  // Agrupar items por sizeId, en el orden en que aparecen
+  const sizeOrder: string[] = []
+  const bySize = new Map<string, { sizeName: string; items: CartItem[] }>()
+  for (const item of items) {
+    if (!bySize.has(item.sizeId)) {
+      sizeOrder.push(item.sizeId)
+      bySize.set(item.sizeId, { sizeName: item.sizeName, items: [] })
+    }
+    bySize.get(item.sizeId)!.items.push(item)
   }
+
+  const rowStyle: React.CSSProperties = {
+    display: 'flex', justifyContent: 'space-between',
+    fontSize: 15, color: colors.textSecondary,
+  }
+
   return (
     <>
+      {/* Banner precio de paquete activo */}
+      {isPackageActive && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 10,
+          padding: '10px 16px', marginBottom: 12,
+          background: '#7ac77a18',
+          border: '1.5px solid #7ac77a',
+          borderRadius: 10,
+        }}>
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+            <circle cx="9" cy="9" r="9" fill="#7ac77a" />
+            <path d="M5 9l3 3 5-5" stroke="#fff" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+          <span style={{
+            fontFamily: "'Franchise','Big Shoulders Display',sans-serif",
+            fontSize: 14, fontWeight: 700, letterSpacing: '0.05em',
+            color: '#7ac77a', textTransform: 'uppercase',
+          }}>
+            Precio de paquete activo
+          </span>
+        </div>
+      )}
+
+      {/* Lista de items agrupados por talla */}
       <div style={{
-        border: `2px solid ${colors.grayLight}`,
+        border: `1.5px solid rgba(245,241,236,.1)`,
         borderRadius: 12,
         overflow: 'hidden',
-        background: colors.grayDark
+        background: '#191614',
+        marginBottom: 16,
       }}>
-        {packageGroups.map((pkg) => (
-          <PackageSummaryCard key={pkg.packageInstanceId} package={pkg} membershipMode={membershipMode} membershipDiscountPct={membershipDiscountPct} />
-        ))}
-        {individualItems.map((item, idx) => (
-          <IndividualItemSummary
-            key={`${item.mealId}-${item.sizeId}`}
-            item={item}
-            showBorder={idx < individualItems.length - 1 || packageGroups.length > 0}
-            membershipMode={membershipMode}
-            membershipDiscountPct={membershipDiscountPct}
-          />
-        ))}
+        {sizeOrder.map((sizeId, gi) => {
+          const group = bySize.get(sizeId)!
+          const groupQty = group.items.reduce((s, i) => s + i.qty, 0)
+          return (
+            <div key={sizeId}>
+              {/* Size header */}
+              <div style={{
+                padding: '8px 16px',
+                background: 'rgba(245,241,236,.04)',
+                borderBottom: '1px solid rgba(245,241,236,.08)',
+                borderTop: gi > 0 ? '1px solid rgba(245,241,236,.08)' : 'none',
+              }}>
+                <span style={{
+                  fontSize: 11, fontWeight: 700, letterSpacing: '0.1em',
+                  textTransform: 'uppercase', color: 'rgba(245,241,236,.45)',
+                  fontFamily: 'Barlow,system-ui,sans-serif',
+                }}>
+                  {group.sizeName} · {groupQty} {groupQty === 1 ? 'meal' : 'meals'}
+                </span>
+              </div>
+
+              {/* Item rows */}
+              {group.items.map((item, idx) => {
+                const effectivePrice = isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice
+                const lineTotal = effectivePrice * item.qty
+                return (
+                  <div key={`${item.mealId}-${item.sizeId}-${idx}`} style={{
+                    padding: '12px 16px',
+                    borderBottom: idx < group.items.length - 1 ? '1px solid rgba(245,241,236,.06)' : 'none',
+                    display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12,
+                  }}>
+                    <div>
+                      <div style={{ fontSize: 15, fontWeight: 600, color: '#F5F1EC', marginBottom: 2 }}>
+                        {item.mealName}
+                      </div>
+                      <div style={{ fontSize: 13, color: '#7ac77a' }}>
+                        {fmt(effectivePrice)} c/u
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                      <div style={{ fontSize: 13, color: 'rgba(245,241,236,.45)', marginBottom: 2 }}>
+                        ×{item.qty}
+                      </div>
+                      <div style={{ fontSize: 15, fontWeight: 700, color: '#F5F1EC' }}>
+                        {fmt(lineTotal)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        })}
       </div>
 
-      {/* Desglose */}
+      {/* Desglose de totales */}
       <div style={{
-        marginTop: 16,
-        padding: 20,
-        background: colors.grayDark,
-        border: `2px solid ${membershipMode ? colors.orange : colors.grayLight}`,
+        padding: '18px 20px',
+        background: '#191614',
+        border: `1.5px solid ${membershipMode ? colors.orange : 'rgba(245,241,236,.1)'}`,
         borderRadius: 12,
       }}>
-        {/* Subtotal */}
-        <div style={{ ...rowStyle, marginBottom: 12, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}` }}>
-          <span>Subtotal{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:</span>
-          <span>${((membershipMode ? total : subtotal) / 100).toFixed(2)} MXN</span>
+        {/* Subtotal — tachado si hay descuento paquete */}
+        <div style={{ ...rowStyle, marginBottom: 10 }}>
+          <span>Subtotal ({items.reduce((n,i) => n + i.qty, 0)}):</span>
+          {isPackageActive ? (
+            <span style={{ textDecoration: 'line-through', color: 'rgba(245,241,236,.35)' }}>
+              {fmt(subtotalIndividual)}
+            </span>
+          ) : (
+            <span>{fmt(subtotalIndividual)}</span>
+          )}
         </div>
 
+        {/* Descuento paquete */}
+        {packageDiscountAmount > 0 && (
+          <div style={{ ...rowStyle, marginBottom: 10, color: '#7ac77a' }}>
+            <span>Descuento paquete:</span>
+            <span style={{ fontWeight: 700 }}>−{fmt(packageDiscountAmount)}</span>
+          </div>
+        )}
+
+        {/* Separador */}
+        <div style={{ height: 1, background: 'rgba(245,241,236,.08)', margin: '10px 0' }} />
+
         {/* Envío */}
-        <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12 }}>
+        <div style={{ ...rowStyle, marginBottom: 10 }}>
           <span>
             Envío {shippingType === 'standard' ? 'Estándar' : shippingType === 'priority' ? 'Prioritario' : 'Pickup'}:
           </span>
-          <span style={{ textAlign: 'right', color: membershipMode ? '#10b981' : undefined }}>
-            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? `$${(shippingCost / 100).toFixed(2)} MXN` : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
+          <span style={{ color: membershipMode ? '#7ac77a' : undefined }}>
+            {membershipMode ? 'Gratis (membresía)' : shippingCost > 0 ? fmt(shippingCost) : shippingType === 'priority' ? 'Pendiente' : 'Gratis'}
             {!membershipMode && shippingType === 'priority' && (
-              <span style={{ fontSize: 12, display: 'block', color: colors.orange }}>(Estimado: $100-200)</span>
+              <span style={{ fontSize: 12, display: 'block', color: colors.orange, textAlign: 'right' }}>(Estimado: $100-200)</span>
             )}
           </span>
         </div>
 
-        {/* Descuento */}
+        {/* Descuento código promo */}
         {appliedDiscount && discountAmount > 0 && (
-          <div style={{ ...rowStyle, paddingBottom: 12, borderBottom: `1px solid ${colors.grayLight}`, marginBottom: 12, color: '#10b981' }}>
+          <div style={{ ...rowStyle, marginBottom: 10, color: '#10b981' }}>
             <span style={{ fontSize: 14 }}>Descuento ({appliedDiscount.name}):</span>
-            <span style={{ fontWeight: 700 }}>-${(discountAmount / 100).toFixed(2)} MXN</span>
+            <span style={{ fontWeight: 700 }}>−{fmt(discountAmount)}</span>
           </div>
         )}
 
+        {/* Separador */}
+        <div style={{ height: 1, background: 'rgba(245,241,236,.08)', margin: '10px 0' }} />
+
         {/* Total */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: 18, fontWeight: 'bold', color: colors.white }}>Total:</span>
-          <span style={{ fontSize: 28, fontWeight: 'bold', color: colors.orange }}>
-            ${(total / 100).toFixed(2)} MXN
+          <span style={{ fontSize: 16, color: 'rgba(245,241,236,.6)' }}>
+            Total{membershipMode && membershipWeeks ? ` × ${membershipWeeks} sem. − ${membershipDiscountPct ?? 0}%` : ''}:
+          </span>
+          <span style={{ fontSize: 28, fontWeight: 700, color: colors.orange }}>
+            {fmt(total)}
           </span>
         </div>
       </div>
     </>
-  )
-}
-
-function PackageSummaryCard({ package: pkg, membershipMode, membershipDiscountPct }: { package: PackageGroup; membershipMode?: boolean; membershipDiscountPct?: number }) {
-  const pct = membershipMode && membershipDiscountPct ? membershipDiscountPct : 0
-  const discountedPkgTotal = pct ? Math.round(pkg.totalPrice * (1 - pct / 100)) : pkg.totalPrice
-
-  return (
-    <div style={{ background: colors.grayLight }}>
-      {/* Package header */}
-      <div style={{
-        padding: 16,
-        borderBottom: `1px solid ${colors.black}`,
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center'
-      }}>
-        <strong style={{ color: colors.orange }}>{pkg.packageName} · x{pkg.totalMeals}</strong>
-        {pct ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ color: colors.textMuted, textDecoration: 'line-through', fontSize: 14 }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</span>
-            <span style={{ color: colors.orange, fontSize: 13 }}>→</span>
-            <strong style={{ color: colors.white }}>${(discountedPkgTotal / 100).toFixed(2)} MXN</strong>
-          </div>
-        ) : (
-          <strong style={{ color: colors.white }}>${(pkg.totalPrice / 100).toFixed(2)} MXN</strong>
-        )}
-      </div>
-
-      {/* Package items — merged by mealId+sizeId */}
-      {(() => {
-        const merged = new Map<string, typeof pkg.items[0] & { qty: number }>()
-        for (const item of pkg.items) {
-          const k = `${item.mealId}-${item.sizeId}`
-          const existing = merged.get(k)
-          if (existing) existing.qty += item.qty
-          else merged.set(k, { ...item })
-        }
-        return Array.from(merged.values()).map(item => {
-          const discountedUnit = pct ? Math.round(item.unitPrice * (1 - pct / 100)) : item.unitPrice
-          return (
-            <div
-              key={`${item.mealId}-${item.sizeId}`}
-              style={{
-                padding: '10px 16px 10px 24px',
-                borderBottom: `1px solid ${colors.grayDark}`,
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                gap: 12,
-              }}
-            >
-              <div>
-                <span style={{ fontSize: 15, color: colors.white }}>{item.mealName}</span>
-                <span style={{ fontSize: 14, color: colors.textMuted, marginLeft: 8 }}>{item.sizeName}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                {pct ? (
-                  <>
-                    <span style={{ fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
-                      ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
-                    </span>
-                    <span style={{ fontSize: 15, color: colors.orange }}>→</span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: colors.white }}>
-                      ${(discountedUnit / 100).toFixed(2)} c/u
-                    </span>
-                  </>
-                ) : (
-                  <>
-                    <span style={{ fontSize: 15, color: colors.textMuted }}>
-                      ×{item.qty} · ${(item.unitPrice / 100).toFixed(2)} c/u
-                    </span>
-                    <span style={{ fontSize: 15, fontWeight: 600, color: colors.white, marginLeft: 4 }}>
-                      ${(item.unitPrice * item.qty / 100).toFixed(2)}
-                    </span>
-                  </>
-                )}
-              </div>
-            </div>
-          )
-        })
-      })()}
-    </div>
-  )
-}
-
-function IndividualItemSummary({ item, showBorder, membershipMode, membershipDiscountPct }: {
-  item: CartItem
-  showBorder: boolean
-  membershipMode?: boolean
-  membershipDiscountPct?: number
-}) {
-  const pct = membershipMode && membershipDiscountPct ? membershipDiscountPct : 0
-  const discountedUnit = pct ? Math.round(item.unitPrice * (1 - pct / 100)) : item.unitPrice
-
-  return (
-    <div
-      style={{
-        padding: 16,
-        borderBottom: showBorder ? `1px solid ${colors.grayLight}` : 'none',
-        display: 'grid',
-        gridTemplateColumns: '1fr auto',
-        gap: 16,
-        alignItems: 'center'
-      }}
-    >
-      <div>
-        <h3 style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.orange }}>
-          {item.mealName}
-        </h3>
-        <p style={{ margin: 0, fontSize: 14, color: colors.textMuted }}>
-          {item.sizeName} · x{item.qty}
-        </p>
-      </div>
-      <div style={{ textAlign: 'right' }}>
-        {pct ? (
-          <>
-            <p style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.textMuted, textDecoration: 'line-through' }}>
-              ${(item.unitPrice / 100).toFixed(2)} MXN c/u
-            </p>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: colors.white }}>
-              ${(discountedUnit / 100).toFixed(2)} MXN c/u
-            </p>
-          </>
-        ) : (
-          <>
-            <p style={{ margin: '0 0 4px 0', fontSize: 15, color: colors.textMuted }}>
-              ${(item.unitPrice / 100).toFixed(2)} MXN c/u
-            </p>
-            <p style={{ margin: 0, fontSize: 15, fontWeight: 'bold', color: colors.white }}>
-              ${(item.unitPrice * item.qty / 100).toFixed(2)} MXN
-            </p>
-          </>
-        )}
-      </div>
-    </div>
   )
 }
 
