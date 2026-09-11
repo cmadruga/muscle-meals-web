@@ -148,6 +148,8 @@ export default function CheckoutClient({
       setAutoDiscountNotif(null)
       setDiscountCode('')
       setDiscountError('')
+      // Priority not available with membership — fall back to standard
+      setShippingType(prev => prev === 'priority' ? 'standard' : prev)
     }
   }, [membershipMode])
 
@@ -229,6 +231,8 @@ export default function CheckoutClient({
     if (!addressValidated) {
       if (shippingType !== 'pickup' && addressOption === 'new' && codigoPostal.length === 5 && !isPostalCodeValid)
         return 'CP fuera del area de entrega'
+      if (shippingType !== 'pickup' && addressOption === 'new' && codigoPostal.length < 5)
+        return 'Falta el CP'
       return 'Completa la direccion'
     }
     return null
@@ -431,38 +435,79 @@ export default function CheckoutClient({
   return (
     <>
     <style>{`
-      .co-page { background: ${C.page}; min-height: 100vh; padding: 30px 28px 60px; }
+      .co-page { background: linear-gradient(rgba(15,13,12,.40),rgba(15,13,12,.40)), url(/media/Fondo.jpg) center/1100px repeat fixed; min-height: 100vh; padding: 30px 28px 60px; position: relative; -webkit-font-smoothing: auto; -moz-osx-font-smoothing: auto; }
       .co-grid { display: grid; grid-template-columns: 1fr 392px; gap: 26px; align-items: start; }
+      .co-mobile-bar { display: none; }
+      .co-mobile-summary { display: none; }
+      .co-subcopy-short { display: none; }
       @media (max-width: 900px) {
         .co-page { padding: 20px 18px 140px; }
         .co-grid { grid-template-columns: 1fr; }
         .co-sidebar { display: none; }
         .co-mobile-bar { display: flex !important; }
         .co-mobile-summary { display: block !important; }
-        .co-shipping-grid { grid-template-columns: 1fr !important; }
+        .co-shipping-grid { grid-template-columns: 1fr !important; gap: 8px !important; margin-bottom: 14px !important; }
+        /* co-ship-detail shows below shipping cards on mobile, matching reference 2c */
+        /* H1 + subcopy */
+        .co-h1 { font-size: 38px !important; line-height: .9 !important; margin-bottom: 5px !important; }
+        .co-subcopy { font-size: 13.5px !important; margin-bottom: 16px !important; max-width: none !important; }
+        .co-subcopy-long { display: none !important; }
+        .co-subcopy-short { display: inline !important; }
+        /* Membership band */
+        .co-memb-band { margin-bottom: 16px !important; }
+        .co-memb-row { flex-direction: column !important; align-items: stretch !important; }
+        .co-memb-img { width: 100% !important; }
+        .co-memb-content { padding: 14px 15px !important; gap: 14px !important; }
+        .co-memb-title { font-size: 22px !important; line-height: .98 !important; }
+        .co-memb-desc { font-size: 12.5px !important; margin-top: 6px !important; }
+        .co-memb-chips { display: none !important; }
+        .co-memb-weeks { display: none !important; }
+        .co-memb-stats { display: none !important; }
+        /* Mobile-specific activated layout */
+        .co-memb-weeks-mob { display: grid !important; }
+        .co-memb-stats-mob { display: block !important; }
+        /* Date banner */
+        .co-date-wrap { padding: 12px 13px !important; gap: 11px !important; margin-bottom: 12px !important; }
+        .co-date-badge { width: 34px !important; height: 34px !important; font-size: 14px !important; }
+        .co-date-main { font-size: 13.5px !important; }
+        .co-date-sub { font-size: 11.5px !important; }
+        /* Shipping cards — compact horizontal row on mobile */
+        .co-ship-card { display: grid !important; grid-template-columns: 1fr auto; grid-template-rows: auto auto; column-gap: 12px; row-gap: 0; align-items: center; padding: 14px 15px !important; }
+        .co-ship-name { grid-column: 1; grid-row: 1; font-size: 18px !important; }
+        .co-ship-price { grid-column: 2; grid-row: 1 / 3; align-self: center; font-size: 15px !important; margin-top: 0 !important; }
+        .co-ship-desc { grid-column: 1; grid-row: 2; font-size: 11.5px !important; margin-top: 5px !important; }
+        /* Section label */
+        .co-section-hint { display: none !important; }
+        .co-section-label-text { font-size: 12.5px !important; }
+        /* Hide phone helper text on mobile (not in reference 2c) */
+        .co-phone-hint { display: none !important; }
+        /* Section 2 label — no top margin when ShippingDetail already provides spacing */
+        .co-section2-label { margin-top: 0 !important; }
+        /* Inputs on mobile — font forced to 16px (iOS zoom prevention), smaller padding */
+        .co-page input, .co-page select { padding: 11px 13px !important; font-size: 16px !important; }
       }
-      .co-mobile-bar { display: none; }
-      .co-mobile-summary { display: none; }
       @media (max-width: 640px) {
         .co-pickup-row { flex-direction: column; align-items: flex-start !important; }
       }
     `}</style>
 
     <main className="co-page" style={{ color: C.text }}>
+      <div>
 
       {/* H1 + subcopy */}
-      <h1 style={{
+      <h1 className="co-h1" style={{
         fontFamily: F.display, fontSize: 54, lineHeight: .88,
         fontWeight: 700, textTransform: 'uppercase', color: C.text,
         margin: '0 0 6px', letterSpacing: 0,
       }}>
         Checkout
       </h1>
-      <p style={{
+      <p className="co-subcopy" style={{
         fontFamily: F.body, fontSize: 15, lineHeight: 1.5,
         color: C.textSub, maxWidth: '56ch', margin: '0 0 26px',
       }}>
-        Revisa tu pedido y completa tu información para continuar.
+        <span className="co-subcopy-long">Revisa tu semana, elige cómo la quieres recibir y confirma. La confirmación de pago te llega por WhatsApp.</span>
+        <span className="co-subcopy-short">Revisa, elige entrega y confirma.</span>
       </p>
 
       {/* Banda de membresía — full width */}
@@ -543,22 +588,25 @@ export default function CheckoutClient({
             selected={shippingType}
             onSelect={setShippingType}
             shippingStandard={shippingStandard}
-            membershipMode={membershipMode && canPurchaseMembership}
+            membershipMode={(membershipMode && canPurchaseMembership) || isMembershipMatch}
           />
 
-          <ShippingDetail
-            type={shippingType}
-            pickupSpots={pickupSpots}
-            selectedSpot={selectedPickupSpot}
-            onSelectSpot={setSelectedPickupSpot}
-          />
+          <div className="co-ship-detail">
+            <ShippingDetail
+              type={shippingType}
+              pickupSpots={pickupSpots}
+              selectedSpot={selectedPickupSpot}
+              onSelectSpot={setSelectedPickupSpot}
+            />
+          </div>
 
           {/* 2 · Contacto y dirección */}
           <SectionLabel
             n="2"
             title={shippingType === 'pickup' ? 'Contacto' : 'Contacto y direccion'}
             hint={shippingType === 'pickup' ? 'recoges tú, no pedimos dirección' : undefined}
-            style={{ marginTop: 32 }}
+            style={{ marginTop: 16, marginBottom: 14 }}
+            className="co-section2-label"
           />
 
           <ContactFields
@@ -593,6 +641,9 @@ export default function CheckoutClient({
               {error}
             </div>
           )}
+
+          {/* Referral card — mobile only (inline). Desktop = fixed bubble abajo */}
+          <ReferralBanner variant="inline" />
         </div>
 
         {/* ── Sidebar (desktop only) ────────────────────────────────────── */}
@@ -624,9 +675,11 @@ export default function CheckoutClient({
             ctaDisabled={ctaDisabled}
             ctaReason={ctaReason}
             onCTA={handleCTA}
+            isActiveMember={isMembershipMatch}
           />
         </aside>
       </div>
+      </div>{/* end content wrapper */}
     </main>
 
     {/* Barra fija móvil */}
@@ -664,117 +717,180 @@ function MembershipBand({
   const weeklyOriginal = subtotal
   const weeklyDiscounted = Math.round(subtotal * (1 - pct / 100))
   const membershipTotal = Math.round(subtotal * weeks * (1 - pct / 100))
-  const fmt = (c: number) => `$${(c / 100).toFixed(2)}`
+  // Formato con separador de miles: $1,090.00
+  const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
 
   return (
-    <div style={{
-      display: 'flex', borderRadius: 12, overflow: 'hidden', marginBottom: 30,
-      border: `1px solid ${mode ? C.orange : 'rgba(247,145,56,.45)'}`,
-      background: mode ? 'rgba(247,145,56,.07)' : 'rgba(247,145,56,.05)',
-    }}>
-      {/* Imagen (solo desktop) */}
-      <div className="co-memb-img" style={{ width: 200, flexShrink: 0, overflow: 'hidden', position: 'relative' }}>
-        <Image
-          src="/media/membership-lockup.png"
-          alt=""
-          fill
-          style={{ objectFit: 'cover' }}
-          sizes="200px"
-        />
-      </div>
+    <div
+      className="co-memb-band"
+      onClick={onToggle}
+      style={{
+        borderRadius: 12, overflow: 'hidden', marginBottom: 30,
+        border: `1px solid ${mode ? C.orange : 'rgba(247,145,56,.45)'}`,
+        background: mode ? 'rgba(247,145,56,.07)' : 'rgba(247,145,56,.05)',
+        cursor: 'pointer',
+      }}
+    >
+      {/* Top row — imagen + contenido en flex row (columna en mobile) */}
+      <div className="co-memb-row" style={{ display: 'flex', alignItems: 'stretch' }}>
 
-      <div style={{ flex: 1, padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14 }}>
-        {/* Header row */}
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 }}>
-          <div>
-            <div style={{ fontFamily: F.display, fontSize: 28, lineHeight: .95, fontWeight: 700,
-              textTransform: 'uppercase', color: mode ? C.orange : C.text, marginBottom: 6 }}>
-              {mode ? 'Membresia activada' : '¿Pides cada semana?'}
-            </div>
-            {!mode && (
-              <p style={{ fontFamily: F.body, fontSize: 13.5, lineHeight: 1.5, color: C.textSub, margin: '0 0 8px' }}>
-                Convierte tu pedido en membresía y paga menos cada semana.
-              </p>
-            )}
-            {/* Chips */}
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              <Chip color={C.orange} bg="rgba(247,145,56,.14)">{`Desde -10%`}</Chip>
-              <Chip color={C.success} bg="rgba(122,199,122,.14)">Envio siempre gratis</Chip>
-              <Chip color="rgba(245,241,236,.65)" bg="rgba(255,255,255,.06)">Cancelas cuando quieras</Chip>
-            </div>
-          </div>
-          {/* Toggle */}
-          <button
-            onClick={onToggle}
-            aria-label={mode ? 'Desactivar membresía' : 'Activar membresía'}
-            style={{
-              width: 58, height: 32, borderRadius: 16, padding: 3, flexShrink: 0,
-              background: mode ? C.orange : 'rgba(255,255,255,.14)',
-              border: 'none', cursor: 'pointer', position: 'relative',
-              transition: 'background .2s',
-            }}
-          >
-            <div style={{
-              width: 26, height: 26, borderRadius: '50%', background: C.text,
-              boxShadow: '0 1px 4px rgba(0,0,0,.5)',
-              position: 'absolute', top: 3,
-              left: mode ? 29 : 3,
-              transition: 'left .2s',
-            }} />
-          </button>
+        {/* Imagen — desktop: 420px fijo, overflow hidden; mobile: full-width natural height */}
+        <div className="co-memb-img"
+          style={{ width: 420, flexShrink: 0, overflow: 'hidden', alignSelf: 'stretch' }}>
+          <Image
+            src="/media/membership-lockup.png"
+            alt=""
+            width={1517}
+            height={605}
+            style={{ width: '100%', height: 'auto', display: 'block' }}
+          />
         </div>
 
-        {/* Selector de plazo (when active) */}
-        {mode && (
-          <>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-              {([4, 8, 12] as const).map(w => (
-                <button key={w} onClick={() => onWeeksChange(w)} style={{
-                  padding: '11px 12px', borderRadius: 9, cursor: 'pointer',
-                  border: `1px solid ${weeks === w ? C.orange : 'rgba(255,255,255,.12)'}`,
-                  background: weeks === w ? 'rgba(247,145,56,.14)' : 'rgba(255,255,255,.03)',
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                }}>
-                  <span style={{ fontFamily: F.body, fontSize: 17, fontWeight: 700, color: weeks === w ? C.orange : C.text }}>
-                    {w} sem.
-                  </span>
-                  <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 500, color: weeks === w ? C.orange : C.textDim }}>
-                    −{discountMap[w]}%
-                  </span>
-                </button>
-              ))}
+        {/* Contenido — flex ROW: texto (flex:1) + toggle (fijo) */}
+        <div className="co-memb-content" style={{ flex: 1, display: 'flex', alignItems: 'center', gap: 22, padding: '20px 22px' }}>
+
+          {/* Bloque de texto: título, descripción, chips o semanas */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div className="co-memb-title" style={{ fontFamily: F.display, fontSize: 30, lineHeight: .95, fontWeight: 700,
+              textTransform: 'uppercase', color: mode ? C.orange : C.text }}>
+              {mode ? 'Membresia activada' : 'Pides cada semana?'}
             </div>
 
-            {/* Banda de 3 cifras */}
-            <div style={{
-              display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
-              gap: 1, background: 'rgba(247,145,56,.16)', borderRadius: 9, overflow: 'hidden',
-              marginTop: 4,
-            }}>
-              {[
-                { label: 'Por platillo', prev: fmt(perMealOriginal), next: fmt(perMealDiscounted) },
-                { label: 'Por semana',   prev: fmt(weeklyOriginal),  next: fmt(weeklyDiscounted) },
-                { label: `Total · ${weeks} sem.`, prev: fmt(weeklyOriginal * weeks), next: fmt(membershipTotal), accent: true },
-              ].map(({ label, prev, next, accent }) => (
-                <div key={label} style={{ padding: '13px 18px', background: 'rgba(20,17,15,.5)' }}>
-                  <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, letterSpacing: '.12em',
-                    textTransform: 'uppercase', color: C.textFaint, marginBottom: 4 }}>
-                    {label}
+            <p className="co-memb-desc" style={{ fontFamily: F.body, fontSize: 13.5, lineHeight: 1.5, color: C.textSub, margin: '9px 0 0' }}>
+              {mode
+                ? 'Este menú se repite cada domingo.'
+                : 'Hasta 15% off y envío siempre gratis.'}
+            </p>
+
+            {/* Chips (inactivo) — ocultos en mobile */}
+            {!mode && (
+              <div className="co-memb-chips" style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 12 }}>
+                <Chip color={C.orange} bg="rgba(247,145,56,.14)">Desde -10%</Chip>
+                <Chip color={C.success} bg="rgba(122,199,122,.14)">Envio siempre gratis</Chip>
+              </div>
+            )}
+
+            {/* Selector de semanas (activo) — oculto en mobile */}
+            {mode && (
+              <div className="co-memb-weeks" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8, marginTop: 14 }}>
+                {([4, 8, 12] as const).map(w => (
+                  <div key={w} onClick={e => { e.stopPropagation(); onWeeksChange(w) }} style={{
+                    padding: '11px 12px', borderRadius: 9, cursor: 'pointer', textAlign: 'center',
+                    border: `1px solid ${weeks === w ? C.orange : 'rgba(255,255,255,.12)'}`,
+                    background: weeks === w ? 'rgba(247,145,56,.14)' : 'rgba(255,255,255,.03)',
+                  }}>
+                    <span style={{ font: `700 17px/1 ${F.body}`, color: weeks === w ? C.orange : C.text, display: 'block' }}>
+                      {w} sem.
+                    </span>
+                    <span style={{ font: `500 12px/1 ${F.body}`, color: weeks === w ? C.orange : C.textDim, display: 'block', marginTop: 4 }}>
+                      −{discountMap[w]}%
+                    </span>
                   </div>
-                  <div style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.4)',
-                    textDecoration: 'line-through', marginBottom: 2 }}>
-                    {prev}
-                  </div>
-                  <div style={{ fontFamily: F.body, fontSize: 17, fontWeight: 700,
-                    color: accent ? C.orange : C.text }}>
-                    {next}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Toggle */}
+          <div
+            role="switch"
+            aria-checked={mode}
+            aria-label={mode ? 'Desactivar membresía' : 'Activar membresía'}
+            onClick={e => { e.stopPropagation(); onToggle() }}
+            style={{
+              flexShrink: 0, display: 'flex', alignItems: 'center',
+              justifyContent: mode ? 'flex-end' : 'flex-start',
+              width: 52, height: 30, borderRadius: 15, padding: 3,
+              background: mode ? C.orange : 'rgba(255,255,255,.14)',
+            }}
+          >
+            <div style={{ width: 24, height: 24, borderRadius: '50%', background: C.text, boxShadow: '0 1px 4px rgba(0,0,0,.5)' }} />
+          </div>
+        </div>
       </div>
+
+      {/* Selector de semanas — mobile only, full-width bajo la fila de imagen+contenido */}
+      {mode && (
+        <div className="co-memb-weeks-mob" style={{
+          display: 'none', // mostrado en mobile via CSS
+          gridTemplateColumns: 'repeat(3,1fr)', gap: 8, padding: '0 15px 14px',
+        }}>
+          {([4, 8, 12] as const).map(w => (
+            <div key={w} onClick={e => { e.stopPropagation(); onWeeksChange(w) }} style={{
+              padding: '7px 6px', borderRadius: 8, cursor: 'pointer', textAlign: 'center',
+              border: `1px solid ${weeks === w ? C.orange : 'rgba(255,255,255,.12)'}`,
+              background: weeks === w ? 'rgba(247,145,56,.14)' : 'rgba(255,255,255,.03)',
+            }}>
+              <div style={{ fontFamily: F.body, fontSize: 13, fontWeight: 700, color: weeks === w ? C.orange : C.text }}>
+                {w} sem.
+              </div>
+              <div style={{ fontFamily: F.body, fontSize: 10.5, fontWeight: 500,
+                color: weeks === w ? 'rgba(245,241,236,.75)' : C.textDim, marginTop: 3 }}>
+                −{discountMap[w]}%
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Cifras por fila — mobile only (desktop usa la banda de 3 columnas) */}
+      {mode && (
+        <div className="co-memb-stats-mob" style={{
+          display: 'none', // mostrado en mobile via CSS
+          borderTop: '1px solid rgba(247,145,56,.3)',
+        }}>
+          {[
+            { label: 'Por platillo',  prev: fmt(perMealOriginal),          next: fmt(perMealDiscounted),  accent: false },
+            { label: 'Por semana',    prev: fmt(weeklyOriginal),            next: fmt(weeklyDiscounted),   accent: false },
+            { label: `Total · ${weeks} sem.`, prev: fmt(weeklyOriginal * weeks), next: fmt(membershipTotal), accent: true },
+          ].map(({ label, prev, next, accent }, i, arr) => (
+            <div key={label} style={{
+              display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
+              padding: '10px 15px',
+              borderBottom: i < arr.length - 1 ? '1px solid rgba(255,255,255,.06)' : 'none',
+            }}>
+              <span style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600,
+                letterSpacing: '.1em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>
+                {label}
+              </span>
+              <span style={{ display: 'flex', alignItems: 'baseline', gap: 7 }}>
+                <span style={{ fontFamily: F.body, fontSize: 12, color: 'rgba(245,241,236,.4)', textDecoration: 'line-through' }}>{prev}</span>
+                <span style={{ fontFamily: F.body, fontSize: 15, fontWeight: 700, color: accent ? C.orange : C.text }}>{next}</span>
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Banda de 3 cifras — full width (solo activo, oculta en mobile) */}
+      {mode && (
+        <div className="co-memb-stats" style={{
+          display: 'grid', gridTemplateColumns: 'repeat(3,1fr)',
+          gap: 1, background: 'rgba(247,145,56,.16)',
+          borderTop: '1px solid rgba(247,145,56,.3)',
+        }}>
+          {[
+            { label: 'Por platillo',  prev: fmt(perMealOriginal),          next: fmt(perMealDiscounted),  accent: false },
+            { label: 'Por semana',    prev: fmt(weeklyOriginal),            next: fmt(weeklyDiscounted),   accent: false },
+            { label: `Total membresía · ${weeks} sem.`, prev: fmt(weeklyOriginal * weeks), next: fmt(membershipTotal), accent: true },
+          ].map(({ label, prev, next, accent }) => (
+            <div key={label} style={{ padding: '13px 18px', background: 'rgba(20,17,15,.5)' }}>
+              <div style={{ fontFamily: F.body, fontSize: 11, fontWeight: 600, letterSpacing: '.12em',
+                textTransform: 'uppercase', color: C.textFaint }}>
+                {label}
+              </div>
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 7 }}>
+                <span style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.4)', textDecoration: 'line-through' }}>
+                  {prev}
+                </span>
+                <span style={{ fontFamily: F.body, fontSize: 17, fontWeight: 700, color: accent ? C.orange : C.text }}>
+                  {next}
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
@@ -789,19 +905,19 @@ function Chip({ children, color, bg }: { children: React.ReactNode; color: strin
 }
 
 // ── SectionLabel ──────────────────────────────────────────────────────────────
-function SectionLabel({ n, title, hint, style: s }: {
-  n: string; title: string; hint?: string; style?: React.CSSProperties
+function SectionLabel({ n, title, hint, style: s, className }: {
+  n: string; title: string; hint?: string; style?: React.CSSProperties; className?: string
 }) {
   return (
-    <div style={{ marginBottom: 16, ...s }}>
-      <div style={{ fontFamily: F.display, fontSize: 15, fontWeight: 700,
+    <div className={className} style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 12, ...s }}>
+      <span className="co-section-label-text" style={{ fontFamily: F.display, fontSize: 15, fontWeight: 700,
         letterSpacing: '.16em', textTransform: 'uppercase', color: C.text }}>
         {n} · {title}
-      </div>
+      </span>
       {hint && (
-        <div style={{ fontFamily: F.body, fontSize: 13, color: C.textDim, marginTop: 2 }}>
+        <span className="co-section-hint" style={{ fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.45)' }}>
           {hint}
-        </div>
+        </span>
       )}
     </div>
   )
@@ -820,12 +936,12 @@ function DateBanner({ deliveryDateStr, shippingType, membershipMode, membershipW
     : 'Pedidos cortados el viernes a mediodía'
 
   return (
-    <div style={{
+    <div className="co-date-wrap" style={{
       padding: '14px 16px', borderRadius: 11,
       border: '1px solid rgba(122,199,122,.35)', background: 'rgba(122,199,122,.07)',
       display: 'flex', alignItems: 'center', gap: 14, marginBottom: 16,
     }}>
-      <div style={{
+      <div className="co-date-badge" style={{
         width: 38, height: 38, borderRadius: 9, flexShrink: 0,
         background: 'rgba(122,199,122,.14)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -834,10 +950,10 @@ function DateBanner({ deliveryDateStr, shippingType, membershipMode, membershipW
         {dayNum}
       </div>
       <div>
-        <div style={{ fontFamily: F.body, fontSize: 15, fontWeight: 700, color: C.success }}>
+        <div className="co-date-main" style={{ fontFamily: F.body, fontSize: 15, fontWeight: 700, color: C.success }}>
           {prefix} {deliveryDateStr ?? '—'}
         </div>
-        <div style={{ fontFamily: F.body, fontSize: 12.5, color: 'rgba(245,241,236,.5)', marginTop: 2 }}>
+        <div className="co-date-sub" style={{ fontFamily: F.body, fontSize: 12.5, color: 'rgba(245,241,236,.5)', marginTop: 4 }}>
           {secondary}
         </div>
       </div>
@@ -854,37 +970,41 @@ function ShippingCards({ selected, onSelect, shippingStandard, membershipMode }:
     {
       type: 'standard',
       name: 'Estandar',
-      price: membershipMode ? 'Gratis' : `$${(shippingStandard / 100).toFixed(0)}`,
+      price: membershipMode ? 'Gratis' : `$${(shippingStandard / 100).toFixed(0)}.00`,
       priceColor: membershipMode ? C.success : undefined,
-      desc: 'Domingo 9AM–4PM',
+      desc: 'Domingo 9AM – 4PM',
     },
     {
       type: 'pickup',
       name: 'Pickup',
       price: 'Gratis',
       priceColor: C.success,
-      desc: 'Sin costo, recoge tú',
+      desc: 'Recoges en el local',
     },
     {
       type: 'priority',
       name: 'Prioritario',
       price: '$100–200',
       priceColor: 'rgba(245,241,236,.75)',
-      desc: 'Horario y zona específica',
+      desc: 'Horario a acordar',
     },
   ]
+
+  // Membership: only standard + pickup (no priority — shipping is included)
+  const visibleOptions = membershipMode ? options.filter(o => o.type !== 'priority') : options
 
   return (
     <div className="co-shipping-grid" style={{
       display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 10, marginBottom: 12,
     }}>
-      {options.map(({ type, name, price, priceColor, desc }) => {
+      {visibleOptions.map(({ type, name, price, priceColor, desc }) => {
         const active = selected === type
         const isStandardWithMembership = type === 'standard' && membershipMode
         return (
           <button
             key={type}
             onClick={() => onSelect(type)}
+            className="co-ship-card"
             style={{
               padding: 15, borderRadius: 11, cursor: 'pointer', textAlign: 'left',
               border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`,
@@ -894,23 +1014,24 @@ function ShippingCards({ selected, onSelect, shippingStandard, membershipMode }:
           >
             {isStandardWithMembership && (
               <div style={{
-                position: 'absolute', top: -8, right: 11,
-                padding: '3px 7px', borderRadius: 4, background: C.success,
-                fontFamily: F.body, fontSize: 9.5, fontWeight: 700,
+                position: 'absolute', top: -7, right: 11,
+                padding: '2px 6px', borderRadius: 4, background: C.success,
+                fontFamily: F.body, fontSize: 8.5, fontWeight: 700,
                 letterSpacing: '.1em', textTransform: 'uppercase', color: '#14110f',
               }}>
                 Incluido
               </div>
             )}
-            <div style={{ fontFamily: F.display, fontSize: 20, textTransform: 'uppercase',
-              color: active ? C.orange : C.text, marginBottom: 4 }}>
+            <div className="co-ship-name" style={{ fontFamily: F.display, fontSize: 20, textTransform: 'uppercase',
+              color: active ? C.orange : C.text }}>
               {name}
             </div>
-            <div style={{ fontFamily: F.body, fontSize: 16, fontWeight: 700,
-              color: priceColor ?? C.text, marginBottom: 4 }}>
+            <div className="co-ship-price" style={{ fontFamily: F.body, fontSize: 16, fontWeight: 700,
+              color: priceColor ?? C.text, marginTop: 7 }}>
               {price}
             </div>
-            <div style={{ fontFamily: F.body, fontSize: 12, lineHeight: 1.35, color: C.textDim }}>
+            <div className="co-ship-desc" style={{ fontFamily: F.body, fontSize: 12, lineHeight: 1.35,
+              color: 'rgba(245,241,236,.5)', marginTop: 5 }}>
               {desc}
             </div>
           </button>
@@ -929,27 +1050,29 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
 
   return (
     <div style={{
-      padding: '15px 16px', borderRadius: 11, marginBottom: 28,
+      padding: 14, borderRadius: 11, marginBottom: 18,
       border: `1px solid ${noSpot ? 'rgba(255,128,128,.35)' : 'rgba(255,255,255,.09)'}`,
       background: noSpot ? 'rgba(255,128,128,.04)' : 'rgba(255,255,255,.03)',
     }}>
       {type === 'standard' && (
         <>
-          <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text, marginBottom: 6 }}>
-            Horario según tu zona
+          <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
+            letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>
+            Horario segun tu zona
           </div>
-          <div style={{ fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 1.5 }}>
-            Te escribimos el sábado por WhatsApp con la hora estimada de entrega del domingo.
+          <div style={{ fontFamily: F.body, fontSize: 12.5, color: C.textSub, lineHeight: 1.45 }}>
+            Te escribimos el <strong style={{ color: C.text, fontWeight: 600 }}>sábado</strong> por WhatsApp con la hora estimada del domingo.
           </div>
         </>
       )}
 
       {type === 'priority' && (
         <>
-          <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text, marginBottom: 6 }}>
+          <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
+            letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>
             Envío a cotizar
           </div>
-          <ul style={{ margin: 0, padding: '0 0 0 18px', fontFamily: F.body, fontSize: 13, color: C.textSub, lineHeight: 1.6 }}>
+          <ul style={{ margin: 0, padding: '0 0 0 18px', fontFamily: F.body, fontSize: 12.5, color: C.textSub, lineHeight: 1.45 }}>
             <li>Acuerda horario y zona específica</li>
             <li>Confirma el costo de envío según tu ubicación</li>
             <li>El envío se paga por separado (est. $100–200 MXN)</li>
@@ -959,12 +1082,13 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
 
       {type === 'pickup' && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12, gap: 8 }}>
-            <div style={{ fontFamily: F.body, fontWeight: 700, fontSize: 13.5, color: C.text }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 10, gap: 10 }}>
+            <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
+              letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange }}>
               Elige tu pickup spot
             </div>
             {!selectedSpot && (
-              <span style={{ fontFamily: F.body, fontSize: 11.5, color: C.errText, fontWeight: 600 }}>
+              <span style={{ fontFamily: F.body, fontSize: 11.5, color: C.textDim }}>
                 requerido
               </span>
             )}
@@ -975,27 +1099,30 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
               return (
                 <button key={spot.id} onClick={() => onSelectSpot(spot.id)}
                   style={{
-                    padding: '13px 15px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
+                    padding: '13px 13px', borderRadius: 10, cursor: 'pointer', textAlign: 'left',
                     border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`,
                     background: active ? 'rgba(247,145,56,.08)' : 'rgba(255,255,255,.03)',
-                    display: 'flex', alignItems: 'center', gap: 10,
+                    display: 'flex', alignItems: 'flex-start', gap: 11,
                   }}
                 >
                   {/* Radio */}
                   <div style={{
-                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
-                    border: `2px solid ${active ? C.orange : 'rgba(255,255,255,.3)'}`,
-                    background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 2,
+                    border: `1px solid ${active ? C.orange : 'rgba(245,241,236,.35)'}`,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
                   }}>
                     {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.orange }} />}
                   </div>
                   <div style={{ flex: 1 }}>
-                    <div className="co-pickup-row" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 6 }}>
-                      <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>{spot.name}</span>
-                      <span style={{ fontFamily: F.body, fontSize: 12, fontWeight: 500, color: active ? C.orange : C.textDim }}>{spot.schedule}</span>
+                    {/* Name → Address → Schedule (vertical stack per reference) */}
+                    <div style={{ fontFamily: F.body, fontSize: 13.5, fontWeight: 600, lineHeight: 1, color: C.text }}>
+                      {spot.name}
                     </div>
-                    <div style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.45, color: C.textSub, marginTop: 2 }}>
+                    <div style={{ fontFamily: F.body, fontSize: 12, lineHeight: 1.45, color: C.textSub, marginTop: 4 }}>
                       {spot.address}
+                    </div>
+                    <div style={{ fontFamily: F.body, fontSize: 11.5, fontWeight: 500, lineHeight: 1, color: active ? C.orange : 'rgba(245,241,236,.5)', marginTop: 4 }}>
+                      {spot.schedule}
                     </div>
                   </div>
                 </button>
@@ -1016,24 +1143,24 @@ function ContactFields({ name, phone, countryCode, onNameChange, onPhoneChange, 
   shippingType: ShippingType; disabled: boolean
 }) {
   const inp: React.CSSProperties = {
-    padding: 14, fontFamily: F.body, fontSize: 15, color: C.text,
+    padding: '14px 13px', fontFamily: F.body, fontSize: 15, lineHeight: 1, color: C.text,
     background: 'rgba(255,255,255,.04)', borderRadius: 9,
     border: '1px solid rgba(255,255,255,.12)', width: '100%', boxSizing: 'border-box',
   }
-  const label: React.CSSProperties = {
-    display: 'block', fontFamily: F.body, fontSize: 12, fontWeight: 600,
-    letterSpacing: '.04em', color: C.textSub, marginBottom: 6,
+  const lbl: React.CSSProperties = {
+    display: 'block', fontFamily: F.body, fontSize: 11.5, fontWeight: 600,
+    color: C.textSub, marginBottom: 5,
   }
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 8 }}>
+    <div style={{ display: 'grid', gap: 10, marginBottom: 8 }}>
       <div>
-        <label style={label}>Nombre completo *</label>
+        <label style={lbl}>Nombre completo *</label>
         <input type="text" value={name} onChange={e => onNameChange(e.target.value)}
           placeholder="Nombre y apellido" disabled={disabled} style={inp} />
       </div>
       <div>
-        <label style={label}>WhatsApp *</label>
-        <div style={{ display: 'grid', gridTemplateColumns: '118px 1fr', gap: 8 }}>
+        <label style={lbl}>WhatsApp (10 dígitos) *</label>
+        <div style={{ display: 'grid', gridTemplateColumns: '104px 1fr', gap: 8 }}>
           <select value={countryCode} onChange={e => onCountryCodeChange(e.target.value as '+52' | '+1')}
             disabled={disabled} style={{ ...inp, padding: '14px 10px' }}>
             <option value="+52">🇲🇽 +52</option>
@@ -1044,9 +1171,9 @@ function ContactFields({ name, phone, countryCode, onNameChange, onPhoneChange, 
               const d = e.target.value.replace(/\D/g, '')
               if (d.length <= 10) onPhoneChange(e.target.value)
             }}
-            placeholder="10 dígitos" disabled={disabled} style={{ ...inp, fontSize: 16 }} />
+            placeholder="10 dígitos" disabled={disabled} style={{ ...inp }} />
         </div>
-        <div style={{ fontFamily: F.body, fontSize: 12, color: C.textDim, marginTop: 5 }}>
+        <div className="co-phone-hint" style={{ fontFamily: F.body, fontSize: 12, color: C.textDim, marginTop: 5 }}>
           {shippingType === 'pickup'
             ? 'Te avisamos por WhatsApp cuando tu pedido esté listo para recoger'
             : 'Recibirás la confirmación de pago por WhatsApp'}
@@ -1074,73 +1201,87 @@ function AddressSection({
   const cpInvalid = codigoPostal.length === 5 && !(validateCP(codigoPostal) && isValidPostalCode(codigoPostal))
 
   const inp: React.CSSProperties = {
-    padding: 14, fontFamily: F.body, fontSize: 15, color: C.text,
+    padding: '14px 13px', fontFamily: F.body, fontSize: 15, lineHeight: 1, color: C.text,
     background: 'rgba(255,255,255,.04)', borderRadius: 9,
     border: '1px solid rgba(255,255,255,.12)', width: '100%', boxSizing: 'border-box',
   }
   const label: React.CSSProperties = {
-    display: 'block', fontFamily: F.body, fontSize: 12, fontWeight: 600,
-    letterSpacing: '.04em', color: C.textSub, marginBottom: 6,
+    display: 'block', fontFamily: F.body, fontSize: 11.5, fontWeight: 600,
+    color: C.textSub, marginBottom: 5,
   }
 
   return (
-    <div style={{ marginTop: 6, paddingTop: 18, borderTop: '1px solid rgba(255,255,255,.08)' }}>
-      <div style={{ fontFamily: F.display, fontSize: 13, fontWeight: 700, letterSpacing: '.16em',
-        textTransform: 'uppercase', color: C.orange, marginBottom: 12 }}>
+    <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.08)' }}>
+      <div style={{ fontFamily: F.display, fontSize: 12, fontWeight: 700, letterSpacing: '.16em',
+        textTransform: 'uppercase', color: C.orange, marginBottom: 10 }}>
         Direccion de entrega
       </div>
 
       {/* Radios dirección guardada */}
       {savedAddress && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
-          {([
-            { val: 'saved' as const, label: 'Usar dirección guardada', sub: savedAddress },
-            { val: 'new'   as const, label: 'Ingresar otra dirección',  sub: undefined },
-          ]).map(({ val, label: lbl, sub }) => (
-            <label key={val} style={{
-              display: 'flex', alignItems: 'flex-start', gap: 10, padding: '13px 15px',
-              borderRadius: 10, cursor: disabled ? 'default' : 'pointer',
-              border: `1px solid ${addressOption === val ? C.orange : 'rgba(255,255,255,.12)'}`,
-              background: addressOption === val ? 'rgba(247,145,56,.05)' : 'rgba(255,255,255,.03)',
-            }}>
-              <div style={{
-                width: 16, height: 16, borderRadius: '50%', flexShrink: 0, marginTop: 1,
-                border: `2px solid ${addressOption === val ? C.orange : 'rgba(255,255,255,.3)'}`,
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
+        <>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 12 }}>
+            {([
+              { val: 'saved' as const, label: 'Usar dirección guardada', sub: savedAddress },
+              { val: 'new'   as const, label: 'Ingresar otra dirección',  sub: undefined },
+            ]).map(({ val, label: lbl, sub }) => {
+              const active = addressOption === val
+              return (
+              <label key={val} style={{
+                display: 'flex',
+                alignItems: sub ? 'flex-start' : 'center',
+                gap: 11,
+                padding: sub ? '13px 14px' : '15px 14px',
+                borderRadius: 10, cursor: disabled ? 'default' : 'pointer',
+                border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`,
+                background: active ? 'rgba(247,145,56,.08)' : 'rgba(255,255,255,.03)',
               }}>
-                {addressOption === val && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.orange }} />}
-              </div>
-              <div>
-                <input type="radio" name="addrOpt" value={val} checked={addressOption === val}
-                  onChange={() => onAddressOptionChange(val)} disabled={disabled} style={{ display: 'none' }} />
-                <div style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>{lbl}</div>
-                {sub && <div style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.4, color: C.textSub, marginTop: 2 }}>{sub}</div>}
-              </div>
-            </label>
-          ))}
-        </div>
+                <div style={{
+                  width: 16, height: 16, borderRadius: '50%', flexShrink: 0,
+                  marginTop: (sub && active) ? 2 : 0,
+                  border: `1px solid ${active ? C.orange : 'rgba(245,241,236,.35)'}`,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>
+                  {active && <div style={{ width: 8, height: 8, borderRadius: '50%', background: C.orange }} />}
+                </div>
+                <div>
+                  <input type="radio" name="addrOpt" value={val} checked={active}
+                    onChange={() => onAddressOptionChange(val)} disabled={disabled} style={{ display: 'none' }} />
+                  <div style={{ fontFamily: F.body, fontSize: 13.5, fontWeight: 600, lineHeight: 1,
+                    color: active ? C.text : 'rgba(245,241,236,.75)' }}>{lbl}</div>
+                  {sub && <div style={{ fontFamily: F.body, fontSize: 12.5, lineHeight: 1.45, color: 'rgba(245,241,236,.55)', marginTop: 5 }}>{sub}</div>}
+                </div>
+              </label>
+            )})}
+          </div>
+          {addressOption === 'saved' && (
+            <div style={{ fontFamily: F.body, fontSize: 12, color: C.textFaint, marginBottom: 16 }}>
+              Entregamos solo en el área metropolitana de Monterrey
+            </div>
+          )}
+        </>
       )}
 
       {/* Formulario nueva dirección dentro del recuadro naranja */}
       {(!savedAddress || addressOption === 'new') && (
         <div style={{
-          padding: 18, borderRadius: 11,
+          padding: 15, borderRadius: 11,
           border: '1px solid rgba(247,145,56,.28)', background: 'rgba(247,145,56,.03)',
-          display: 'flex', flexDirection: 'column', gap: 12,
+          display: 'flex', flexDirection: 'column', gap: 11,
         }}>
           <div>
             <label style={label}>Calle *</label>
             <input type="text" value={calle} onChange={e => onCalleChange(e.target.value)}
               disabled={disabled} style={inp} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
             <div>
-              <label style={label}>Núm. exterior *</label>
+              <label style={label}>Núm. ext. *</label>
               <input type="text" value={numeroExterior} onChange={e => onNumExtChange(e.target.value)}
                 disabled={disabled} style={inp} />
             </div>
             <div>
-              <label style={label}>Núm. interior</label>
+              <label style={label}>Núm. int.</label>
               <input type="text" value={numeroInterior} onChange={e => onNumIntChange(e.target.value)}
                 placeholder="Opcional" disabled={disabled} style={inp} />
             </div>
@@ -1150,7 +1291,7 @@ function AddressSection({
             <input type="text" value={colonia} onChange={e => onColoniaChange(e.target.value)}
               disabled={disabled} style={inp} />
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '150px 1fr', gap: 12 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '118px 1fr', gap: 8 }}>
             <div>
               <label style={label}>CP *</label>
               <input type="text" value={codigoPostal}
@@ -1215,6 +1356,7 @@ type SidebarProps = {
   ctaDisabled: boolean
   ctaReason: string | null
   onCTA: () => void
+  isActiveMember?: boolean
 }
 
 function CheckoutSidebar(p: SidebarProps) {
@@ -1222,10 +1364,10 @@ function CheckoutSidebar(p: SidebarProps) {
   return (
     <div style={{
       border: `1px solid ${p.membershipMode ? C.orange : 'rgba(255,255,255,.1)'}`,
-      borderRadius: 12, background: C.panel, overflow: 'hidden',
+      borderRadius: 12, background: '#0c0a09', overflow: 'hidden',
     }}>
       {/* Header */}
-      <div style={{ padding: '18px 18px 14px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+      <div style={{ padding: '7px 18px 7px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <span style={{ fontFamily: F.display, fontSize: 26, textTransform: 'uppercase', color: C.text }}>
           {p.membershipMode ? 'Tu membresia' : 'Tu pedido'}
         </span>
@@ -1234,8 +1376,20 @@ function CheckoutSidebar(p: SidebarProps) {
         </span>
       </div>
 
+      {/* Membership info banner */}
+      {p.membershipMode && (
+        <div style={{ padding: '0 18px 14px' }}>
+          <div style={{ padding: '12px 14px', border: '1px solid rgba(247,145,56,.3)', borderRadius: 10,
+            background: 'rgba(247,145,56,.07)', fontFamily: F.body, fontSize: 12.5, lineHeight: 1.5,
+            color: 'rgba(245,241,236,.65)' }}>
+            Se cobra hoy el total de las {p.membershipWeeks} semanas. Este menú se repite cada domingo.
+          </div>
+        </div>
+      )}
+
       {/* Order items grouped by size */}
-      <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive} />
+      <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive}
+        membershipMode={p.membershipMode} membershipDiscountPct={p.membershipDiscountPct} />
 
       {/* Auto-discount notification */}
       {p.autoDiscountNotif && (
@@ -1250,48 +1404,49 @@ function CheckoutSidebar(p: SidebarProps) {
         </div>
       )}
 
-      {/* Discount code */}
-      <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-        {p.membershipMode ? (
-          <input disabled value="" onChange={() => {}}
-            placeholder="Con membresía activa no aplican más descuentos"
-            style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px',
-              background: 'rgba(255,255,255,.02)', border: '1px solid rgba(255,255,255,.08)',
-              borderRadius: 9, fontFamily: F.body, fontSize: 13, color: 'rgba(245,241,236,.3)', cursor: 'not-allowed' }} />
-        ) : !p.appliedDiscount ? (
-          <div style={{ display: 'flex', gap: 8 }}>
-            <input value={p.discountCode}
-              onChange={e => p.onCodeChange(e.target.value.toUpperCase())}
-              onKeyDown={e => e.key === 'Enter' && p.onApplyDiscount()}
-              placeholder="Código de descuento"
-              style={{ flex: 1, minWidth: 0, padding: '10px 12px',
-                background: 'rgba(255,255,255,.04)', borderRadius: 9, fontFamily: F.body, fontSize: 13,
-                color: C.text, border: `1px solid ${p.discountError ? C.errBorder : 'rgba(247,145,56,.5)'}` }} />
-            <button onClick={p.onApplyDiscount} disabled={p.discountLoading || !p.discountCode.trim()}
-              style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
-                background: 'rgba(247,145,56,.1)', color: C.orange, cursor: 'pointer',
-                fontFamily: F.body, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
-                opacity: p.discountCode.trim() ? 1 : 0.5 }}>
-              {p.discountLoading ? '…' : 'Aplicar'}
-            </button>
+      {/* Discount code — hidden in membership mode */}
+      {!p.membershipMode && <div style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
+        {!p.appliedDiscount ? (
+          <div style={{ paddingTop: 14, paddingRight: 18, paddingBottom: p.discountError ? 0 : 14, paddingLeft: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+              <input value={p.discountCode}
+                onChange={e => p.onCodeChange(e.target.value.toUpperCase())}
+                onKeyDown={e => e.key === 'Enter' && p.onApplyDiscount()}
+                placeholder="Código de descuento"
+                style={{ flex: 1, minWidth: 0, padding: '12px 13px',
+                  background: 'rgba(255,255,255,.04)', borderRadius: 9, fontFamily: F.body, fontSize: 13.5,
+                  color: p.discountCode ? C.text : 'rgba(245,241,236,.35)',
+                  border: `1px solid ${p.discountError ? C.errBorder : 'rgba(255,255,255,.12)'}` }} />
+              <button onClick={p.onApplyDiscount} disabled={p.discountLoading || !p.discountCode.trim()}
+                style={{ flexShrink: 0, padding: '12px 16px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
+                  background: 'rgba(247,145,56,.1)', color: C.orange, cursor: 'pointer',
+                  fontFamily: F.body, fontSize: 13, fontWeight: 600, whiteSpace: 'nowrap',
+                  opacity: p.discountCode.trim() ? 1 : 0.5 }}>
+                {p.discountLoading ? '…' : 'Aplicar'}
+              </button>
+            </div>
+            {p.discountError && (
+              <div style={{ fontFamily: F.body, fontSize: 12, color: C.errText, marginTop: 6, paddingBottom: 14 }}>
+                {p.discountError}
+              </div>
+            )}
           </div>
         ) : (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            padding: '8px 12px', background: 'rgba(122,199,122,.08)',
-            border: '1px solid rgba(122,199,122,.25)', borderRadius: 9 }}>
-            <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.success }}>
-              ✓ {p.appliedDiscount.name}
-            </span>
-            <button onClick={p.onRemoveDiscount}
-              style={{ background: 'transparent', border: '1px solid rgba(255,128,128,.4)', borderRadius: 6,
-                color: C.errText, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '3px 8px',
-                fontFamily: F.body }}>Quitar</button>
+          <div style={{ padding: '12px 18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+              padding: '8px 12px', background: 'rgba(122,199,122,.08)',
+              border: '1px solid rgba(122,199,122,.25)', borderRadius: 9 }}>
+              <span style={{ fontFamily: F.body, fontSize: 13, fontWeight: 600, color: C.success }}>
+                ✓ {p.appliedDiscount.name}
+              </span>
+              <button onClick={p.onRemoveDiscount}
+                style={{ background: 'transparent', border: '1px solid rgba(255,128,128,.4)', borderRadius: 6,
+                  color: C.errText, cursor: 'pointer', fontSize: 12, fontWeight: 600, padding: '3px 8px',
+                  fontFamily: F.body }}>Quitar</button>
+            </div>
           </div>
         )}
-        {p.discountError && (
-          <div style={{ fontFamily: F.body, fontSize: 12, color: C.errText, marginTop: 5 }}>{p.discountError}</div>
-        )}
-      </div>
+      </div>}
 
       {/* Totals */}
       <SidebarTotals
@@ -1308,6 +1463,7 @@ function CheckoutSidebar(p: SidebarProps) {
         appliedDiscount={p.appliedDiscount}
         discountAmount={p.discountAmount}
         selectedPickupSpots={undefined}
+        isActiveMember={p.isActiveMember}
       />
 
       {/* CTA */}
@@ -1319,7 +1475,17 @@ function CheckoutSidebar(p: SidebarProps) {
 }
 
 // ── Sidebar order items ───────────────────────────────────────────────────────
-function SidebarOrderItems({ items, isPackageActive }: { items: CartItem[]; isPackageActive: boolean }) {
+function SidebarOrderItems({ items, isPackageActive, membershipMode, membershipDiscountPct, compact }: {
+  items: CartItem[]; isPackageActive: boolean
+  membershipMode?: boolean; membershipDiscountPct?: number; compact?: boolean
+}) {
+  const ph = compact ? '8px 15px' : '9px 18px'   // group header padding
+  const pi = compact ? '10px 15px' : '11px 18px'  // item padding
+  const fnName = compact ? 13 : 14
+  const fnQty  = compact ? 11 : 11.5
+  const fnUnit = compact ? 12 : 12.5
+  const fnLine = compact ? 13 : 13.5
+
   const sizeOrder: string[] = []
   const bySize = new Map<string, { sizeName: string; items: CartItem[] }>()
   for (const item of items) {
@@ -1327,41 +1493,43 @@ function SidebarOrderItems({ items, isPackageActive }: { items: CartItem[]; isPa
     bySize.get(item.sizeId)!.items.push(item)
   }
   return (
-    <div>
+    <div style={{ borderTop: '1px solid rgba(255,255,255,.08)' }}>
       {sizeOrder.map(sizeId => {
         const group = bySize.get(sizeId)!
         const groupQty = group.items.reduce((s, i) => s + i.qty, 0)
         return (
           <div key={sizeId}>
-            {/* Group header */}
-            <div style={{ padding: '9px 18px', background: 'rgba(255,255,255,.02)',
-              borderTop: '1px solid rgba(255,255,255,.05)' }}>
-              <span style={{ fontFamily: F.body, fontSize: 10.5, fontWeight: 600,
-                letterSpacing: '.16em', textTransform: 'uppercase', color: C.textFaint }}>
-                {group.sizeName} · {groupQty} platillo{groupQty !== 1 ? 's' : ''}
-              </span>
+            {/* Group header — first group has no border-top (the outer wrapper provides it) */}
+            <div style={{ padding: ph, background: 'rgba(255,255,255,.02)',
+              borderTop: sizeId === sizeOrder[0] ? 'none' : '1px solid rgba(255,255,255,.08)',
+              font: `600 ${compact ? 10 : 10.5}px/1 ${F.body}`, letterSpacing: '.16em',
+              textTransform: 'uppercase', color: C.textFaint }}>
+              {group.sizeName} · {groupQty} platillo{groupQty !== 1 ? 's' : ''}
             </div>
             {/* Meal rows */}
             {group.items.map((item, idx) => {
-              const effectivePrice = isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice
+              const basePrice = isPackageActive && item.packagePrice ? item.packagePrice : item.unitPrice
+              const effectivePrice = membershipMode && membershipDiscountPct
+                ? Math.round(basePrice * (1 - membershipDiscountPct / 100))
+                : basePrice
               const lineTotal = effectivePrice * item.qty
+              const priceColor = membershipMode ? C.orange : isPackageActive ? C.success : 'rgba(245,241,236,.5)'
               return (
-                <div key={`${item.mealId}-${idx}`} style={{ padding: '11px 18px',
+                <div key={`${item.mealId}-${idx}`} style={{ padding: pi,
                   borderTop: '1px solid rgba(255,255,255,.05)' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                    <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 600, color: C.text }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10 }}>
+                    <span style={{ fontFamily: F.body, fontSize: fnName, fontWeight: 600, lineHeight: 1.2, color: C.text }}>
                       {item.mealName}
                     </span>
-                    <span style={{ fontFamily: F.body, fontSize: 11.5, color: C.textFaint, flexShrink: 0, marginTop: 1 }}>
+                    <span style={{ flexShrink: 0, fontFamily: F.body, fontSize: fnQty, fontWeight: 500, lineHeight: 1, color: C.textFaint }}>
                       ×{item.qty}
                     </span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 5 }}>
-                    <span style={{ fontFamily: F.body, fontSize: 12.5,
-                      color: isPackageActive ? C.success : 'rgba(245,241,236,.5)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginTop: compact ? 4 : 5 }}>
+                    <span style={{ fontFamily: F.body, fontSize: fnUnit, lineHeight: 1, color: priceColor }}>
                       ${(effectivePrice / 100).toFixed(2)} c/u
                     </span>
-                    <span style={{ fontFamily: F.body, fontSize: 13.5, fontWeight: 700, color: C.text }}>
+                    <span style={{ flexShrink: 0, fontFamily: F.body, fontSize: fnLine, fontWeight: 700, lineHeight: 1, color: C.text }}>
                       ${(lineTotal / 100).toFixed(2)}
                     </span>
                   </div>
@@ -1381,65 +1549,90 @@ function SidebarTotals({
   shippingCost, shippingType, total,
   membershipMode, membershipWeeks, membershipDiscountPct,
   appliedDiscount, discountAmount,
-  selectedPickupSpots,
+  selectedPickupSpots, isActiveMember, compact, hideTotal,
 }: {
   subtotalIndividual: number; subtotal: number; packageDiscountAmount: number; isPackageActive: boolean
   shippingCost: number; shippingType: ShippingType; total: number
   membershipMode: boolean; membershipWeeks: number; membershipDiscountPct: number
   appliedDiscount: ValidatedDiscount | null; discountAmount: number
-  selectedPickupSpots?: string
+  selectedPickupSpots?: string; isActiveMember?: boolean
+  compact?: boolean; hideTotal?: boolean
 }) {
-  const fmt = (c: number) => `$${(c / 100).toFixed(2)}`
+  const fn = compact ? 12.5 : 13.5
+  const rp = compact ? '4px 0' : '5px 0'
+  const fmt = (c: number) => `$${(c / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
   const row = (label: React.ReactNode, value: React.ReactNode, color?: string) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0',
-      fontFamily: F.body, fontSize: 13.5 }}>
-      <span style={{ color: C.textSub }}>{label}</span>
-      <span style={{ color: color ?? C.text, fontWeight: 500 }}>{value}</span>
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: rp }}>
+      <span style={{ fontFamily: F.body, fontSize: fn, lineHeight: 1, color: color ?? C.textSub }}>{label}</span>
+      <span style={{ fontFamily: F.body, fontSize: fn, lineHeight: 1, fontWeight: 500, color: color ?? C.text }}>{value}</span>
+    </div>
+  )
+  // Row with strikethrough old value + new value
+  const rowStrike = (label: React.ReactNode, oldVal: string, newVal: string, newColor: string) => (
+    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, padding: rp }}>
+      <span style={{ fontFamily: F.body, fontSize: fn, lineHeight: 1, color: C.textSub }}>{label}</span>
+      <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <span style={{ fontFamily: F.body, fontSize: compact ? 11 : 12, lineHeight: 1, color: 'rgba(245,241,236,.3)', textDecoration: 'line-through' }}>{oldVal}</span>
+        <span style={{ fontFamily: F.body, fontSize: fn, lineHeight: 1, fontWeight: 500, color: newColor }}>{newVal}</span>
+      </span>
     </div>
   )
 
   return (
-    <div style={{ padding: '16px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+    <div style={{ padding: compact ? '13px 15px' : '16px 18px', borderTop: '1px solid rgba(255,255,255,.08)' }}>
       {membershipMode ? (
         <>
-          {row('Semana:', fmt(subtotal))}
-          {row(`× ${membershipWeeks} semanas:`, `−${membershipDiscountPct}%`, C.success)}
+          {row('Semana:', fmt(Math.round(subtotal * (1 - membershipDiscountPct / 100))))}
+          {row(`× ${membershipWeeks} semanas:`, fmt(total))}
           {row('Envío incluido:', 'Gratis', C.success)}
           {row(`Ahorro total:`, `−${fmt(subtotalIndividual * membershipWeeks - total)}`, C.success)}
         </>
       ) : (
         <>
-          {/* Subtotal — tachado si descuento paquete */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '5px 0', fontFamily: F.body, fontSize: 13.5 }}>
-            <span style={{ color: C.textSub }}>Subtotal:</span>
-            {isPackageActive ? (
-              <span style={{ color: 'rgba(245,241,236,.3)', textDecoration: 'line-through' }}>{fmt(subtotalIndividual)}</span>
-            ) : (
-              <span style={{ color: C.text, fontWeight: 500 }}>{fmt(subtotalIndividual)}</span>
-            )}
-          </div>
-          {packageDiscountAmount > 0 && row('Descuento por paquete:', `−${fmt(packageDiscountAmount)}`, C.success)}
-          {row(
-            shippingType === 'standard' ? 'Envío estándar:' : shippingType === 'pickup' ? 'Pickup:' : 'Envío prioritario:',
-            shippingCost > 0 ? fmt(shippingCost) : shippingType === 'priority' ? 'Pendiente' : 'Gratis',
-            shippingCost === 0 && shippingType !== 'priority' ? C.success : undefined,
+          {/* Subtotal — valor ya con descuento de paquete aplicado */}
+          {row('Subtotal', fmt(subtotal))}
+          {isActiveMember ? (
+            // Membresía activa: envío cubierto → tachado + Gratis
+            rowStrike(
+              shippingType === 'standard' ? 'Envío estándar' : shippingType === 'pickup' ? 'Pickup' : 'Envío prioritario',
+              shippingCost > 0 ? fmt(shippingCost) : 'Gratis',
+              'Gratis', C.success,
+            )
+          ) : (
+            row(
+              shippingType === 'standard' ? 'Envío estándar' : shippingType === 'pickup' ? 'Pickup' : 'Envío prioritario',
+              shippingCost > 0 ? fmt(shippingCost) : shippingType === 'priority' ? 'Pendiente' : 'Gratis',
+              shippingCost === 0 && shippingType !== 'priority' ? C.success : undefined,
+            )
           )}
+          {packageDiscountAmount > 0 && row('Descuento por paquete', `−${fmt(packageDiscountAmount)}`, C.success)}
           {appliedDiscount && discountAmount > 0 && row(
-            `${appliedDiscount.name}:`, `−${fmt(discountAmount)}`, C.success
+            appliedDiscount.name, `−${fmt(discountAmount)}`, C.success
           )}
         </>
       )}
 
-      {/* Total */}
-      <div style={{ marginTop: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.1)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: F.body, fontSize: 14, fontWeight: 500, color: C.text }}>
-          {membershipMode ? 'Total hoy:' : 'Total:'}
-        </span>
-        <span style={{ fontFamily: F.display, fontSize: 34, color: C.orange }}>
-          {fmt(total)}
-        </span>
-      </div>
+      {/* Total — se oculta en mobile summary expandido */}
+      {!hideTotal && (
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10,
+          marginTop: 10, paddingTop: 14, borderTop: '1px solid rgba(255,255,255,.1)' }}>
+          <span style={{ fontFamily: F.body, fontSize: 14, lineHeight: 1, fontWeight: 500, color: C.text }}>
+            {membershipMode ? 'Total hoy' : 'Total'}
+          </span>
+          {isActiveMember ? (
+            <span style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
+              <span style={{ fontFamily: F.body, fontSize: 17, lineHeight: 1, color: 'rgba(245,241,236,.3)', textDecoration: 'line-through' }}>
+                {fmt(total)}
+              </span>
+              <span style={{ fontFamily: F.display, fontSize: 34, lineHeight: 1, color: C.success }}>$0.00</span>
+            </span>
+          ) : (
+            <span style={{ fontFamily: F.display, fontSize: 34, lineHeight: 1, color: C.orange }}>
+              {fmt(total)}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -1461,12 +1654,10 @@ function CTAButton({ label, disabled, reason, onClick }: {
       }}>
         {disabled && reason ? reason : label}
       </button>
-      {!disabled && (
-        <div style={{ fontFamily: F.body, fontSize: 11.5, lineHeight: 1.45,
-          color: 'rgba(245,241,236,.4)', textAlign: 'center', marginTop: 8 }}>
-          Al continuar aceptas nuestros términos y condiciones.
-        </div>
-      )}
+      <div style={{ fontFamily: F.body, fontSize: 11.5, lineHeight: 1.45,
+        color: 'rgba(245,241,236,.4)', textAlign: 'center', marginTop: 10, textWrap: 'pretty' } as React.CSSProperties}>
+        Al continuar aceptas los términos. El pedido se confirma por WhatsApp.
+      </div>
     </div>
   )
 }
@@ -1487,14 +1678,14 @@ function MobileBar({ total, membershipMode, shippingType, membershipWeeks, ctaLa
       padding: '12px 16px 16px',
       borderTop: '1px solid rgba(255,255,255,.1)',
       background: 'rgba(12,10,9,.97)',
-      flexDirection: 'column', gap: 10, zIndex: 900,
+      flexDirection: 'column', zIndex: 900,
     }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontFamily: F.body, fontSize: 12.5, color: barLabelColor }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', gap: 10, marginBottom: 9 }}>
+        <span style={{ fontFamily: F.body, fontSize: 12.5, fontWeight: 500, color: barLabelColor }}>
           {barLabel}
         </span>
-        <span style={{ fontFamily: F.display, fontSize: 26, color: C.orange }}>
-          ${(total / 100).toFixed(2)}
+        <span style={{ fontFamily: F.display, fontSize: 26, fontWeight: 700, color: C.orange }}>
+          ${(total / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
         </span>
       </div>
       <button onClick={onCTA} disabled={ctaDisabled} style={{
@@ -1521,7 +1712,7 @@ function MobileSummaryCollapsible(p: MobileSummaryProps) {
   const sizeNames = [...new Set(p.items.map(i => i.sizeName))].join(' y ')
 
   return (
-    <div className="co-mobile-summary" style={{ marginBottom: 20 }}>
+    <div className="co-mobile-summary" style={{ marginBottom: 18 }}>
       {/* Collapsed header */}
       <button onClick={() => setOpen(o => !o)} style={{
         width: '100%', padding: '14px 15px', borderRadius: open ? '12px 12px 0 0' : 12,
@@ -1531,17 +1722,19 @@ function MobileSummaryCollapsible(p: MobileSummaryProps) {
       }}>
         <div style={{ textAlign: 'left' }}>
           <div style={{ fontFamily: F.display, fontSize: 19, textTransform: 'uppercase', color: C.text }}>
-            Tu pedido
+            {p.membershipMode ? 'Tu membresia' : 'Tu pedido'}
           </div>
-          <div style={{ fontFamily: F.body, fontSize: 12, color: C.textSub, marginTop: 2 }}>
-            {totalQty} platillo{totalQty !== 1 ? 's' : ''} · {sizeNames}
+          <div style={{ fontFamily: F.body, fontSize: 12, color: C.textSub, marginTop: 4 }}>
+            {p.membershipMode
+              ? `${totalQty} platillo${totalQty !== 1 ? 's' : ''} · ${p.membershipWeeks} semanas`
+              : `${totalQty} platillo${totalQty !== 1 ? 's' : ''} · ${sizeNames}`}
           </div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontFamily: F.display, fontSize: 20, color: C.orange }}>
-            ${(p.total / 100).toFixed(2)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
+          <span style={{ fontFamily: F.display, fontSize: 20, fontWeight: 700, color: C.orange }}>
+            ${Math.round(p.total / 100).toLocaleString('en-US')}
           </span>
-          <span style={{ color: C.textDim, fontSize: 14, transform: open ? 'rotate(180deg)' : 'none' }}>▾</span>
+          <span style={{ fontFamily: F.body, fontSize: 11, color: C.textDim, transform: open ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
         </div>
       </button>
 
@@ -1549,7 +1742,8 @@ function MobileSummaryCollapsible(p: MobileSummaryProps) {
       {open && (
         <div style={{ border: `1px solid ${C.orange}`, borderTop: 'none', borderRadius: '0 0 12px 12px',
           background: C.panel, overflow: 'hidden' }}>
-          <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive} />
+          <SidebarOrderItems items={p.items} isPackageActive={p.isPackageActive}
+            membershipMode={p.membershipMode} membershipDiscountPct={p.membershipDiscountPct} compact />
           <SidebarTotals
             subtotalIndividual={p.subtotalIndividual} subtotal={p.subtotal}
             packageDiscountAmount={p.packageDiscountAmount} isPackageActive={p.isPackageActive}
@@ -1557,21 +1751,22 @@ function MobileSummaryCollapsible(p: MobileSummaryProps) {
             membershipMode={p.membershipMode} membershipWeeks={p.membershipWeeks}
             membershipDiscountPct={p.membershipDiscountPct}
             appliedDiscount={p.appliedDiscount} discountAmount={p.discountAmount}
+            isActiveMember={p.isActiveMember} compact hideTotal
           />
           {/* Discount code in mobile summary */}
-          <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
+          <div style={{ padding: '0 15px 14px' }}>
             {!p.appliedDiscount ? (
               <div style={{ display: 'flex', gap: 8 }}>
                 <input value={p.discountCode} onChange={e => p.onCodeChange(e.target.value.toUpperCase())}
                   onKeyDown={e => e.key === 'Enter' && p.onApplyDiscount()}
                   placeholder="Código de descuento"
-                  style={{ flex: 1, minWidth: 0, padding: '10px 12px', fontSize: 16,
+                  style={{ flex: 1, minWidth: 0, padding: '11px 12px', fontSize: 16,
                     background: 'rgba(255,255,255,.04)', borderRadius: 9, fontFamily: F.body,
-                    color: C.text, border: `1px solid rgba(247,145,56,.5)` }} />
+                    color: C.text, border: `1px solid rgba(255,255,255,.12)` }} />
                 <button onClick={p.onApplyDiscount} disabled={p.discountLoading || !p.discountCode.trim()}
-                  style={{ padding: '10px 14px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
+                  style={{ padding: '11px 14px', borderRadius: 9, border: '1px solid rgba(247,145,56,.5)',
                     background: 'rgba(247,145,56,.1)', color: C.orange, cursor: 'pointer',
-                    fontFamily: F.body, fontSize: 13, fontWeight: 600 }}>
+                    fontFamily: F.body, fontSize: 12.5, fontWeight: 600 }}>
                   {p.discountLoading ? '…' : 'Aplicar'}
                 </button>
               </div>

@@ -53,7 +53,7 @@ export default function Navbar() {
   }
 
   const getBack = () => {
-    if (pathname === '/checkout') return { show: true, label: 'Volver al menu',   href: '/menu' }
+    if (pathname === '/checkout') return { show: true, label: 'Volver al menú',   href: '/menu' }
     if (pathname === '/menu')     return { show: true, label: 'Volver al inicio', href: '/'    }
     return { show: false, label: '', href: '' }
   }

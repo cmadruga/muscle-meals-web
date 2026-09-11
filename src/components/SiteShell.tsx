@@ -10,13 +10,14 @@ import Navbar from './Navbar'
  */
 export default function SiteShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
-  const isAdmin  = pathname.startsWith('/admin')
+  const isAdmin    = pathname.startsWith('/admin')
+  const noZoom     = isAdmin || pathname.startsWith('/checkout')
 
   return (
     <>
       {!isAdmin && <Navbar />}
       <div style={{ paddingTop: isAdmin ? 0 : 64 }}>
-        {isAdmin ? children : <div className="public-content">{children}</div>}
+        {noZoom ? children : <div className="public-content">{children}</div>}
       </div>
     </>
   )
