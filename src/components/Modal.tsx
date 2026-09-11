@@ -8,9 +8,6 @@ interface ModalProps {
   children: React.ReactNode
 }
 
-/**
- * Modal overlay — la card/contenido viene del children (LoginForm ya trae su propia card).
- */
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
@@ -27,25 +24,33 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
   if (!isOpen) return null
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0, 0, 0, 0.88)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        padding: 20,
-      }}
-    >
-      <div
-        onClick={e => e.stopPropagation()}
-        style={{ maxWidth: 860, width: '100%', maxHeight: '95vh', overflowY: 'auto' }}
-      >
-        {children}
+    <>
+      <style>{`
+        .mm-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,.88);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          padding: 24px;
+        }
+        .mm-modal-inner {
+          max-width: 800px;
+          width: 100%;
+        }
+        @media (max-width: 900px) {
+          .mm-modal-overlay { padding: 16px; }
+          .mm-modal-inner   { max-height: 96dvh; overflow-y: auto; border-radius: 14px; }
+        }
+      `}</style>
+
+      <div className="mm-modal-overlay" onClick={onClose}>
+        <div className="mm-modal-inner" onClick={e => e.stopPropagation()}>
+          {children}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

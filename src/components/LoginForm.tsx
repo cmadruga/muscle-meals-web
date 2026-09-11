@@ -6,14 +6,36 @@ import { createClient } from '@/lib/supabase/client'
 type Mode = 'signin' | 'signup' | 'forgot'
 
 interface LoginFormProps {
-  /** URL to redirect after successful login (default: /cuenta) */
   next?: string
-  /** Called after successful sign-in (for modal use) */
   onSuccess?: () => void
-  /** Called when the × close button is clicked */
   onClose?: () => void
 }
 
+// ── Design tokens ─────────────────────────────────────────────────────────────
+const C = {
+  page:      '#0a0908',
+  panel:     '#0c0a09',
+  card:      '#191614',
+  formBg:    '#141110',
+  orange:    '#F79138',
+  orangeHov: '#ffa252',
+  orangeTxt: '#17140f',
+  text:      '#F5F1EC',
+  muted:     'rgba(245,241,236,.6)',
+  subtle:    'rgba(245,241,236,.45)',
+  faint:     'rgba(245,241,236,.42)',
+  border:    'rgba(255,255,255,.12)',
+  borderSft: 'rgba(255,255,255,.1)',
+  inputBg:   'rgba(255,255,255,.04)',
+  error:     '#ef4444',
+  success:   '#7ac77a',
+}
+const F = {
+  display: `'Franchise','Big Shoulders Display',sans-serif`,
+  body:    `Barlow,system-ui,sans-serif`,
+}
+
+// ── Google SVG ────────────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
     <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" style={{ flexShrink: 0 }}>
@@ -25,6 +47,7 @@ function GoogleIcon() {
   )
 }
 
+// ── Password strength ─────────────────────────────────────────────────────────
 function passwordStrength(pw: string): { score: number; label: string } {
   if (pw.length < 6) return { score: 0, label: '' }
   if (pw.length < 8) return { score: 1, label: 'Débil' }
@@ -35,28 +58,7 @@ function passwordStrength(pw: string): { score: number; label: string } {
   return { score: 1, label: 'Débil' }
 }
 
-// Design tokens from Auth Redesign
-const C = {
-  card:      '#191614',
-  left:      '#120f0e',
-  orange:    '#F79138',
-  text:      '#F5F1EC',
-  muted:     'rgba(245,241,236,.6)',
-  subtle:    'rgba(245,241,236,.45)',
-  faint:     'rgba(245,241,236,.42)',
-  border:    'rgba(255,255,255,.12)',
-  borderSoft:'rgba(255,255,255,.1)',
-  inputBg:   'rgba(255,255,255,.04)',
-  error:     '#ef4444',
-  success:   '#7ac77a',
-}
-
-const FONTS = {
-  display:   `'Big Shoulders Display', 'Barlow Condensed', sans-serif`,
-  body:      `'Barlow Condensed', system-ui, sans-serif`,
-  label:     `'Barlow Condensed', system-ui, sans-serif`,
-}
-
+// ── Component ─────────────────────────────────────────────────────────────────
 export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: LoginFormProps) {
   const [mode, setMode] = useState<Mode>('signin')
   const [name, setName] = useState('')
@@ -96,7 +98,6 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
         setLoading(false)
         return
       }
-
       if (mode === 'signup') {
         if (password !== confirmPassword) { setError('Las contraseñas no coinciden.'); setLoading(false); return }
         if (password.length < 6) { setError('La contraseña debe tener al menos 6 caracteres.'); setLoading(false); return }
@@ -116,13 +117,11 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
           setLoading(false)
           return
         }
-        setSuccess('¡Cuenta creada! Revisa tu correo para confirmarla. Redirigiendo…')
+        setSuccess('¡Cuenta creada! Revisa tu correo para confirmarla.')
         setLoading(false)
         setTimeout(() => { setMode('signin'); setSuccess(''); setPassword(''); setConfirmPassword(''); setName('') }, 3000)
         return
       }
-
-      // Sign in
       const { error } = await supabase.auth.signInWithPassword({ email, password })
       if (error) {
         setError(
@@ -147,251 +146,518 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
   const isSignup = mode === 'signup'
   const isForgot = mode === 'forgot'
 
-  const leftContent = isSignup
-    ? { lines: ['Arma tu', 'cuenta'], benefits: ['Repite tu última orden en un toque', 'Guarda direcciones y macros', 'Sigue tu entrega en vivo'] }
-    : { lines: ['Bienvenido', 'de vuelta'], benefits: ['Repite tu última orden en un toque', 'Guarda direcciones y macros', 'Sigue tu entrega en vivo'] }
+  const headline = isSignup
+    ? { line1: 'Arma tu', line2: 'Cuenta' }
+    : { line1: 'Bienvenido', line2: 'de vuelta' }
+
+  const benefits = [
+    'Repite tu última orden en un toque',
+    'Guarda direcciones y macros',
+    'Sigue tu entrega en vivo',
+  ]
+
+  const ctaLabel = loading ? '…' : mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Crear cuenta' : 'Enviar correo'
 
   return (
     <>
-      {/* Scoped styles — fonts ya cargadas globalmente via next/font */}
       <style>{`
-        .mm-login { display: grid; grid-template-columns: 300px 1fr; background: ${C.card}; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
-        .mm-left  { display: flex; }
-        @media (max-width: 600px) {
-          .mm-login { grid-template-columns: 1fr; }
-          .mm-left  { display: none; }
+        /* ── Shell ── */
+        .mm-shell {
+          display: grid;
+          grid-template-columns: 336px 1fr;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid rgba(255,255,255,.08);
+          background: ${C.card};
         }
-        .mm-label { position: absolute; top: 10px; left: 14px; font: 600 10px/1 'Barlow', sans-serif; letter-spacing: .12em; text-transform: uppercase; color: ${C.faint}; pointer-events: none; transition: color .15s; }
-        .mm-label-orange { color: rgba(247,145,56,.85); }
-        input:-webkit-autofill, input:-webkit-autofill:hover, input:-webkit-autofill:focus {
+
+        /* ── Desktop left (decorative) ── */
+        .mm-left {
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          justify-content: flex-end;
+          padding: 32px;
+          min-height: 572px;
+          overflow: hidden;
+          border-right: 1px solid rgba(255,255,255,.07);
+        }
+
+        /* ── Desktop right (form panel) ── */
+        .mm-right {
+          position: relative;
+          padding: 34px 34px 30px;
+          background: ${C.formBg} url('/media/fondo-auth.jpg') center/900px repeat;
+        }
+        /* Overlay sobre la textura */
+        .mm-right-overlay {
+          position: absolute;
+          inset: 0;
+          background: rgba(20,17,16,.82);
+          pointer-events: none;
+        }
+        /* Todo el contenido del form por encima del overlay */
+        .mm-right-content {
+          position: relative;
+        }
+
+        /* ── Mobile: ocultar el left, mostrar foto 168px ── */
+        .mm-mob-photo {
+          display: none;
+        }
+
+        /* ── Shared input ── */
+        .mm-inp {
+          width: 100%;
+          box-sizing: border-box;
+          padding: 26px 14px 10px;
+          background: ${C.inputBg};
+          border: 1px solid ${C.border};
+          border-radius: 9px;
+          color: ${C.text};
+          font-size: 15.5px;
+          font-family: ${F.body};
+          outline: none;
+          display: block;
+        }
+        .mm-inp:focus { border-color: ${C.orange} !important; }
+
+        /* ── Hover states ── */
+        .mm-close:hover   { background: rgba(255,255,255,.12) !important; color: ${C.text} !important; }
+        .mm-tab:hover     { color: ${C.text} !important; }
+        .mm-submit:hover:not(:disabled) { background: ${C.orangeHov} !important; }
+        .mm-google:hover  { background: rgba(255,255,255,.08) !important; }
+        .mm-switch-btn:hover { color: ${C.orangeHov} !important; }
+
+        /* ── Autofill dark override ── */
+        .mm-inp:-webkit-autofill,
+        .mm-inp:-webkit-autofill:hover,
+        .mm-inp:-webkit-autofill:focus {
           -webkit-text-fill-color: ${C.text} !important;
-          -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,.05) inset !important;
+          -webkit-box-shadow: 0 0 0px 1000px #1a1714 inset !important;
           transition: background-color 9999s;
+        }
+
+        /* ── Mobile (≤900px) ── */
+        @media (max-width: 900px) {
+          .mm-shell {
+            display: flex;
+            flex-direction: column;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,.09);
+            background: ${C.formBg} url('/media/fondo-auth.jpg') center/700px repeat;
+            box-shadow: 0 24px 60px rgba(0,0,0,.55);
+          }
+          .mm-left        { display: none; }
+          .mm-mob-photo   { display: block; }
+          .mm-right {
+            padding: 14px 18px 20px;
+            background: rgba(20,17,16,.88);
+          }
+          .mm-right-overlay { display: none; }
+          /* iOS zoom prevention */
+          .mm-inp { font-size: 16px !important; padding: 25px 13px 10px !important; }
+          .mm-inp-pw { padding-right: 56px !important; }
+          .mm-tab-label { font-size: 14px !important; }
+          .mm-submit { font-size: 19px !important; padding: 16px 0 !important; }
         }
       `}</style>
 
-      <div className="mm-login">
+      <div className="mm-shell">
 
-        {/* ── LEFT PANEL ── */}
-        <div className="mm-left" style={{
-          position: 'relative',
-          background: C.left,
-          padding: '36px 28px',
-          flexDirection: 'column',
-          justifyContent: 'space-between',
-          borderRight: `1px solid rgba(255,255,255,.07)`,
-        }}>
-          {/* diagonal stripe */}
-          <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(135deg,rgba(247,145,56,.09) 0 2px,transparent 2px 11px)' }} />
+        {/* ── Mobile photo band (168px) ── */}
+        <div className="mm-mob-photo" style={{ position: 'relative', height: 168, overflow: 'hidden', flexShrink: 0 }} aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/media/photo-lifestyle.jpg"
+            alt=""
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '50% 38%', display: 'block' }}
+          />
+          {/* Gradient: blends into form bg */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg,rgba(10,9,8,.1) 0%,rgba(10,9,8,.45) 52%,rgba(20,17,16,1) 100%)',
+          }} />
+          {/* Logo — top left */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/media/logo-horizontal.png"
+            alt="Muscle Meals"
+            style={{ position: 'absolute', top: 14, left: 16, height: 17, width: 'auto', display: 'block' }}
+          />
+          {/* Close — top right */}
+          {onClose && (
+            <button
+              className="mm-close"
+              onClick={onClose}
+              aria-label="Cerrar"
+              style={{
+                position: 'absolute', top: 12, right: 12,
+                width: 32, height: 32,
+                border: 0, borderRadius: 8,
+                background: 'rgba(10,9,8,.55)', color: C.text,
+                font: `400 17px/1 ${F.body}`, cursor: 'pointer',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >×</button>
+          )}
+          {/* Heading — bottom left, above the gradient fade */}
+          <h2 style={{
+            position: 'absolute', left: 16, bottom: 12, margin: 0,
+            font: `700 32px/.9 ${F.display}`,
+            textTransform: 'uppercase', color: C.text,
+            textShadow: '0 2px 14px rgba(0,0,0,.7)',
+          }}>
+            {headline.line1}<br />
+            <span style={{ color: C.orange }}>{headline.line2}</span>
+          </h2>
+        </div>
 
+        {/* ── Desktop left: decorative panel ── */}
+        <div className="mm-left" aria-hidden="true">
+          {/* Photo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/media/photo-desk.jpg"
+            alt=""
+            style={{
+              position: 'absolute', inset: 0, width: '100%', height: '100%',
+              objectFit: 'cover', objectPosition: '54% 62%', display: 'block',
+            }}
+          />
+          {/* Main gradient (bottom-heavy) */}
+          <div style={{
+            position: 'absolute', inset: 0,
+            background: 'linear-gradient(180deg,rgba(10,9,8,.3) 0%,rgba(10,9,8,.72) 45%,rgba(10,9,8,.95) 100%)',
+          }} />
+          {/* Top gradient (darker top for logo legibility) */}
+          <div style={{
+            position: 'absolute', top: 0, left: 0, right: 0, height: 150,
+            background: 'linear-gradient(180deg,rgba(10,9,8,.92) 0%,transparent 100%)',
+          }} />
+          {/* Logo */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/media/logo-horizontal.png"
+            alt="Muscle Meals"
+            style={{ position: 'absolute', top: 30, left: 32, height: 20, width: 'auto', display: 'block' }}
+          />
+          {/* Content: heading + subcopy + benefits */}
           <div style={{ position: 'relative' }}>
-            {/* Logo */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 32 }}>
-              <div style={{ width: 22, height: 22, borderRadius: 5, background: C.orange, flexShrink: 0 }} />
-              <span style={{ font: `700 13px/1 ${FONTS.display}`, letterSpacing: '.22em', textTransform: 'uppercase', color: C.text }}>
-                Muscle Meals
-              </span>
-            </div>
-            {/* Headline */}
-            <h2 style={{ margin: '0 0 20px', font: `800 42px/.92 ${FONTS.display}`, textTransform: 'uppercase', color: C.text }}>
-              {leftContent.lines[0]}<br />
-              <span style={{ color: C.orange }}>{leftContent.lines[1]}</span>
+            <h2 style={{
+              margin: '0 0 18px',
+              font: `700 50px/.88 ${F.display}`,
+              textTransform: 'uppercase', color: C.text,
+              textShadow: '0 2px 16px rgba(0,0,0,.7)',
+            }}>
+              {headline.line1}<br />
+              <span style={{ color: C.orange }}>{headline.line2}</span>
             </h2>
-            {/* Benefits */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 13 }}>
-              {leftContent.benefits.map((b, i) => (
-                <div key={i} style={{ display: 'flex', gap: 10, font: `400 13px/1.45 ${FONTS.body}`, color: C.muted }}>
-                  <span style={{ color: C.orange, fontWeight: 700, flexShrink: 0 }}>0{i + 1}</span>
+            <p style={{
+              margin: '0 0 20px',
+              font: `400 13.5px/1.5 ${F.body}`,
+              color: 'rgba(245,241,236,.82)', maxWidth: '28ch',
+            }}>
+              Tu última orden sigue guardada. Entra y repítela en un toque.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
+              {benefits.map((b, i) => (
+                <div key={i} style={{ display: 'flex', gap: 11, font: `400 13px/1.4 ${F.body}`, color: C.text }}>
+                  <span style={{ color: C.orange, fontWeight: 700 }}>0{i + 1}</span>
                   {b}
                 </div>
               ))}
             </div>
           </div>
-
-          {/* Product photo placeholder */}
-          <div style={{ position: 'relative', marginTop: 28, border: '1px dashed rgba(245,241,236,.22)', borderRadius: 8, height: 90, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'repeating-linear-gradient(45deg,rgba(255,255,255,.04) 0 6px,transparent 6px 12px)' }}>
-            <span style={{ font: '400 10px/1 ui-monospace, monospace', letterSpacing: '.08em', color: 'rgba(245,241,236,.38)' }}>foto de producto</span>
-          </div>
         </div>
 
-        {/* ── RIGHT PANEL ── */}
-        <div style={{ position: 'relative', padding: '32px 30px 28px' }}>
-          {/* Close button */}
-          {onClose && (
-            <button onClick={onClose} style={{ position: 'absolute', top: 16, right: 16, width: 32, height: 32, border: 0, borderRadius: 8, background: 'rgba(255,255,255,.06)', color: C.muted, font: `400 17px/1 ${FONTS.body}`, cursor: 'pointer' }}>×</button>
-          )}
+        {/* ── Right: form panel ── */}
+        <div className="mm-right">
+          <div className="mm-right-overlay" />
 
-          {/* Forgot heading */}
-          {isForgot ? (
-            <div style={{ marginBottom: 24, paddingTop: 4 }}>
-              <p style={{ margin: '0 0 6px', font: `800 28px/1 ${FONTS.display}`, textTransform: 'uppercase', color: C.text }}>Restablecer</p>
-              <p style={{ margin: 0, font: `400 13.5px/1.5 ${FONTS.body}`, color: C.muted, maxWidth: '30ch' }}>
-                Te enviamos un enlace para crear una nueva contraseña.
-              </p>
-            </div>
-          ) : (
-            /* Tab navigation */
-            <div style={{ display: 'flex', gap: 24, marginBottom: 24, borderBottom: `1px solid ${C.borderSoft}`, paddingTop: 4 }}>
-              {(['signin', 'signup'] as const).map(m => (
-                <button key={m} onClick={() => switchMode(m)} style={{
-                  padding: '0 0 11px',
-                  border: 'none',
-                  borderBottom: `2px solid ${mode === m ? C.orange : 'transparent'}`,
-                  background: 'transparent',
-                  font: `700 14px/1 ${FONTS.display}`,
-                  letterSpacing: '.08em',
-                  textTransform: 'uppercase',
-                  color: mode === m ? C.text : C.subtle,
-                  cursor: 'pointer',
-                  transition: 'color .15s, border-color .15s',
-                }}>
-                  {m === 'signin' ? 'Iniciar sesión' : 'Crear cuenta'}
-                </button>
-              ))}
-            </div>
-          )}
+          <div className="mm-right-content">
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
-
-            {/* Name — signup only */}
-            {isSignup && (
-              <label style={{ display: 'block', position: 'relative' }}>
-                <span className="mm-label">Nombre completo</span>
-                <input type="text" placeholder="" value={name} onChange={e => setName(e.target.value)}
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '26px 14px 10px', background: C.inputBg, border: `1px solid ${C.border}`, borderRadius: 9, color: C.text, fontSize: 15.5, fontFamily: FONTS.body, outline: 'none' }}
-                  autoComplete="name"
-                />
-              </label>
+            {/* Close button (desktop) — positioned relative to this content div */}
+            {onClose && (
+              <button
+                className="mm-close"
+                onClick={onClose}
+                aria-label="Cerrar"
+                style={{
+                  position: 'absolute', top: -14, right: 0,
+                  width: 32, height: 32,
+                  border: 0, borderRadius: 8,
+                  background: 'rgba(255,255,255,.06)', color: 'rgba(245,241,236,.65)',
+                  font: `400 17px/1 ${F.body}`, cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >×</button>
             )}
 
-            {/* Email */}
-            <label style={{ display: 'block', position: 'relative' }}>
-              <span className="mm-label">Correo electrónico</span>
-              <input type="email" placeholder="" value={email} onChange={e => setEmail(e.target.value)} required
-                style={{ width: '100%', boxSizing: 'border-box', padding: '26px 14px 10px', background: C.inputBg, border: `1px solid ${C.border}`, borderRadius: 9, color: C.text, fontSize: 15.5, fontFamily: FONTS.body, outline: 'none' }}
-                autoComplete="email"
-              />
-            </label>
+            {/* Tabs / Forgot heading */}
+            {isForgot ? (
+              <div style={{ marginBottom: 26 }}>
+                <p style={{
+                  margin: '0 0 6px',
+                  font: `700 26px/1 ${F.display}`,
+                  textTransform: 'uppercase', color: C.text,
+                }}>Restablecer</p>
+                <p style={{ margin: 0, font: `400 14px/1.5 ${F.body}`, color: C.muted }}>
+                  Te enviamos un enlace para crear una nueva contraseña.
+                </p>
+              </div>
+            ) : (
+              <div style={{
+                display: 'flex', gap: 26,
+                margin: '6px 0 26px',
+                borderBottom: `1px solid ${C.borderSft}`,
+              }}>
+                {(['signin', 'signup'] as const).map(m => (
+                  <button
+                    key={m}
+                    className="mm-tab"
+                    onClick={() => switchMode(m)}
+                    style={{
+                      padding: '0 0 11px',
+                      border: 'none',
+                      borderBottom: `2px solid ${mode === m ? C.orange : 'transparent'}`,
+                      background: 'transparent',
+                      font: `700 16px/1 ${F.display}`,
+                      letterSpacing: '.08em', textTransform: 'uppercase',
+                      color: mode === m ? C.text : C.subtle,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span className="mm-tab-label">
+                      {m === 'signin' ? 'Iniciar sesión' : 'Crear cuenta'}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
 
-            {/* Password */}
+            {/* Form */}
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+
+              {/* Name — signup only */}
+              {isSignup && (
+                <label style={{ display: 'block', position: 'relative' }}>
+                  <span style={{
+                    position: 'absolute', top: 10, left: 14,
+                    font: `600 10px/1 ${F.body}`, letterSpacing: '.12em',
+                    textTransform: 'uppercase', color: C.faint, pointerEvents: 'none',
+                  }}>Nombre completo</span>
+                  <input
+                    className="mm-inp" type="text" placeholder="" value={name}
+                    onChange={e => setName(e.target.value)}
+                    autoComplete="name"
+                    style={{ borderColor: name ? C.orange : C.border }}
+                  />
+                </label>
+              )}
+
+              {/* Email */}
+              <label style={{ display: 'block', position: 'relative' }}>
+                <span style={{
+                  position: 'absolute', top: 10, left: 14,
+                  font: `600 10px/1 ${F.body}`, letterSpacing: '.12em',
+                  textTransform: 'uppercase', color: C.faint, pointerEvents: 'none',
+                }}>Correo electrónico</span>
+                <input
+                  className="mm-inp" type="email" placeholder="" value={email}
+                  onChange={e => setEmail(e.target.value)} required
+                  autoComplete="email"
+                  style={{ borderColor: email ? C.orange : C.border }}
+                />
+              </label>
+
+              {/* Password */}
+              {!isForgot && (
+                <>
+                  <label style={{ display: 'block', position: 'relative' }}>
+                    <span style={{
+                      position: 'absolute', top: 10, left: 14,
+                      font: `600 10px/1 ${F.body}`, letterSpacing: '.12em',
+                      textTransform: 'uppercase',
+                      color: password ? 'rgba(247,145,56,.85)' : C.faint,
+                      pointerEvents: 'none',
+                    }}>Contraseña</span>
+                    <input
+                      className="mm-inp mm-inp-pw"
+                      type={showPw ? 'text' : 'password'} placeholder="" value={password}
+                      onChange={e => setPassword(e.target.value)} required
+                      autoComplete={isSignup ? 'new-password' : 'current-password'}
+                      style={{ paddingRight: 60, borderColor: password ? C.orange : C.border }}
+                    />
+                    <button
+                      type="button" onClick={() => setShowPw(v => !v)}
+                      style={{
+                        position: 'absolute', right: 14, bottom: 11,
+                        background: 'none', border: 'none',
+                        font: `600 11px/1 ${F.body}`, letterSpacing: '.08em',
+                        textTransform: 'uppercase', color: C.orange, cursor: 'pointer', padding: 0,
+                      }}
+                    >{showPw ? 'Ocultar' : 'Ver'}</button>
+                  </label>
+
+                  {/* Strength meter — signup */}
+                  {isSignup && pwStrength && pwStrength.score > 0 && (
+                    <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: -4 }}>
+                      {[1, 2, 3].map(i => (
+                        <span key={i} style={{
+                          flex: 1, height: 3, borderRadius: 2,
+                          background: i <= pwStrength.score ? C.orange : 'rgba(255,255,255,.12)',
+                        }} />
+                      ))}
+                      <span style={{
+                        marginLeft: 8, font: `600 11px/1 ${F.body}`, letterSpacing: '.1em',
+                        textTransform: 'uppercase', color: C.subtle,
+                      }}>{pwStrength.label}</span>
+                    </div>
+                  )}
+                </>
+              )}
+
+              {/* Confirm password — signup */}
+              {isSignup && (
+                <label style={{ display: 'block', position: 'relative' }}>
+                  <span style={{
+                    position: 'absolute', top: 10, left: 14,
+                    font: `600 10px/1 ${F.body}`, letterSpacing: '.12em',
+                    textTransform: 'uppercase', color: C.faint, pointerEvents: 'none',
+                  }}>Confirmar contraseña</span>
+                  <input
+                    className="mm-inp" type="password" placeholder="" value={confirmPassword}
+                    onChange={e => setConfirmPassword(e.target.value)} required
+                    autoComplete="new-password"
+                    style={{ borderColor: confirmPassword ? C.orange : C.border }}
+                  />
+                  {confirmPassword && confirmPassword === password && (
+                    <span style={{
+                      position: 'absolute', right: 14, bottom: 11,
+                      font: `400 16px/1 ${F.body}`, color: C.success,
+                    }}>✓</span>
+                  )}
+                </label>
+              )}
+
+              {/* Forgot link — signin only */}
+              {mode === 'signin' && (
+                <div style={{ display: 'flex', justifyContent: 'flex-end', margin: '14px 0 18px' }}>
+                  <button
+                    type="button" onClick={() => switchMode('forgot')}
+                    style={{
+                      background: 'none', border: 'none',
+                      font: `500 13px/1 ${F.body}`, color: C.muted,
+                      cursor: 'pointer', padding: 0,
+                    }}
+                  >¿Olvidaste tu contraseña?</button>
+                </div>
+              )}
+
+              {/* Error / Success */}
+              {error   && <p style={{ margin: 0, font: `400 13px/1.4 ${F.body}`, color: C.error }}>{error}</p>}
+              {success && <p style={{ margin: 0, font: `400 13px/1.4 ${F.body}`, color: C.success }}>{success}</p>}
+
+              {/* CTA */}
+              <button
+                className="mm-submit"
+                type="submit" disabled={loading}
+                style={{
+                  width: '100%',
+                  border: 0, borderRadius: 9,
+                  background: C.orange, color: C.orangeTxt,
+                  font: `700 20px/1 ${F.display}`,
+                  letterSpacing: '.09em', textTransform: 'uppercase',
+                  padding: '17px 0', cursor: loading ? 'default' : 'pointer',
+                  opacity: loading ? 0.7 : 1,
+                  boxShadow: '0 6px 20px rgba(247,145,56,.2)',
+                }}
+              >{ctaLabel}</button>
+
+              {/* Terms — signup */}
+              {isSignup && (
+                <p style={{ margin: '2px 0 0', font: `400 12px/1.5 ${F.body}`, color: C.subtle }}>
+                  Al continuar aceptas los{' '}
+                  <a href="/terminos" style={{ color: C.orange }}>Términos</a> y el{' '}
+                  <a href="/privacidad" style={{ color: C.orange }}>Aviso de privacidad</a>.
+                </p>
+              )}
+            </form>
+
+            {/* Back — forgot */}
+            {isForgot && (
+              <button
+                onClick={() => switchMode('signin')}
+                style={{
+                  background: 'none', border: 'none',
+                  font: `400 13px/1 ${F.body}`, color: C.subtle,
+                  cursor: 'pointer', padding: 0, marginTop: 16, display: 'block',
+                }}
+              >← Volver a iniciar sesión</button>
+            )}
+
+            {/* Divider + Google */}
             {!isForgot && (
               <>
-                <label style={{ display: 'block', position: 'relative' }}>
-                  <span className={`mm-label${password ? ' mm-label-orange' : ''}`}>Contraseña</span>
-                  <input type={showPw ? 'text' : 'password'} placeholder="" value={password} onChange={e => setPassword(e.target.value)} required
-                    style={{ width: '100%', boxSizing: 'border-box', padding: '26px 62px 10px 14px', background: C.inputBg, border: `1px solid ${password ? C.orange : C.border}`, borderRadius: 9, color: C.text, fontSize: 15.5, fontFamily: FONTS.body, outline: 'none', transition: 'border-color .15s' }}
-                    autoComplete={isSignup ? 'new-password' : 'current-password'}
-                  />
-                  <button type="button" onClick={() => setShowPw(v => !v)}
-                    style={{ position: 'absolute', right: 14, bottom: 11, background: 'none', border: 'none', font: `600 11px/1 ${FONTS.label}`, letterSpacing: '.08em', textTransform: 'uppercase', color: C.orange, cursor: 'pointer', padding: 0 }}>
-                    {showPw ? 'Ocultar' : 'Ver'}
-                  </button>
-                </label>
-
-                {/* Strength meter — signup */}
-                {isSignup && pwStrength && pwStrength.score > 0 && (
-                  <div style={{ display: 'flex', gap: 5, alignItems: 'center', marginTop: -2 }}>
-                    {[1, 2, 3].map(i => (
-                      <span key={i} style={{ flex: 1, height: 3, borderRadius: 2, background: i <= pwStrength.score ? C.orange : 'rgba(255,255,255,.12)', transition: 'background .2s' }} />
-                    ))}
-                    <span style={{ marginLeft: 8, font: `600 11px/1 ${FONTS.label}`, letterSpacing: '.1em', textTransform: 'uppercase', color: C.subtle }}>{pwStrength.label}</span>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '22px 0 14px' }}>
+                  <span style={{ flex: 1, height: 1, background: C.borderSft }} />
+                  <span style={{ font: `600 10.5px/1 ${F.body}`, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,241,236,.4)' }}>
+                    o continuar con
+                  </span>
+                  <span style={{ flex: 1, height: 1, background: C.borderSft }} />
+                </div>
+                <button
+                  className="mm-google"
+                  onClick={handleGoogleLogin}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
+                    width: '100%', padding: '14px 0',
+                    border: `1px solid rgba(255,255,255,.14)`, borderRadius: 9,
+                    background: 'rgba(255,255,255,.03)', color: C.text,
+                    font: `600 13.5px/1 ${F.body}`, cursor: 'pointer',
+                  }}
+                >
+                  <GoogleIcon />
+                  Google
+                </button>
               </>
             )}
 
-            {/* Confirm password — signup */}
-            {isSignup && (
-              <label style={{ display: 'block', position: 'relative' }}>
-                <span className="mm-label">Confirmar contraseña</span>
-                <input type="password" placeholder="" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required
-                  style={{ width: '100%', boxSizing: 'border-box', padding: '26px 14px 10px', background: C.inputBg, border: `1px solid ${C.border}`, borderRadius: 9, color: C.text, fontSize: 15.5, fontFamily: FONTS.body, outline: 'none' }}
-                  autoComplete="new-password"
-                />
-                {confirmPassword && confirmPassword === password && (
-                  <span style={{ position: 'absolute', right: 14, bottom: 11, font: `700 14px/1 ${FONTS.body}`, color: C.success }}>✓</span>
-                )}
-              </label>
-            )}
-
-            {/* Forgot link — signin */}
+            {/* Footer link */}
             {mode === 'signin' && (
-              <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                <button type="button" onClick={() => switchMode('forgot')}
-                  style={{ background: 'none', border: 'none', font: `500 13px/1 ${FONTS.body}`, color: C.muted, cursor: 'pointer', padding: 0 }}>
-                  ¿Olvidaste tu contraseña?
-                </button>
-              </div>
-            )}
-
-            {/* Error / Success */}
-            {error   && <p style={{ margin: 0, font: `400 13px/1.4 ${FONTS.body}`, color: C.error }}>{error}</p>}
-            {success && <p style={{ margin: 0, font: `400 13px/1.4 ${FONTS.body}`, color: C.success }}>{success}</p>}
-
-            {/* Submit */}
-            <button type="submit" disabled={loading} style={{
-              width: '100%', marginTop: 6, border: 0, borderRadius: 9,
-              background: C.orange, color: '#17140f',
-              font: `700 18px/1 ${FONTS.display}`,
-              letterSpacing: '.09em', textTransform: 'uppercase',
-              padding: '17px 0', cursor: loading ? 'default' : 'pointer',
-              opacity: loading ? 0.7 : 1,
-              boxShadow: '0 6px 20px rgba(247,145,56,.18)',
-            }}>
-              {loading ? '…' : mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Crear cuenta' : 'Enviar correo'}
-            </button>
-
-            {/* Terms — signup */}
-            {isSignup && (
-              <p style={{ margin: '2px 0 0', font: `400 12px/1.5 ${FONTS.body}`, color: C.subtle }}>
-                Al continuar aceptas los{' '}
-                <a href="/terminos" style={{ color: C.orange }}>Términos</a> y el{' '}
-                <a href="/privacidad" style={{ color: C.orange }}>Aviso de privacidad</a>.
+              <p style={{ margin: '16px 0 0', textAlign: 'center', font: `400 13px/1 ${F.body}`, color: C.subtle }}>
+                ¿Primera vez?{' '}
+                <button
+                  className="mm-switch-btn"
+                  onClick={() => switchMode('signup')}
+                  style={{
+                    background: 'none', border: 'none',
+                    font: `400 13px/1 ${F.body}`, color: C.orange,
+                    cursor: 'pointer', padding: 0,
+                  }}
+                >Crea tu cuenta</button>
               </p>
             )}
-          </form>
+            {mode === 'signup' && (
+              <p style={{ margin: '16px 0 0', textAlign: 'center', font: `400 13px/1 ${F.body}`, color: C.subtle }}>
+                ¿Ya tienes cuenta?{' '}
+                <button
+                  className="mm-switch-btn"
+                  onClick={() => switchMode('signin')}
+                  style={{
+                    background: 'none', border: 'none',
+                    font: `400 13px/1 ${F.body}`, color: C.orange,
+                    cursor: 'pointer', padding: 0,
+                  }}
+                >Iniciar sesión</button>
+              </p>
+            )}
 
-          {/* Back link — forgot */}
-          {isForgot && (
-            <button onClick={() => switchMode('signin')}
-              style={{ background: 'none', border: 'none', font: `500 13px/1 ${FONTS.body}`, color: C.subtle, cursor: 'pointer', padding: 0, marginTop: 14, display: 'block' }}>
-              ← Volver a iniciar sesión
-            </button>
-          )}
+          </div>{/* .mm-right-content */}
+        </div>{/* .mm-right */}
 
-          {/* Divider + Google — not in forgot */}
-          {!isForgot && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 14, margin: '18px 0 12px' }}>
-                <span style={{ flex: 1, height: 1, background: C.borderSoft }} />
-                <span style={{ font: `600 10.5px/1 ${FONTS.label}`, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,241,236,.38)' }}>o continuar con</span>
-                <span style={{ flex: 1, height: 1, background: C.borderSoft }} />
-              </div>
-              <button onClick={handleGoogleLogin} style={{
-                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 9,
-                width: '100%', padding: '13px 0',
-                border: `1px solid rgba(255,255,255,.14)`, borderRadius: 9,
-                background: 'rgba(255,255,255,.03)', color: C.text,
-                font: `600 13.5px/1 ${FONTS.body}`, cursor: 'pointer',
-              }}>
-                <GoogleIcon />
-                Google
-              </button>
-            </>
-          )}
-
-          {/* Switch mode link at bottom */}
-          {mode === 'signin' && (
-            <p style={{ margin: '14px 0 0', textAlign: 'center', font: `400 13px/1 ${FONTS.body}`, color: C.subtle }}>
-              ¿Primera vez?{' '}
-              <button onClick={() => switchMode('signup')} style={{ background: 'none', border: 'none', font: `600 13px/1 ${FONTS.body}`, color: C.orange, cursor: 'pointer', padding: 0 }}>
-                Crea tu cuenta
-              </button>
-            </p>
-          )}
-        </div>
-      </div>
+      </div>{/* .mm-shell */}
     </>
   )
 }
