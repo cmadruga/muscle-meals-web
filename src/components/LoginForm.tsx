@@ -247,14 +247,20 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
             border: 1px solid rgba(255,255,255,.09);
             background: ${C.formBg} url('/media/fondo-auth.jpg') center/700px repeat;
             box-shadow: 0 24px 60px rgba(0,0,0,.55);
+            /* ancho fijo aunque la pestaña sea más ancha */
+            max-width: 420px;
+            margin: 0 auto;
+            width: 100%;
           }
-          .mm-left        { display: none; }
-          .mm-mob-photo   { display: block; }
+          .mm-left          { display: none; }
+          .mm-mob-photo     { display: block; }
           .mm-right {
             padding: 14px 18px 20px;
             background: rgba(20,17,16,.88);
           }
           .mm-right-overlay { display: none; }
+          /* ocultar el × del form panel — solo queda el de la foto */
+          .mm-close-form    { display: none !important; }
           /* iOS zoom prevention */
           .mm-inp { font-size: 16px !important; padding: 25px 13px 10px !important; }
           .mm-inp-pw { padding-right: 56px !important; }
@@ -377,10 +383,10 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
 
           <div className="mm-right-content">
 
-            {/* Close button (desktop) — positioned relative to this content div */}
+            {/* Close button (desktop only — hidden on mobile, photo band has its own) */}
             {onClose && (
               <button
-                className="mm-close"
+                className="mm-close mm-close-form"
                 onClick={onClose}
                 aria-label="Cerrar"
                 style={{
