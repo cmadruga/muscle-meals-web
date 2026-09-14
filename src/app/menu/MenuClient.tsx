@@ -3,12 +3,16 @@
 import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import { createCustomSize, deleteCustomSize } from '@/app/actions/sizes'
 import { calculateCustomSizePrice, PROTEIN_BASE, CARB_BASE } from '@/lib/utils/pricing'
 import type { Size, Ingredient } from '@/lib/types'
 import type { MealMenuData } from './page'
+import LoginModal from '@/components/LoginModal'
+import UnavailableModal from '@/components/UnavailableModal'
+import type { UnavailableItem } from '@/components/UnavailableModal'
+import type { ReorderCookie } from '@/lib/types/reorder'
 
 // ─── Modal de info "Que son las porciones" — copy editable ────────
 const PORCIONES_MODAL = {
@@ -228,6 +232,46 @@ export default function MenuClient({
   // Portals solo después de hidratación (evita SSR mismatch)
   const [mounted, setMounted] = useState(false)
   useEffect(() => { setMounted(true) }, [])
+
+  // ── Reorder: login modal + unavailable modal ───────────────────
+  const searchParams = useSearchParams()
+  const [showReorderLogin, setShowReorderLogin] = useState(false)
+  const [unavailableItems, setUnavailableItems] = useState<UnavailableItem[]>([])
+
+  useEffect(() => {
+    if (searchParams.get('reorder') !== '1') return
+
+    // Read cookie set by /reorder server component
+    const raw = document.cookie
+      .split(';')
+      .map(c => c.trim())
+      .find(c => c.startsWith('mm_reorder='))
+
+    // Clean URL regardless of outcome so a refresh doesn't re-trigger
+    router.replace('/menu', { scroll: false })
+
+    if (!raw) {
+      // No cookie → user is not logged in → show reorder login modal
+      setShowReorderLogin(true)
+      return
+    }
+
+    try {
+      const data: ReorderCookie = JSON.parse(decodeURIComponent(raw.split('=').slice(1).join('=')))
+      // Load cart
+      const { clearCart, addItem } = useCartStore.getState()
+      clearCart()
+      for (const item of data.items) addItem(item)
+      // Show unavailable modal if needed
+      if (data.unavailable.length > 0) setUnavailableItems(data.unavailable)
+    } catch {
+      // Malformed cookie — ignore
+    } finally {
+      // Delete cookie
+      document.cookie = 'mm_reorder=;max-age=0;path=/'
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // All sizes: globales + guardadas del cliente + nueva creada en esta sesión
   // Período crítico: stockLimits tiene datos solo cuando se está en cutoff
@@ -1413,6 +1457,24 @@ export default function MenuClient({
             </div>
           </div>
         </div>,
+        document.body
+      )}
+
+      {/* ── Reorder: login modal (7a) ── */}
+      {mounted && (
+        <LoginModal
+          isOpen={showReorderLogin}
+          onClose={() => setShowReorderLogin(false)}
+          context="reorder"
+        />
+      )}
+
+      {/* ── Reorder: unavailable items modal (7b) ── */}
+      {mounted && unavailableItems.length > 0 && createPortal(
+        <UnavailableModal
+          items={unavailableItems}
+          onClose={() => setUnavailableItems([])}
+        />,
         document.body
       )}
     </>

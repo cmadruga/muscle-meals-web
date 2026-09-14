@@ -7,19 +7,21 @@ interface LoginModalProps {
   isOpen: boolean
   onClose: () => void
   redirectTo?: string
-  /** Ignored — LoginForm now owns the card title */
+  context?: 'reorder'
+  /** Ignored — LoginForm owns the card title */
   title?: string
-  /** Ignored — LoginForm now owns the card description */
+  /** Ignored — LoginForm owns the card description */
   description?: string
 }
 
-export default function LoginModal({ isOpen, onClose, redirectTo }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, redirectTo, context }: LoginModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <LoginForm
-        next={redirectTo ?? '/cuenta'}
+        next={redirectTo}
         onSuccess={onClose}
         onClose={onClose}
+        context={context}
       />
     </Modal>
   )

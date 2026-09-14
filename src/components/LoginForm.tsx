@@ -9,6 +9,8 @@ interface LoginFormProps {
   next?: string
   onSuccess?: () => void
   onClose?: () => void
+  /** 'reorder' — muestra contexto especial para repetir pedido */
+  context?: 'reorder'
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
@@ -59,7 +61,9 @@ function passwordStrength(pw: string): { score: number; label: string } {
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
-export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: LoginFormProps) {
+export default function LoginForm({ next, onSuccess, onClose, context }: LoginFormProps) {
+  // Reorder context redirects back to /reorder so the server can build the cart
+  const resolvedNext = next ?? (context === 'reorder' ? '/reorder' : '/cuenta')
   const [mode, setMode] = useState<Mode>('signin')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -72,7 +76,7 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
 
   const supabase = createClient()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(next)}`
+  const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(resolvedNext)}`
 
   function reset() { setError(''); setSuccess('') }
   function switchMode(m: Mode) { reset(); setMode(m) }
@@ -135,7 +139,7 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
         return
       }
       if (onSuccess) onSuccess()
-      else window.location.href = next
+      else window.location.href = resolvedNext
     } catch (err: any) {
       setError(err?.message ?? 'Ocurrió un error, intenta de nuevo.')
       setLoading(false)
@@ -156,7 +160,17 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
     'Sigue tu entrega en vivo',
   ]
 
-  const ctaLabel = loading ? '…' : mode === 'signin' ? 'Entrar' : mode === 'signup' ? 'Crear cuenta' : 'Enviar correo'
+  const isReorder = context === 'reorder'
+  // Subcopy del panel izquierdo: distinto en contexto reorder
+  const leftSubcopy = isReorder && !isSignup
+    ? 'Tu último pedido te está esperando del otro lado.'
+    : 'Tu última orden sigue guardada. Entra y repítela en un toque.'
+
+  const ctaLabel = loading
+    ? '…'
+    : mode === 'signin'
+      ? (isReorder ? 'Entrar y ver mi pedido' : 'Entrar')
+      : mode === 'signup' ? 'Crear cuenta' : 'Enviar correo'
 
   return (
     <>
@@ -364,7 +378,7 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
               font: `400 13.5px/1.5 ${F.body}`,
               color: 'rgba(245,241,236,.82)', maxWidth: '28ch',
             }}>
-              Tu última orden sigue guardada. Entra y repítela en un toque.
+              {leftSubcopy}
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 11 }}>
               {benefits.map((b, i) => (
@@ -398,6 +412,26 @@ export default function LoginForm({ next = '/cuenta', onSuccess, onClose }: Logi
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                 }}
               >×</button>
+            )}
+
+            {/* Info strip — solo en contexto reorder (signin/signup, no forgot) */}
+            {isReorder && !isForgot && (
+              <div style={{
+                display: 'flex', alignItems: 'flex-start', gap: 10,
+                padding: '11px 13px',
+                marginBottom: 18,
+                background: 'rgba(247,145,56,.09)',
+                border: `1px solid rgba(247,145,56,.22)`,
+                borderRadius: 9,
+              }}>
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+                  <path d="M20 6L9 17l-5-5" />
+                </svg>
+                <p style={{ margin: 0, font: `400 13px/1.45 ${F.body}`, color: 'rgba(245,241,236,.8)' }}>
+                  Inicia sesión para ver tu último pedido.{' '}
+                  <strong style={{ fontWeight: 700, color: C.text }}>Lo cargamos en el menú al entrar.</strong>
+                </p>
+              </div>
             )}
 
             {/* Tabs / Forgot heading */}

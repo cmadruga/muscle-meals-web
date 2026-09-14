@@ -10,6 +10,7 @@ import { calculateMealMacros } from '@/lib/utils/macros'
 import { createClient } from '@/lib/supabase/server'
 import type { Size, Ingredient, Macros } from '@/lib/types'
 import MenuClient from './MenuClient'
+import { Suspense } from 'react'
 
 export const dynamic = 'force-dynamic'
 
@@ -199,21 +200,23 @@ export default async function MenuPage() {
   const deliveryDate = formatDeliveryDate(getUpcomingSunday())
 
   return (
-    <MenuClient
-      meals={meals}
-      sizes={sizes}
-      soldOut={soldOutIds}
-      stockLimits={stockLimits}
-      salesEnabled={salesEnabled}
-      isAuthenticated={!!user}
-      deliveryDate={deliveryDate}
-      fitSize={fitSize}
-      proIngredients={proIngredients}
-      carbIngredients={carbIngredients}
-      vegIngredients={vegIngredients}
-      customerSizes={customerSizes}
-      proIdsByName={proIdsByName}
-      carbIdsByName={carbIdsByName}
-    />
+    <Suspense fallback={null}>
+      <MenuClient
+        meals={meals}
+        sizes={sizes}
+        soldOut={soldOutIds}
+        stockLimits={stockLimits}
+        salesEnabled={salesEnabled}
+        isAuthenticated={!!user}
+        deliveryDate={deliveryDate}
+        fitSize={fitSize}
+        proIngredients={proIngredients}
+        carbIngredients={carbIngredients}
+        vegIngredients={vegIngredients}
+        customerSizes={customerSizes}
+        proIdsByName={proIdsByName}
+        carbIdsByName={carbIdsByName}
+      />
+    </Suspense>
   )
 }
