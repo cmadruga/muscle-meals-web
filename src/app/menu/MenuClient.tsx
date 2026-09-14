@@ -669,6 +669,25 @@ export default function MenuClient({
             </div>
           )}
 
+          {totalQty > 0 && (
+            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 3 }}>
+              <button
+                onClick={() => useCartStore.getState().clearCart()}
+                style={{
+                  padding: '5px 10px',
+                  border: '1px solid rgba(245,241,236,.1)',
+                  borderRadius: 7,
+                  background: 'transparent',
+                  font: `500 12px/1 ${F.body}`,
+                  color: 'rgba(245,241,236,.35)',
+                  cursor: 'pointer',
+                }}
+              >
+                Borrar
+              </button>
+            </div>
+          )}
+
           {sidebarGroups.map(group => (
             <div key={group.sizeId} style={{ marginBottom: isPackage ? 16 : 20 }}>
               {/* Group header */}
