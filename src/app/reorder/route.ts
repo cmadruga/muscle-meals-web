@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { cookies } from 'next/headers'
 import type { CartItem } from '@/lib/store/cart'
 import type { ReorderCookie } from '@/lib/types/reorder'
 
@@ -85,14 +84,15 @@ export async function GET() {
 
   const cookieData: ReorderCookie = { items, unavailable }
 
-  // Set short-lived cookie (not httpOnly — client JS reads it)
-  const cookieStore = await cookies()
-  cookieStore.set('mm_reorder', JSON.stringify(cookieData), {
+  // Set cookie directly on the redirect response — this guarantees the
+  // Set-Cookie header travels with the redirect even on client-side navigation.
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3002'
+  const redirectResponse = NextResponse.redirect(new URL('/menu?reorder=1', siteUrl))
+  redirectResponse.cookies.set('mm_reorder', JSON.stringify(cookieData), {
     maxAge: 300,
     path: '/',
     sameSite: 'lax',
+    httpOnly: false,  // must be false so client JS (document.cookie) can read it
   })
-
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3002'
-  return NextResponse.redirect(new URL('/menu?reorder=1', siteUrl))
+  return redirectResponse
 }
