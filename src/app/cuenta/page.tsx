@@ -45,8 +45,8 @@ export default async function CuentaPage() {
     }
   }
 
-  /* ── Fetch orders and referral stats in parallel ── */
-  const [ordersRes, referralStats] = await Promise.all([
+  /* ── Fetch orders, referral stats, and membership plan in parallel ── */
+  const [ordersRes, referralStats, membershipOrderRes] = await Promise.all([
     customer
       ? admin.from('orders')
           .select('id, created_at, total_amount, status, shipping_cost, order_number')
@@ -56,7 +56,26 @@ export default async function CuentaPage() {
           .limit(4)
       : Promise.resolve({ data: [] }),
     customer ? getReferralStats(customer.id) : Promise.resolve(null),
+    // Most recent membership purchase → tells us how many weeks the plan has
+    customer
+      ? admin.from('orders')
+          .select('membership_weeks')
+          .eq('customer_id', customer.id)
+          .eq('is_membership_purchase', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+      : Promise.resolve({ data: null }),
   ])
+
+  const weeksLeft = customer?.membership_weeks_left ?? 0
+  function inferWeeksTotal(left: number): number {
+    if (left <= 4)  return 4
+    if (left <= 8)  return 8
+    return 12
+  }
+  const membershipWeeksTotal: number =
+    (membershipOrderRes as any)?.data?.membership_weeks ?? inferWeeksTotal(weeksLeft)
 
   const allOrders = (ordersRes.data ?? []) as OrderRow[]
   const lastOrder     = allOrders[0] ?? null
@@ -89,6 +108,7 @@ export default async function CuentaPage() {
       referralCode={referralStats?.referralCode ?? null}
       totalReferrals={referralStats?.totalReferrals ?? 0}
       pendingRewards={referralStats?.pendingRewards ?? 0}
+      membershipWeeksTotal={membershipWeeksTotal}
     />
   )
 }

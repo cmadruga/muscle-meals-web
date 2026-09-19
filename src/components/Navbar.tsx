@@ -6,6 +6,7 @@ import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
+import { getMyMembership } from '@/app/actions/customer'
 import LoginModal from './LoginModal'
 
 const C = { orange: '#F79138', text: '#F5F1EC', card: '#191614' }
@@ -31,7 +32,6 @@ export default function Navbar() {
   const [showLogin, setShowLogin]         = useState(false)
   const [showDropdown, setShowDropdown]   = useState(false)
   const [showSheet, setShowSheet]         = useState(false)
-  const [orderCount, setOrderCount]       = useState<number | null>(null)
   const [weeksLeft, setWeeksLeft]         = useState<number | null>(null)
   const [isMember, setIsMember]           = useState(false)
   const { user, loading } = useAuth()
@@ -43,17 +43,10 @@ export default function Navbar() {
 
   /* ── Fetch order count + membership once user is available ── */
   useEffect(() => {
-    if (!user) { setOrderCount(null); setIsMember(false); setWeeksLeft(null); return }
-    const supabase = createClient()
-    supabase.from('customers').select('is_member, membership_weeks_left')
-      .eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => {
-        if (data) { setIsMember(data.is_member ?? false); setWeeksLeft(data.membership_weeks_left ?? null) }
-      })
-    supabase.from('orders').select('id', { count: 'exact', head: true })
-      .eq('customer_id', user.id)  // approximate; real join happens server-side
-      .not('status', 'in', '("extra","admin")')
-      .then(({ count }) => { if (count !== null) setOrderCount(count) })
+    if (!user) { setIsMember(false); setWeeksLeft(null); return }
+    getMyMembership().then(m => {
+      if (m) { setIsMember(m.isMember); setWeeksLeft(m.weeksLeft) }
+    })
   }, [user])
 
   /* ── Close dropdown on outside click ── */
@@ -116,11 +109,17 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Membership status — members only */}
-      {isMember && (
+      {/* Membership status row */}
+      {isMember && (weeksLeft ?? 0) > 0 && (
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 18px', background: 'rgba(247,145,56,.09)', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
           <span style={{ font: `600 11px/1 ${F.body}`, letterSpacing: '.14em', textTransform: 'uppercase', color: C.orange }}>Miembro activo</span>
-          {weeksLeft !== null && <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>{weeksLeft} semana{weeksLeft !== 1 ? 's' : ''} restante{weeksLeft !== 1 ? 's' : ''}</span>}
+          <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>{weeksLeft} semana{weeksLeft !== 1 ? 's' : ''} restante{weeksLeft !== 1 ? 's' : ''}</span>
+        </div>
+      )}
+      {isMember && (weeksLeft ?? 0) === 0 && (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '11px 18px', background: 'rgba(232,181,74,.08)', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+          <span style={{ font: `600 11px/1 ${F.body}`, letterSpacing: '.14em', textTransform: 'uppercase', color: '#E8B54A' }}>Miembro inactivo</span>
+          <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>0 semanas restantes</span>
         </div>
       )}
 
@@ -132,19 +131,20 @@ export default function Navbar() {
 
         <DropdownItem href="/cuenta/pedidos" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>
-        } right={orderCount !== null ? <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{orderCount}</span> : undefined}
-          onClick={() => setShowDropdown(false)}>Mis pedidos</DropdownItem>
+        } onClick={() => setShowDropdown(false)}>Mis pedidos</DropdownItem>
 
         <DropdownItem href="/cuenta#invitar" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>
         } onClick={() => setShowDropdown(false)}>Invitar y ganar 10%</DropdownItem>
       </div>
 
-      {/* Non-member upgrade block */}
-      {!isMember && (
+      {/* Upgrade / renewal block */}
+      {(!isMember || (weeksLeft ?? 0) === 0) && (
         <div style={{ padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.08)', background: 'rgba(247,145,56,.07)' }}>
-          <div style={{ font: `600 13.5px/1.35 ${F.body}`, color: C.text }}>Hazte miembro y ahorra en cada semana</div>
-          <button onClick={() => { setShowDropdown(false); router.push('/membresia') }} style={{ width: '100%', marginTop: 11, padding: '11px 0', border: 'none', borderRadius: 8, background: C.orange, color: '#17140f', font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', cursor: 'pointer' }}>Ver planes</button>
+          <div style={{ font: `600 13.5px/1.35 ${F.body}`, color: C.text }}>
+            {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
+          </div>
+          {/* Ver planes — pendiente */}
         </div>
       )}
 
@@ -178,10 +178,16 @@ export default function Navbar() {
         </div>
 
         {/* Membership */}
-        {isMember && (
+        {isMember && (weeksLeft ?? 0) > 0 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '13px 20px', background: 'rgba(247,145,56,.09)', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
             <span style={{ font: `600 11px/1 ${F.body}`, letterSpacing: '.14em', textTransform: 'uppercase', color: C.orange }}>Miembro activo</span>
-            {weeksLeft !== null && <span style={{ font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>{weeksLeft} semana{weeksLeft !== 1 ? 's' : ''} restante{weeksLeft !== 1 ? 's' : ''}</span>}
+            <span style={{ font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>{weeksLeft} semana{weeksLeft !== 1 ? 's' : ''} restante{weeksLeft !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {isMember && (weeksLeft ?? 0) === 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, padding: '13px 20px', background: 'rgba(232,181,74,.08)', borderBottom: '1px solid rgba(255,255,255,.07)' }}>
+            <span style={{ font: `600 11px/1 ${F.body}`, letterSpacing: '.14em', textTransform: 'uppercase', color: '#E8B54A' }}>Miembro inactivo</span>
+            <span style={{ font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>0 semanas restantes</span>
           </div>
         )}
 
@@ -189,14 +195,15 @@ export default function Navbar() {
         <div style={{ padding: '6px 0' }}>
           <SheetItem href="/cuenta" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c.6-3.6 3.3-5.4 6.5-5.4s5.9 1.8 6.5 5.4"/></svg>} onClick={() => setShowSheet(false)}>Mi cuenta</SheetItem>
           <SheetItem href="/cuenta/pedidos" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>}
-            right={orderCount !== null ? <span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{orderCount}</span> : undefined}
             onClick={() => setShowSheet(false)}>Mis pedidos</SheetItem>
           <SheetItem href="/cuenta#invitar" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>} onClick={() => setShowSheet(false)}>Invitar y ganar 10%</SheetItem>
         </div>
 
-        {!isMember && (
+        {(!isMember || (weeksLeft ?? 0) === 0) && (
           <div style={{ margin: '0 20px', padding: '14px 18px', borderRadius: 10, background: 'rgba(247,145,56,.07)', border: '1px solid rgba(247,145,56,.15)' }}>
-            <div style={{ font: `600 13px/1.35 ${F.body}`, color: C.text }}>Hazte miembro y ahorra en cada semana</div>
+            <div style={{ font: `600 13px/1.35 ${F.body}`, color: C.text }}>
+              {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
+            </div>
             <button onClick={() => { setShowSheet(false); router.push('/membresia') }} style={{ width: '100%', marginTop: 11, padding: '11px 0', border: 'none', borderRadius: 8, background: C.orange, color: '#17140f', font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', cursor: 'pointer' }}>Ver planes</button>
           </div>
         )}

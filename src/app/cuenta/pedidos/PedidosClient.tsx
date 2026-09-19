@@ -83,6 +83,9 @@ export default function PedidosClient({
 
   const PAGE_SIZE = 10
 
+  // Only the most recent paid order can be re-ordered
+  const lastPaidId = initialOrders.find(o => o.status === 'paid')?.id ?? null
+
   const filtered = initialOrders.filter(o => {
     if (filter === 'todos') return true
     if (filter === 'paid') return o.status === 'paid'
@@ -201,9 +204,11 @@ export default function PedidosClient({
                         Subtotal ${(subtotal / 100).toFixed(0)}
                         {shipping > 0 && ` · envío $${(shipping / 100).toFixed(0)}`}
                       </div>
-                      <a href="/reorder" className="pd-btn" style={{ flexShrink: 0, padding: '13px 22px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 17px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none' }}>
-                        Volver a pedir →
-                      </a>
+                      {order.id === lastPaidId && (
+                        <a href="/reorder" className="pd-btn" style={{ flexShrink: 0, padding: '13px 22px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 17px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none' }}>
+                          Volver a pedir →
+                        </a>
+                      )}
                     </div>
                   </div>
                 )}
@@ -285,9 +290,11 @@ export default function PedidosClient({
                       </span>
                       <span style={{ flexShrink: 0, font: `700 18px/1 ${F.display}`, color: C.text }}>${(order.total_amount / 100).toFixed(0)}</span>
                     </div>
-                    <a href="/reorder" className="pd-btn" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 14, padding: '15px 0', border: 'none', borderRadius: 9, background: C.orange, color: C.onOrange, font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none', textAlign: 'center' }}>
-                      Volver a pedir →
-                    </a>
+                    {order.id === lastPaidId && (
+                      <a href="/reorder" className="pd-btn" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 14, padding: '15px 0', border: 'none', borderRadius: 9, background: C.orange, color: C.onOrange, font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none', textAlign: 'center' }}>
+                        Volver a pedir →
+                      </a>
+                    )}
                   </div>
                 </div>
               )

@@ -87,3 +87,25 @@ export async function updateLoggedInCustomer(data: {
 
   return { customer: updated as Customer }
 }
+
+export async function getMyMembership(): Promise<{
+  isMember: boolean
+  weeksLeft: number | null
+} | null> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return null
+
+  const admin = createAdminClient()
+  const { data } = await admin
+    .from('customers')
+    .select('is_member, membership_weeks_left')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (!data) return null
+  return {
+    isMember: data.is_member ?? false,
+    weeksLeft: data.membership_weeks_left ?? null,
+  }
+}

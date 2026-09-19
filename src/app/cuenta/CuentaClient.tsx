@@ -137,12 +137,13 @@ type Props = {
   referralCode: string | null
   totalReferrals: number
   pendingRewards: number
+  membershipWeeksTotal: number  // 4 | 8 | 12 — from most recent membership order
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function CuentaClient({
   customer, lastOrder, lastOrderItems, historyOrders,
-  orderCount, referralCode, totalReferrals, pendingRewards,
+  orderCount, referralCode, totalReferrals, pendingRewards, membershipWeeksTotal,
 }: Props) {
   const router = useRouter()
   const [editando, setEditando] = useState(false)
@@ -196,9 +197,9 @@ export default function CuentaClient({
   /* ── Membership ── */
   const isMember   = customer?.is_member ?? false
   const weeksLeft  = customer?.membership_weeks_left ?? 0
-  const weeksTotal = 4  // assume 4-week plan
+  const weeksTotal = membershipWeeksTotal  // 4 | 8 | 12 from most recent membership order
   const weeksUsed  = Math.max(0, weeksTotal - weeksLeft)
-  const progress   = weeksLeft === 0 ? 100 : Math.round((weeksUsed / weeksTotal) * 100)
+  const progress   = weeksTotal === 0 ? 0 : Math.round((weeksUsed / weeksTotal) * 100)
   const isExpired  = isMember && weeksLeft === 0
 
   const membershipQty = customer?.membership_qty
@@ -290,12 +291,7 @@ export default function CuentaClient({
               Los miembros fijan su plan semanal y pagan menos por platillo. Puedes activarla cuando quieras — nada se cobra automatico.
             </div>
           </div>
-          <a href="/membresia" style={{
-            flexShrink: 0, padding: '14px 24px', borderRadius: 8,
-            background: C.orange, color: C.onOrange,
-            font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
-            textDecoration: 'none',
-          }}>Ver planes</a>
+          {/* Ver planes — pendiente */}
         </div>
       )
     }
@@ -324,15 +320,7 @@ export default function CuentaClient({
               Usaste tus {weeksTotal} semanas. <strong style={{ color: C.amber, fontWeight: 700 }}>Renueva para seguir pidiendo al precio de miembro</strong> — el plan no se cobra automatico, tu decides cuándo.
             </div>
           </div>
-          <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'stretch', gap: 8 }}>
-            <a href="/membresia/renovar" style={{
-              padding: '14px 24px', borderRadius: 8,
-              background: C.orange, color: C.onOrange,
-              font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
-              textDecoration: 'none', textAlign: 'center',
-            }}>Renovar membresia</a>
-            <a href="/membresia" style={{ textAlign: 'center', font: `600 12px/1 ${F.body}`, color: 'rgba(245,241,236,.55)', textDecoration: 'none' }}>Ver mi plan</a>
-          </div>
+          {/* Renovar — pendiente */}
         </div>
       )
     }
@@ -361,12 +349,7 @@ export default function CuentaClient({
             Te quedan <strong style={{ color: C.text, fontWeight: 600 }}>{weeksLeft} semana{weeksLeft !== 1 ? 's' : ''}</strong>. Te avisamos para renovar cuando se acabe — no se cobra solo.
           </div>
         </div>
-        <a href="/membresia" style={{
-          flexShrink: 0, padding: '14px 24px',
-          border: '1px solid rgba(255,255,255,.22)', borderRadius: 8,
-          background: 'rgba(0,0,0,.25)', color: C.text,
-          font: `600 13px/1 ${F.body}`, textDecoration: 'none',
-        }}>Ver mi plan</a>
+          {/* Ver plan — pendiente */}
       </div>
     )
   }
@@ -377,7 +360,7 @@ export default function CuentaClient({
       <div style={{ marginTop: 20, padding: '16px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,.12)', background: 'rgba(255,255,255,.03)' }}>
         <div style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresia</div>
         <div style={{ marginTop: 8, font: `400 12.5px/1.45 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Puedes activarla cuando quieras — nada se cobra automatico.</div>
-        <a href="/membresia" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 13, padding: '13px 0', textAlign: 'center', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none' }}>Ver planes</a>
+        {/* Ver planes — pendiente */}
       </div>
     )
     const bandColor = isExpired ? C.amber : C.orange
@@ -400,9 +383,7 @@ export default function CuentaClient({
         <div style={{ marginTop: 8, font: `400 12px/1.4 ${F.body}`, color: 'rgba(245,241,236,.72)' }}>
           {isExpired ? 'Usaste tus semanas. Renueva para seguir al precio de miembro.' : `Te quedan ${weeksLeft} semana${weeksLeft !== 1 ? 's' : ''}.`}
         </div>
-        <a href={isExpired ? '/membresia/renovar' : '/membresia'} style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 13, padding: '13px 0', textAlign: 'center', border: '1px solid rgba(255,255,255,.22)', borderRadius: 8, background: 'rgba(0,0,0,.25)', color: C.text, font: `600 12.5px/1 ${F.body}`, textDecoration: 'none' }}>
-          {isExpired ? 'Renovar membresia' : 'Ver mi plan'}
-        </a>
+        {/* Renovar / Ver plan — pendiente */}
       </div>
     )
   }
@@ -562,11 +543,11 @@ export default function CuentaClient({
                   Tu amigo recibe <strong style={{ color: C.text, fontWeight: 600 }}>10% off</strong> en su primer pedido y tú otro <strong style={{ color: C.text, fontWeight: 600 }}>10% off</strong> en el siguiente.
                 </p>
                 <div style={{ display: 'flex', alignItems: 'stretch', gap: 9, marginBottom: 16 }}>
-                  <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '0 14px', border: '1px dashed rgba(247,145,56,.45)', borderRadius: 8, background: 'rgba(247,145,56,.06)', font: `700 16px/1 ${F.cond}`, letterSpacing: '.12em', color: C.orange }}>
+                  <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '10px 14px', border: '1px dashed rgba(247,145,56,.45)', borderRadius: 8, background: 'rgba(247,145,56,.06)', font: `700 15px/1 ${F.cond}`, letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange }}>
                     {referralCode.toUpperCase()}
                   </span>
                   <button className="ct-btn-orange" onClick={handleCopy} style={{ flexShrink: 0, padding: '0 18px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 13px/1 ${F.body}`, cursor: 'pointer' }}>
-                    {copied ? 'Copiado' : 'Copiar'}
+                    {copied ? 'Copiado ✓' : 'Copiar'}
                   </button>
                 </div>
                 <div style={{ paddingTop: 15, borderTop: '1px solid rgba(255,255,255,.07)', font: `500 12.5px/1.4 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>
@@ -704,11 +685,11 @@ export default function CuentaClient({
                 <div style={{ font: `700 17px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Invita y ganan los dos</div>
                 <p style={{ margin: '8px 0 14px', font: `400 12.5px/1.45 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Tu amigo recibe 10% off en su primer pedido y tú otro 10% en el siguiente.</p>
                 <div style={{ display: 'flex', alignItems: 'stretch', gap: 9 }}>
-                  <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '13px 14px', border: '1px dashed rgba(247,145,56,.45)', borderRadius: 8, background: 'rgba(247,145,56,.06)', font: `700 15px/1 ${F.cond}`, letterSpacing: '.1em', color: C.orange }}>
+                  <span style={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', padding: '10px 14px', border: '1px dashed rgba(247,145,56,.45)', borderRadius: 8, background: 'rgba(247,145,56,.06)', font: `700 14px/1 ${F.cond}`, letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange }}>
                     {referralCode.toUpperCase()}
                   </span>
-                  <button className="ct-btn-orange" onClick={handleCopy} style={{ flexShrink: 0, padding: '0 16px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 12.5px/1 ${F.body}`, cursor: 'pointer' }}>
-                    {copied ? 'Copiado' : 'Copiar'}
+                  <button className="ct-btn-orange" onClick={handleCopy} style={{ flexShrink: 0, padding: '0 16px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 13px/1 ${F.body}`, cursor: 'pointer' }}>
+                    {copied ? 'Copiado ✓' : 'Copiar'}
                   </button>
                 </div>
               </div>
