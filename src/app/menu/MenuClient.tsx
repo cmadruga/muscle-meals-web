@@ -1504,7 +1504,7 @@ function MealCard({
       <div
         onClick={handlePhotoClick}
         style={{
-          position: 'relative', height: 132,
+          position: 'relative', height: 196,
           borderBottom: `1px solid rgba(255,255,255,.07)`,
           backgroundImage: 'url(/media/Fondo.jpg)',
           backgroundSize: '320px', backgroundRepeat: 'repeat',
@@ -1545,7 +1545,7 @@ function MealCard({
 
       {/* Content */}
       <div style={{ padding: '13px 14px 12px' }}>
-        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: meal.description ? 7 : 11 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 11 }}>
           <div style={{ font: `700 21px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{meal.name}</div>
           {isSoldOut ? (
             <span style={{ font: `500 11px/1 ${F.body}`, color: C.faint, flexShrink: 0 }}>Vuelve pronto</span>
@@ -1558,10 +1558,6 @@ function MealCard({
             <span style={{ font: `600 14.5px/1 ${F.body}`, color: C.text, flexShrink: 0 }}>${(displayPrice / 100).toFixed(0)}</span>
           )}
         </div>
-
-        {meal.description && (
-          <p style={{ margin: '0 0 11px', font: `400 12.5px/1.45 ${F.body}`, color: C.muted }}>{meal.description}</p>
-        )}
 
         {/* Macro boxes — minmax(0,1fr) allows shrinking below content size */}
         {macros && (
@@ -1580,30 +1576,39 @@ function MealCard({
           </div>
         )}
 
-        {/* Ingredients dropdown */}
-        {meal.ingredientGroups.length > 0 && (
+        {/* Detalles dropdown — descripción + ingredientes */}
+        {(meal.description || meal.ingredientGroups.length > 0) && (
           <details style={{ marginTop: 11, borderTop: `1px solid rgba(255,255,255,.08)` }}>
             <summary style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, padding: '11px 0 2px', font: `700 13px/1 ${F.cond}`, letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange, cursor: 'pointer' }}>
               <span data-caret style={{ display: 'inline-block', fontSize: 9, transition: 'transform .15s' }}>▼</span>
-              <span data-lbl-closed>Ingredientes</span>
+              <span data-lbl-closed>Detalles</span>
               <span data-lbl-open>Ocultar</span>
             </summary>
-            <div style={{ margin: '8px 0 4px' }}>
-              {meal.ingredientGroups.map((group, gi) => (
-                <div key={gi}>
-                  {/* Sub-recipe heading — full width between grids */}
-                  {group.name && (
-                    <div style={{ marginTop: 10, marginBottom: 4, font: `700 12px/1 ${F.body}`, color: 'rgba(245,241,236,.55)', letterSpacing: '.04em' }}>
-                      {group.name}
+            <div style={{ margin: '12px 0 6px' }}>
+              {meal.description && (
+                <p style={{ margin: '0 0 14px', font: `400 13.5px/1.5 ${F.body}`, color: C.text }}>{meal.description}</p>
+              )}
+              {meal.ingredientGroups.length > 0 && (
+                <>
+                  <div style={{ font: `700 12px/1 ${F.cond}`, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,241,236,.55)', marginBottom: 8 }}>
+                    Ingredientes
+                  </div>
+                  {meal.ingredientGroups.map((group, gi) => (
+                    <div key={gi}>
+                      {group.name && (
+                        <div style={{ marginTop: 10, marginBottom: 4, font: `700 12px/1 ${F.body}`, color: 'rgba(245,241,236,.55)', letterSpacing: '.04em' }}>
+                          {group.name}
+                        </div>
+                      )}
+                      <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '2px 14px', margin: gi === 0 ? '4px 0 4px' : '0 0 4px', padding: '0 0 0 15px' }}>
+                        {group.ingredients.map(name => (
+                          <li key={name} style={{ font: `400 12px/1.55 ${F.body}`, color: 'rgba(245,241,236,.62)' }}>{name}</li>
+                        ))}
+                      </ul>
                     </div>
-                  )}
-                  <ul style={{ display: 'grid', gridTemplateColumns: 'repeat(2,1fr)', gap: '2px 14px', margin: gi === 0 ? '6px 0 4px' : '0 0 4px', padding: '0 0 0 15px' }}>
-                    {group.ingredients.map(name => (
-                      <li key={name} style={{ font: `400 12px/1.55 ${F.body}`, color: 'rgba(245,241,236,.62)' }}>{name}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
+                  ))}
+                </>
+              )}
             </div>
           </details>
         )}
