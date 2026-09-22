@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition, useRef } from 'react'
+import { useState, useTransition } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { updateCustomerProfile } from '@/app/actions/customer'
@@ -156,7 +156,6 @@ export default function CuentaClient({
   const [fullName, setFullName] = useState(customer?.full_name ?? '')
   const [phone,    setPhone]    = useState(customer?.phone ?? '')
   const [calle,    setCalle]    = useState(addr.calle)
-  const [numExt,   setNumExt]   = useState(addr.numExt)
   const [numInt,   setNumInt]   = useState(addr.numInt)
   const [colonia,  setColonia]  = useState(addr.colonia)
   const [cp,       setCp]       = useState(addr.cp)
@@ -168,7 +167,7 @@ export default function CuentaClient({
     const a = parseAddr(customer?.address ?? null)
     setFullName(customer?.full_name ?? '')
     setPhone(customer?.phone ?? '')
-    setCalle(a.calle); setNumExt(a.numExt); setNumInt(a.numInt)
+    setCalle(a.calle); setNumInt(a.numInt)
     setColonia(a.colonia); setCp(a.cp)
     setFormError(null)
     setEditando(true)
@@ -204,7 +203,6 @@ export default function CuentaClient({
   const isExpired  = isMember && weeksLeft === 0
 
   const membershipQty = customer?.membership_qty
-  const membershipItems = (customer?.membership_items ?? null) as { size_id: string; qty: number }[] | null
 
   /* ── Display name parts ── */
   const fullNameParts = (customer?.full_name ?? '').trim().split(' ')
@@ -214,8 +212,6 @@ export default function CuentaClient({
   const memberSince = customer?.created_at
     ? new Date(customer.created_at).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
     : null
-
-  const initial = customer?.full_name?.[0]?.toUpperCase() ?? customer?.email?.[0]?.toUpperCase() ?? '?'
 
   /* ── Last order items as chips ── */
   const chips = lastOrderItems.map(i => ({
@@ -227,10 +223,6 @@ export default function CuentaClient({
   /* ── Address display ── */
   const hasAddress = !!customer?.address
   const addrParsed = parseAddr(customer?.address ?? null)
-
-  /* ── Subtotal/envio from lastOrder ── */
-  const shipping = lastOrder?.shipping_cost ?? 0
-  const subtotal = lastOrder ? (lastOrder.total_amount - shipping) : 0
 
   /* ── Edit form JSX (shared desktop modal + mobile screen) ── */
   const editForm = (onCancel: () => void) => (
@@ -480,7 +472,7 @@ export default function CuentaClient({
                 </div>
 
                 {/* History rows */}
-                {historyOrders.map((o, i) => (
+                {historyOrders.map((o) => (
                   <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
                     <span style={{ flex: 1, font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.78)' }}>{fmtDate(o.created_at)}</span>
                     <span style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.42)' }}>{/* items count from items — approximate */}pedido</span>
@@ -498,7 +490,7 @@ export default function CuentaClient({
               <div style={{ padding: '52px 24px', textAlign: 'center' }}>
                 <div style={{ font: `700 24px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Todavia no tienes pedidos</div>
                 <p style={{ margin: '11px auto 20px', maxWidth: '40ch', font: `400 13.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Cuando hagas el primero lo verás aquí y podrás repetirlo en un clic.</p>
-                <Link href="/menu" style={{ display: 'inline-block', padding: '14px 26px', border: '1px solid rgba(255,255,255,.18)', borderRadius: 8, font: `600 13px/1 ${F.body}`, color: C.text, textDecoration: 'none' }}>Ver el menú de la semana →</Link>
+                <Link href="/menu" style={{ display: 'inline-block', padding: '14px 26px', background: C.orange, color: C.onOrange, border: `1px solid ${C.orange}`, borderRadius: 8, font: `600 13px/1 ${F.body}`, textDecoration: 'none' }}>Ver el menú de la semana →</Link>
               </div>
             )}
           </div>

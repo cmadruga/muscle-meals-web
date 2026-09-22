@@ -71,13 +71,6 @@ const F = {
 type IngRow = { ids: string[]; name: string; value: number; fitRef: number }
 type CategoryFilter = 'all' | 'pollo' | 'res' | 'pescado'
 
-const CATEGORY_LABELS: Record<CategoryFilter, string> = {
-  all:     'Todos',
-  pollo:   'Pollo',
-  res:     'Res',
-  pescado: 'Pescado',
-}
-
 // ─── Props ───────────────────────────────────────────────────────
 interface Props {
   meals:           MealMenuData[]
@@ -142,41 +135,10 @@ function getSizeIngQty(size: Size, dict: 'protein_qty' | 'carb_qty', ingredientI
   return Number(qtys[ingredientId] ?? qtys['default'] ?? 0)
 }
 
-// ─── Package banner — sidebar card version ───────────────────────
-function PackageBannerCard({ savings }: { savings: number }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '12px 14px', borderRadius: 11, background: 'rgba(122,199,122,.1)', border: '1px solid rgba(122,199,122,.3)' }}>
-      <span style={{ width: 22, height: 22, flexShrink: 0, borderRadius: '50%', background: C.green, color: '#0f0d0c', font: `700 12px/22px ${F.body}`, textAlign: 'center', display: 'inline-block' }}>✓</span>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <div style={{ font: `700 13px/1 ${F.cond}`, letterSpacing: '.16em', textTransform: 'uppercase', color: C.green }}>Precio de paquete</div>
-        <div style={{ marginTop: 3, font: `400 12px/1.3 ${F.body}`, color: 'rgba(122,199,122,.75)' }}>Cada meal bajó al precio de paquete.</div>
-      </div>
-      {savings > 0 && (
-        <span style={{ flexShrink: 0, font: `700 14px/1 ${F.body}`, color: C.green }}>Ahorras ${(savings / 100).toFixed(0)}</span>
-      )}
-    </div>
-  )
-}
-
-// ─── Package banner — left panel bar version (full-width, thin) ──
-function PackageBannerBar({ savings }: { savings: number }) {
-  return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '11px 16px', borderRadius: 10, background: 'rgba(122,199,122,.1)', border: '1px solid rgba(122,199,122,.3)' }}>
-      <span style={{ width: 20, height: 20, flexShrink: 0, borderRadius: '50%', background: C.green, color: '#0f0d0c', font: `700 11px/20px ${F.body}`, textAlign: 'center', display: 'inline-block' }}>✓</span>
-      <span style={{ flex: 1, font: `500 13px/1.2 ${F.body}`, color: C.green }}>
-        Precio de paquete activo — cada meal bajó al precio con descuento.
-      </span>
-      {savings > 0 && (
-        <span style={{ flexShrink: 0, font: `700 14px/1 ${F.body}`, color: C.green }}>Ahorras ${(savings / 100).toFixed(0)}</span>
-      )}
-    </div>
-  )
-}
-
 // ─── Component ──────────────────────────────────────────────────
 export default function MenuClient({
   meals, sizes, soldOut, stockLimits, salesEnabled,
-  isAuthenticated, deliveryDate, fitSize,
+  fitSize,
   proIngredients, carbIngredients, vegIngredients, customerSizes,
   proIdsByName, carbIdsByName,
 }: Props) {
@@ -193,14 +155,13 @@ export default function MenuClient({
   // Custom size panel (independent from active size)
   const [showCustom, setShowCustom] = useState(false)
   const [customName, setCustomName] = useState('')
-  const [customUnit, setCustomUnit] = useState<'crudo' | 'cocido'>('crudo')
   const [customPro, setCustomPro] = useState<IngRow[]>([])
   const [customCarb, setCustomCarb] = useState<IngRow[]>([])
   const [customVeg, setCustomVeg] = useState(fitSize ? sizeVegQty(fitSize) : 70)
   const [savingCustom, setSavingCustom] = useState(false)
 
   // Category filter
-  const [activeCategory, setActiveCategory] = useState<CategoryFilter>('all')
+  const [activeCategory] = useState<CategoryFilter>('all')
 
   // Info modal "Que son las porciones"
   const [showInfoModal, setShowInfoModal] = useState(false)
@@ -233,7 +194,7 @@ export default function MenuClient({
   const [mounted, setMounted] = useState(false)
   // Standard SSR hydration guard
   useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+    
     setMounted(true)
   }, [])
 
@@ -256,7 +217,7 @@ export default function MenuClient({
 
     if (!raw) {
       // No cookie → user is not logged in → show reorder login modal
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setShowReorderLogin(true)
       return
     }
@@ -318,12 +279,6 @@ export default function MenuClient({
     ? meals
     : meals.filter(m => m.category === activeCategory)
 
-  // Available categories (only show chips for categories that have meals)
-  const availableCategories = (['all', 'pollo', 'res', 'pescado'] as CategoryFilter[]).filter(cat => {
-    if (cat === 'all') return true
-    return meals.some(m => m.category === cat)
-  })
-
   // Custom size live price preview — replica la lógica del CustomSizePanel viejo:
   // normaliza cada ingrediente por su fitRef, luego toma min y max para mostrar rango.
   // normQty = qty * BASE.FIT / fitRef  (idéntico a: qty * PROTEIN_BASE.FIT / fitSize.protein_qty[id])
@@ -382,9 +337,8 @@ export default function MenuClient({
   useEffect(() => {
     const fitPro = fitSize ? sizeProteinQty(fitSize) : 180
     const fitCarb = fitSize ? sizeCarbQty(fitSize) : 55
-    // eslint-disable-next-line react-hooks/set-state-in-effect
+     
     setCustomPro(groupIngredientsByName(proIngredients, fitPro, fitPro))
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCustomCarb(groupIngredientsByName(carbIngredients, fitCarb, fitCarb))
   }, [proIngredients, carbIngredients, fitSize])
 
@@ -444,7 +398,7 @@ export default function MenuClient({
       parts.push(`${customRemoved} ${customRemoved !== 1 ? 'platillos tenían tamaño personalizado' : 'platillo tenía tamaño personalizado'} (no disponible en período de stock limitado)`)
     }
     if (parts.length > 0) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setToastMsg(`Se eliminaron del carrito: ${parts.join('\n ')}.`)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -986,8 +940,15 @@ export default function MenuClient({
                     style={{ border: `1px solid ${isActive ? C.orange : C.border2}`, background: isActive ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
                     {isFeatured && (
                       <span className="badge-featured" style={{ position: 'absolute', top: -8, right: 11, padding: '3px 8px', borderRadius: 4, background: C.orange, color: '#17140f', font: `700 10px/1 ${F.body}`, letterSpacing: '.06em', textTransform: 'uppercase' }}>
-                        <span className="badge-featured-text">★ El mas pedido</span>
-                        <span className="badge-featured-star">★</span>
+                        <span className="badge-featured-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/media/mascota-badge.png" alt="" aria-hidden="true" style={{ width: 13, height: 13, objectFit: 'contain', display: 'inline-block', verticalAlign: 'middle', mixBlendMode: 'multiply' }} />
+                          El mas pedido
+                        </span>
+                        <span className="badge-featured-star">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src="/media/mascota-badge.png" alt="" aria-hidden="true" style={{ width: 14, height: 14, objectFit: 'contain', display: 'block', mixBlendMode: 'multiply' }} />
+                        </span>
                       </span>
                     )}
                     <div className="size-name" style={{ color: isActive ? C.orange : C.text }}>{s.name}</div>
