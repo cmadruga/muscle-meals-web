@@ -599,7 +599,7 @@ export default function MenuClient({
             <div style={{ padding: '12px 14px', borderRadius: 11, background: 'rgba(247,145,56,.08)', border: '1px solid rgba(247,145,56,.22)' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ font: `600 13px/1.3 ${F.body}`, color: C.text }}>
-                  Te falt{toDiscount === 1 ? 'a' : 'an'} {toDiscount} para paquete
+                  Te falt{toDiscount === 1 ? 'a' : 'an'} minimo {toDiscount} para paquete
                 </span>
                 <span style={{ font: `700 13px/1 ${F.body}`, color: C.orange }}>{totalQty}/5</span>
               </div>
