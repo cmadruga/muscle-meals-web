@@ -26,11 +26,13 @@ export default async function CartPage() {
     .eq('is_main', true)
     .is('customer_id', null)
     .order('price')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const extractQty = (val: any): number => {
     if (typeof val === 'number') return val
     if (val && typeof val === 'object') return Number(Object.values(val)[0] ?? 0)
     return 0
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mainSizes = (Array.isArray(mainSizesRaw) ? mainSizesRaw : []).map((s: any) => ({
     sizeId: String(s.id), name: String(s.name), price: Number(s.price || 0),
     protein_qty: extractQty(s.protein_qty), carb_qty: extractQty(s.carb_qty), veg_qty: Number(s.veg_qty || 0),

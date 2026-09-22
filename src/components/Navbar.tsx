@@ -25,74 +25,20 @@ function getBack(pathname: string): { label: string; href: string } | null {
   return                                       { label: '← Volver al menú', href: '/menu' }
 }
 
-export default function Navbar() {
-  const pathname        = usePathname()
-  const router          = useRouter()
-  const [mounted, setMounted]             = useState(false)
-  const [showLogin, setShowLogin]         = useState(false)
-  const [showDropdown, setShowDropdown]   = useState(false)
-  const [showSheet, setShowSheet]         = useState(false)
-  const [weeksLeft, setWeeksLeft]         = useState<number | null>(null)
-  const [isMember, setIsMember]           = useState(false)
-  const { user, loading } = useAuth()
-  const dropdownRef   = useRef<HTMLDivElement>(null)
-  const desktopBtnRef = useRef<HTMLButtonElement>(null)
-  const mobileBtnRef  = useRef<HTMLButtonElement>(null)
+/* ── Dropdown panel (desktop) ─────────────────────────────────────────────── */
+interface DropdownPanelProps {
+  dropdownRef: React.RefObject<HTMLDivElement | null>
+  userInitial: string
+  userName: string
+  email: string | undefined
+  isMember: boolean
+  weeksLeft: number | null
+  onClose: () => void
+  onLogout: () => void
+}
 
-  useEffect(() => { setMounted(true) }, [])
-
-  /* ── Fetch order count + membership once user is available ── */
-  useEffect(() => {
-    if (!user) { setIsMember(false); setWeeksLeft(null); return }
-    getMyMembership().then(m => {
-      if (m) { setIsMember(m.isMember); setWeeksLeft(m.weeksLeft) }
-    })
-  }, [user])
-
-  /* ── Close dropdown on outside click ── */
-  useEffect(() => {
-    if (!showDropdown) return
-    const close = (e: MouseEvent) => {
-      const t = e.target as Node
-      if (!dropdownRef.current?.contains(t) && !desktopBtnRef.current?.contains(t)) setShowDropdown(false)
-    }
-    document.addEventListener('mousedown', close)
-    return () => document.removeEventListener('mousedown', close)
-  }, [showDropdown])
-
-  /* ── Close sheet on outside click ── */
-  useEffect(() => {
-    if (!showSheet) return
-    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowSheet(false) }
-    document.addEventListener('keydown', handleKey)
-    document.body.style.overflow = 'hidden'
-    return () => { document.removeEventListener('keydown', handleKey); document.body.style.overflow = '' }
-  }, [showSheet])
-
-  const handleLogout = async () => {
-    const supabase = createClient()
-    await supabase.auth.signOut()
-    setShowDropdown(false); setShowSheet(false)
-    router.push('/'); router.refresh()
-  }
-
-  const back        = getBack(pathname)
-  const userInitial = user?.user_metadata?.full_name?.[0]?.toUpperCase()
-    || user?.email?.[0]?.toUpperCase() || '?'
-  const userName    = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || ''
-  const firstName   = userName.split(' ')[0] || 'Mi cuenta'
-
-  /* ── Chip style when dropdown open (members vs non-members) ── */
-  const chipBorder = showDropdown
-    ? (isMember ? '1px solid rgba(247,145,56,.5)' : '1px solid rgba(255,255,255,.2)')
-    : '1px solid rgba(255,255,255,.14)'
-  const chipBg = showDropdown
-    ? (isMember ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.07)')
-    : 'rgba(255,255,255,.04)'
-  const caretColor = showDropdown ? (isMember ? C.orange : 'rgba(245,241,236,.6)') : 'rgba(245,241,236,.55)'
-
-  /* ── Dropdown panel ── */
-  const DropdownPanel = () => (
+function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, weeksLeft, onClose, onLogout }: DropdownPanelProps) {
+  return (
     <div ref={dropdownRef} style={{
       position: 'fixed', top: 74, right: 16, zIndex: 1100,
       width: 284,
@@ -104,8 +50,8 @@ export default function Navbar() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '16px 18px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
         <span style={{ flexShrink: 0, width: 38, height: 38, borderRadius: '50%', background: C.orange, color: '#17140f', font: `700 16px/38px ${F.body}`, textAlign: 'center', display: 'inline-block' }}>{userInitial}</span>
         <div style={{ minWidth: 0 }}>
-          <div style={{ font: `600 14.5px/1 ${F.body}`, color: C.text }}>{userName || firstName}</div>
-          <div style={{ marginTop: 4, font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+          <div style={{ font: `600 14.5px/1 ${F.body}`, color: C.text }}>{userName}</div>
+          <div style={{ marginTop: 4, font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
         </div>
       </div>
 
@@ -127,15 +73,15 @@ export default function Navbar() {
       <div style={{ padding: '7px 0' }}>
         <DropdownItem href="/cuenta" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c.6-3.6 3.3-5.4 6.5-5.4s5.9 1.8 6.5 5.4"/></svg>
-        } onClick={() => setShowDropdown(false)}>Mi cuenta</DropdownItem>
+        } onClick={onClose}>Mi cuenta</DropdownItem>
 
         <DropdownItem href="/cuenta/pedidos" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>
-        } onClick={() => setShowDropdown(false)}>Mis pedidos</DropdownItem>
+        } onClick={onClose}>Mis pedidos</DropdownItem>
 
         <DropdownItem href="/cuenta#invitar" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>
-        } onClick={() => setShowDropdown(false)}>Invitar y ganar 10%</DropdownItem>
+        } onClick={onClose}>Invitar y ganar 10%</DropdownItem>
       </div>
 
       {/* Upgrade / renewal block */}
@@ -150,7 +96,7 @@ export default function Navbar() {
 
       {/* Logout */}
       <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', padding: '7px 0' }}>
-        <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '11px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
+        <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 11, width: '100%', padding: '11px 18px', background: 'transparent', border: 'none', cursor: 'pointer', textAlign: 'left' }}
           onMouseEnter={e => (e.currentTarget.style.background = 'rgba(214,84,74,.09)')}
           onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#e08078" strokeWidth="1.9" strokeLinecap="round"><path d="M15 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8"/><path d="M18 12h-7M15.5 9l3 3-3 3"/></svg>
@@ -159,12 +105,24 @@ export default function Navbar() {
       </div>
     </div>
   )
+}
 
-  /* ── Mobile bottom sheet ── */
-  const BottomSheet = () => (
+/* ── Mobile bottom sheet ──────────────────────────────────────────────────── */
+interface BottomSheetProps {
+  userInitial: string
+  userName: string
+  email: string | undefined
+  isMember: boolean
+  weeksLeft: number | null
+  onClose: () => void
+  onLogout: () => void
+}
+
+function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, onClose, onLogout }: BottomSheetProps) {
+  return (
     <>
       {/* Backdrop */}
-      <div onClick={() => setShowSheet(false)} style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(8,7,6,.74)', backdropFilter: 'blur(2px)' }} />
+      <div onClick={onClose} style={{ position: 'fixed', inset: 0, zIndex: 1050, background: 'rgba(8,7,6,.74)', backdropFilter: 'blur(2px)' }} />
       {/* Sheet */}
       <div style={{ position: 'fixed', left: 0, right: 0, bottom: 0, zIndex: 1100, background: C.card, borderTop: '1px solid rgba(255,255,255,.1)', borderRadius: '22px 22px 0 0', padding: '10px 0 22px' }}>
         <span style={{ display: 'block', width: 38, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.18)', margin: '0 auto 16px' }} />
@@ -172,8 +130,8 @@ export default function Navbar() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 20px 16px', borderBottom: '1px solid rgba(255,255,255,.08)' }}>
           <span style={{ flexShrink: 0, width: 42, height: 42, borderRadius: '50%', background: C.orange, color: '#17140f', font: `700 17px/42px ${F.body}`, textAlign: 'center', display: 'inline-block' }}>{userInitial}</span>
           <div style={{ minWidth: 0 }}>
-            <div style={{ font: `600 15px/1 ${F.body}`, color: C.text }}>{userName || firstName}</div>
-            <div style={{ marginTop: 4, font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
+            <div style={{ font: `600 15px/1 ${F.body}`, color: C.text }}>{userName}</div>
+            <div style={{ marginTop: 4, font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{email}</div>
           </div>
         </div>
 
@@ -193,10 +151,9 @@ export default function Navbar() {
 
         {/* Nav items */}
         <div style={{ padding: '6px 0' }}>
-          <SheetItem href="/cuenta" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c.6-3.6 3.3-5.4 6.5-5.4s5.9 1.8 6.5 5.4"/></svg>} onClick={() => setShowSheet(false)}>Mi cuenta</SheetItem>
-          <SheetItem href="/cuenta/pedidos" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>}
-            onClick={() => setShowSheet(false)}>Mis pedidos</SheetItem>
-          <SheetItem href="/cuenta#invitar" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>} onClick={() => setShowSheet(false)}>Invitar y ganar 10%</SheetItem>
+          <SheetItem href="/cuenta" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c.6-3.6 3.3-5.4 6.5-5.4s5.9 1.8 6.5 5.4"/></svg>} onClick={onClose}>Mi cuenta</SheetItem>
+          <SheetItem href="/cuenta/pedidos" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>} onClick={onClose}>Mis pedidos</SheetItem>
+          <SheetItem href="/cuenta#invitar" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>} onClick={onClose}>Invitar y ganar 10%</SheetItem>
         </div>
 
         {(!isMember || (weeksLeft ?? 0) === 0) && (
@@ -204,13 +161,13 @@ export default function Navbar() {
             <div style={{ font: `600 13px/1.35 ${F.body}`, color: C.text }}>
               {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
             </div>
-            <button onClick={() => { setShowSheet(false); router.push('/membresia') }} style={{ width: '100%', marginTop: 11, padding: '11px 0', border: 'none', borderRadius: 8, background: C.orange, color: '#17140f', font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', cursor: 'pointer' }}>Ver planes</button>
+            {/* Ver planes — pendiente */}
           </div>
         )}
 
         {/* Logout */}
         <div style={{ borderTop: '1px solid rgba(255,255,255,.08)', padding: '6px 0 0' }}>
-          <button onClick={handleLogout} style={{ display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
+          <button onClick={onLogout} style={{ display: 'flex', alignItems: 'center', gap: 13, width: '100%', padding: '15px 20px', background: 'transparent', border: 'none', cursor: 'pointer' }}>
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#e08078" strokeWidth="1.9" strokeLinecap="round"><path d="M15 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8"/><path d="M18 12h-7M15.5 9l3 3-3 3"/></svg>
             <span style={{ font: `500 15.5px/1 ${F.body}`, color: '#e08078' }}>Cerrar sesión</span>
           </button>
@@ -218,6 +175,87 @@ export default function Navbar() {
       </div>
     </>
   )
+}
+
+/* ── Main Navbar ──────────────────────────────────────────────────────────── */
+export default function Navbar() {
+  const pathname        = usePathname()
+  const router          = useRouter()
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  const [mounted, setMounted]             = useState(false)
+  const [showLogin, setShowLogin]         = useState(false)
+  const [showDropdown, setShowDropdown]   = useState(false)
+  const [showSheet, setShowSheet]         = useState(false)
+  const [weeksLeft, setWeeksLeft]         = useState<number | null>(null)
+  const [isMember, setIsMember]           = useState(false)
+  const { user, loading } = useAuth()
+  const dropdownRef   = useRef<HTMLDivElement>(null)
+  const desktopBtnRef = useRef<HTMLButtonElement>(null)
+  const mobileBtnRef  = useRef<HTMLButtonElement>(null)
+
+  // Standard SSR hydration guard — must set state in effect to avoid mismatch
+  // eslint-disable-next-line react-hooks/set-state-in-effect
+  useEffect(() => { setMounted(true) }, [])
+
+  /* ── Fetch membership once user is available ── */
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (!user) { setIsMember(false); setWeeksLeft(null); return }
+    getMyMembership().then(m => {
+      if (m) { setIsMember(m.isMember); setWeeksLeft(m.weeksLeft) }
+    })
+  }, [user])
+
+  /* ── Close dropdown on outside click ── */
+  useEffect(() => {
+    if (!showDropdown) return
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!dropdownRef.current?.contains(t) && !desktopBtnRef.current?.contains(t)) setShowDropdown(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showDropdown])
+
+  /* ── Close sheet on Escape / lock scroll ── */
+  useEffect(() => {
+    if (!showSheet) return
+    const handleKey = (e: KeyboardEvent) => { if (e.key === 'Escape') setShowSheet(false) }
+    document.addEventListener('keydown', handleKey)
+    document.body.style.overflow = 'hidden'
+    return () => { document.removeEventListener('keydown', handleKey); document.body.style.overflow = '' }
+  }, [showSheet])
+
+  const handleLogout = async () => {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    setShowDropdown(false); setShowSheet(false)
+    router.push('/'); router.refresh()
+  }
+
+  const back        = getBack(pathname)
+  const userInitial = user?.user_metadata?.full_name?.[0]?.toUpperCase()
+    || user?.email?.[0]?.toUpperCase() || '?'
+  const userName    = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || ''
+  const firstName   = userName.split(' ')[0] || 'Mi cuenta'
+
+  /* ── Chip style when dropdown open ── */
+  const chipBorder = showDropdown
+    ? (isMember ? '1px solid rgba(247,145,56,.5)' : '1px solid rgba(255,255,255,.2)')
+    : '1px solid rgba(255,255,255,.14)'
+  const chipBg = showDropdown
+    ? (isMember ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.07)')
+    : 'rgba(255,255,255,.04)'
+  const caretColor = showDropdown ? (isMember ? C.orange : 'rgba(245,241,236,.6)') : 'rgba(245,241,236,.55)'
+
+  const sharedPanelProps = {
+    userInitial,
+    userName,
+    email: user?.email,
+    isMember,
+    weeksLeft,
+    onLogout: handleLogout,
+  }
 
   /* ─────────────────────────────────────────────────────────────────────────── */
   return (
@@ -308,10 +346,21 @@ export default function Navbar() {
       </nav>
 
       {/* Desktop dropdown */}
-      {mounted && showDropdown && user && <DropdownPanel />}
+      {mounted && showDropdown && user && (
+        <DropdownPanel
+          {...sharedPanelProps}
+          dropdownRef={dropdownRef}
+          onClose={() => setShowDropdown(false)}
+        />
+      )}
 
       {/* Mobile bottom sheet */}
-      {mounted && showSheet && user && <BottomSheet />}
+      {mounted && showSheet && user && (
+        <BottomSheet
+          {...sharedPanelProps}
+          onClose={() => setShowSheet(false)}
+        />
+      )}
 
       <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
     </>

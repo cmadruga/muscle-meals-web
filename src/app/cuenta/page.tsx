@@ -74,8 +74,10 @@ export default async function CuentaPage() {
     if (left <= 8)  return 8
     return 12
   }
+  /* eslint-disable @typescript-eslint/no-explicit-any */
   const membershipWeeksTotal: number =
     (membershipOrderRes as any)?.data?.membership_weeks ?? inferWeeksTotal(weeksLeft)
+  /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const allOrders = (ordersRes.data ?? []) as OrderRow[]
   const lastOrder     = allOrders[0] ?? null

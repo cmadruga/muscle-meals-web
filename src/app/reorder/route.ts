@@ -45,6 +45,7 @@ export async function GET() {
     meals: { name: string } | null
     sizes: { name: string; price: number; package_price: number | null } | null
   }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const rawItems: RawItem[] = (lastOrder as any)?.order_items ?? []
 
   if (!lastOrder || rawItems.length === 0) {
@@ -59,6 +60,7 @@ export async function GET() {
     .in('id', allMealIds)
     .eq('active', true)
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const activeMealIdSet = new Set(activeMeals?.map((m: any) => m.id) ?? [])
   const activeItems  = rawItems.filter(i => activeMealIdSet.has(i.meal_id))
   const skippedItems = rawItems.filter(i => !activeMealIdSet.has(i.meal_id))

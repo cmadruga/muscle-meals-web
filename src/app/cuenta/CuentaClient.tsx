@@ -179,6 +179,7 @@ export default function CuentaClient({
     e.preventDefault()
     const fd = new FormData(e.currentTarget)
     startTransition(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const res = await updateCustomerProfile(undefined as any, fd)
       if (res?.error) { setFormError(res.error); return }
       setEditando(false)

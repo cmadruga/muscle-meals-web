@@ -145,8 +145,9 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
       }
       if (onSuccess) onSuccess()
       else window.location.href = resolvedNext
-    } catch (err: any) {
-      setError(err?.message ?? 'Ocurrió un error, intenta de nuevo.')
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Ocurrió un error, intenta de nuevo.'
+      setError(msg)
       setLoading(false)
     }
   }

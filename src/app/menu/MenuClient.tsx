@@ -231,7 +231,11 @@ export default function MenuClient({
 
   // Portals solo después de hidratación (evita SSR mismatch)
   const [mounted, setMounted] = useState(false)
-  useEffect(() => { setMounted(true) }, [])
+  // Standard SSR hydration guard
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true)
+  }, [])
 
   // ── Reorder: login modal + unavailable modal ───────────────────
   const searchParams = useSearchParams()
@@ -252,6 +256,7 @@ export default function MenuClient({
 
     if (!raw) {
       // No cookie → user is not logged in → show reorder login modal
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowReorderLogin(true)
       return
     }
@@ -377,7 +382,9 @@ export default function MenuClient({
   useEffect(() => {
     const fitPro = fitSize ? sizeProteinQty(fitSize) : 180
     const fitCarb = fitSize ? sizeCarbQty(fitSize) : 55
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCustomPro(groupIngredientsByName(proIngredients, fitPro, fitPro))
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCustomCarb(groupIngredientsByName(carbIngredients, fitCarb, fitCarb))
   }, [proIngredients, carbIngredients, fitSize])
 
@@ -437,6 +444,7 @@ export default function MenuClient({
       parts.push(`${customRemoved} ${customRemoved !== 1 ? 'platillos tenían tamaño personalizado' : 'platillo tenía tamaño personalizado'} (no disponible en período de stock limitado)`)
     }
     if (parts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToastMsg(`Se eliminaron del carrito: ${parts.join('\n ')}.`)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps

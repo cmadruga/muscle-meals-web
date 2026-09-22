@@ -134,7 +134,9 @@ export default function CheckoutClient({
       if (stored) {
         const intent = JSON.parse(stored)
         if (intent.enabled && [4, 8, 12].includes(intent.weeks)) {
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setMembershipMode(true)
+          // eslint-disable-next-line react-hooks/set-state-in-effect
           setMembershipWeeks(intent.weeks as 4 | 8 | 12)
         }
       }
@@ -144,9 +146,14 @@ export default function CheckoutClient({
 
   useEffect(() => {
     if (membershipMode) {
+      // Membership mode clears discount state — setState in effect is intentional
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAppliedDiscount(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setAutoDiscountNotif(null)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDiscountCode('')
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setDiscountError('')
       // Priority not available with membership — fall back to standard
       setShippingType(prev => prev === 'priority' ? 'standard' : prev)
@@ -581,7 +588,6 @@ export default function CheckoutClient({
             deliveryDateStr={deliveryDateStr}
             shippingType={shippingType}
             membershipMode={membershipMode && canPurchaseMembership}
-            membershipWeeks={membershipWeeks}
           />
 
           <ShippingCards
@@ -924,16 +930,12 @@ function SectionLabel({ n, title, hint, style: s, className }: {
 }
 
 // ── DateBanner ────────────────────────────────────────────────────────────────
-function DateBanner({ deliveryDateStr, shippingType, membershipMode, membershipWeeks }: {
-  deliveryDateStr?: string; shippingType: ShippingType
-  membershipMode: boolean; membershipWeeks: number
+function DateBanner({ deliveryDateStr, shippingType, membershipMode }: {
+  deliveryDateStr?: string; shippingType: ShippingType; membershipMode: boolean
 }) {
   // Parse day number from deliveryDateStr (e.g. "domingo, 13 de septiembre")
   const dayNum = deliveryDateStr?.match(/,\s*(\d+)/)?.[1] ?? '—'
   const prefix = shippingType === 'pickup' ? 'Recoge:' : membershipMode ? 'Primera entrega:' : 'Entrega:'
-  const secondary = membershipMode
-    ? `Luego cada domingo durante ${membershipWeeks} semanas`
-    : 'Pedidos cortados el viernes a mediodía'
 
   return (
     <div className="co-date-wrap" style={{
@@ -952,9 +954,6 @@ function DateBanner({ deliveryDateStr, shippingType, membershipMode, membershipW
       <div>
         <div className="co-date-main" style={{ fontFamily: F.body, fontSize: 15, fontWeight: 700, color: C.success }}>
           {prefix} {deliveryDateStr ?? '—'}
-        </div>
-        <div className="co-date-sub" style={{ fontFamily: F.body, fontSize: 12.5, color: 'rgba(245,241,236,.5)', marginTop: 4 }}>
-          {secondary}
         </div>
       </div>
     </div>
@@ -1589,6 +1588,7 @@ function SidebarTotals({
         </>
       ) : (
         <>
+          {packageDiscountAmount > 0 && row('Descuento por paquete', `−${fmt(packageDiscountAmount)}`, C.success)}
           {/* Subtotal — valor ya con descuento de paquete aplicado */}
           {row('Subtotal', fmt(subtotal))}
           {isActiveMember ? (
@@ -1605,7 +1605,6 @@ function SidebarTotals({
               shippingCost === 0 && shippingType !== 'priority' ? C.success : undefined,
             )
           )}
-          {packageDiscountAmount > 0 && row('Descuento por paquete', `−${fmt(packageDiscountAmount)}`, C.success)}
           {appliedDiscount && discountAmount > 0 && row(
             appliedDiscount.name, `−${fmt(discountAmount)}`, C.success
           )}

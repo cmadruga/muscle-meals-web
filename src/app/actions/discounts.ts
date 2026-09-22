@@ -34,6 +34,7 @@ export async function getDiscounts(): Promise<Discount[]> {
     countMap.set(u.discount_id, (countMap.get(u.discount_id) ?? 0) + 1)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (discounts ?? []).map((d: any) => ({
     ...d,
     total_uses: countMap.get(d.id) ?? 0,
@@ -59,17 +60,21 @@ export async function getDiscountUses(discountId: string): Promise<DiscountUseRo
 
   if (!data || data.length === 0) return []
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const customerIds = [...new Set(data.map((u: any) => u.customer_id).filter(Boolean))]
   const { data: customers } = customerIds.length
     ? await supabase.from('customers').select('id, full_name').in('id', customerIds)
     : { data: [] }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const nameMap = new Map((customers ?? []).map((c: any) => [c.id, c.full_name]))
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return data.map((u: any) => ({
     id: u.id,
     customer_id: u.customer_id,
     customer_name: u.customer_id ? (nameMap.get(u.customer_id) ?? 'Cliente') : 'Invitado',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     order_number: (u.orders as any)?.order_number ?? '—',
     amount_saved: u.amount_saved,
     created_at: u.created_at,
