@@ -76,12 +76,17 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
 
   const supabase = createClient()
   const origin = typeof window !== 'undefined' ? window.location.origin : ''
-  const callbackUrl = `${origin}/auth/callback?next=${encodeURIComponent(resolvedNext)}`
+  // Keep redirectTo clean (no ?next=) so Supabase's redirect URL validation
+  // matches exactly against the allowed list. We store the destination in a
+  // short-lived cookie and read it in /auth/callback instead.
+  const callbackUrl = `${origin}/auth/callback`
 
   function reset() { setError(''); setSuccess('') }
   function switchMode(m: Mode) { reset(); setMode(m) }
 
   async function handleGoogleLogin() {
+    // Store post-login destination in a cookie the callback route will read
+    document.cookie = `mm_auth_next=${encodeURIComponent(resolvedNext)};path=/;max-age=300;samesite=lax`
     await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: callbackUrl },
