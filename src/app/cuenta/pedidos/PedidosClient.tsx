@@ -200,7 +200,7 @@ export default function PedidosClient({
         /* Mobile */
         .pd-desktop { display: block; }
         .pd-mobile  { display: none; }
-        @media (max-width: 680px) {
+        @media (max-width: 900px) {
           .pd-desktop { display: none !important; }
           .pd-mobile  { display: block !important; }
         }

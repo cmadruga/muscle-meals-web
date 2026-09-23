@@ -475,7 +475,7 @@ export default function CuentaClient({
         .ct-link-ver:hover   { color: #ffab5e !important; }
         .ct-desktop { display: block; }
         .ct-mobile  { display: none; }
-        @media (max-width: 680px) {
+        @media (max-width: 900px) {
           .ct-desktop { display: none !important; }
           .ct-mobile  { display: block !important; }
         }
