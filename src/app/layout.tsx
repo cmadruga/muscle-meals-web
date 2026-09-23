@@ -6,8 +6,8 @@ import { FB_PIXEL_ID } from '@/lib/pixel'
 import { bigShoulders, barlow, barlowCondensed } from '@/lib/fonts'
 
 export const metadata: Metadata = {
-  title: 'Muscle Meals',
-  description: 'Paquetes de comida preparada para tu semana fitness',
+  title: 'Muscle Meals | Comida preparada saludable en Monterrey',
+  description: 'Comida preparada, porcionada y cocinada con los macros exactos para tus metas fitness. Elige tus porciones, arma tu menú semanal o mensual y recíbelo cada semana listo para comer.',
 }
 
 export default function RootLayout({
