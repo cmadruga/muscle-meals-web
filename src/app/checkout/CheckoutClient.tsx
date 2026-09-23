@@ -12,6 +12,7 @@ import type { CartItem } from '@/lib/store/cart'
 import { trackInitiateCheckout } from '@/lib/pixel'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
 import { checkMembershipMatch } from '@/lib/utils/membership'
+import { F } from '@/lib/ui-fonts'
 import LoginBanner from '@/components/LoginBanner'
 import ReferralBanner from '@/components/ReferralBanner'
 import {
@@ -44,10 +45,6 @@ const C = {
   border:  'rgba(255,255,255,.1)',
   borderSub: 'rgba(255,255,255,.08)',
   cardBg:  'rgba(255,255,255,.03)',
-}
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    'Barlow,system-ui,sans-serif',
 }
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -134,9 +131,9 @@ export default function CheckoutClient({
       if (stored) {
         const intent = JSON.parse(stored)
         if (intent.enabled && [4, 8, 12].includes(intent.weeks)) {
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+           
           setMembershipMode(true)
-          // eslint-disable-next-line react-hooks/set-state-in-effect
+           
           setMembershipWeeks(intent.weeks as 4 | 8 | 12)
         }
       }
@@ -147,13 +144,13 @@ export default function CheckoutClient({
   useEffect(() => {
     if (membershipMode) {
       // Membership mode clears discount state — setState in effect is intentional
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setAppliedDiscount(null)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setAutoDiscountNotif(null)
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setDiscountCode('')
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+       
       setDiscountError('')
       // Priority not available with membership — fall back to standard
       setShippingType(prev => prev === 'priority' ? 'standard' : prev)
@@ -759,7 +756,7 @@ function MembershipBand({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div className="co-memb-title" style={{ fontFamily: F.display, fontSize: 30, lineHeight: .95, fontWeight: 700,
               textTransform: 'uppercase', color: mode ? C.orange : C.text }}>
-              {mode ? 'Membresia activada' : 'Pides cada semana?'}
+              {mode ? 'Membresía activada' : '¿Pides cada semana?'}
             </div>
 
             <p className="co-memb-desc" style={{ fontFamily: F.body, fontSize: 13.5, lineHeight: 1.5, color: C.textSub, margin: '9px 0 0' }}>
@@ -968,7 +965,7 @@ function ShippingCards({ selected, onSelect, shippingStandard, membershipMode }:
   const options: { type: ShippingType; name: string; price: string; priceColor?: string; desc: string }[] = [
     {
       type: 'standard',
-      name: 'Estandar',
+      name: 'Estándar',
       price: membershipMode ? 'Gratis' : `$${(shippingStandard / 100).toFixed(0)}.00`,
       priceColor: membershipMode ? C.success : undefined,
       desc: 'Domingo 9AM – 4PM',
@@ -1213,7 +1210,7 @@ function AddressSection({
     <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,.08)' }}>
       <div style={{ fontFamily: F.display, fontSize: 12, fontWeight: 700, letterSpacing: '.16em',
         textTransform: 'uppercase', color: C.orange, marginBottom: 10 }}>
-        Direccion de entrega
+        Dirección de entrega
       </div>
 
       {/* Radios dirección guardada */}

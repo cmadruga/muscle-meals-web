@@ -6,13 +6,9 @@ import { useRouter } from 'next/navigation'
 import { updateCustomerProfile } from '@/app/actions/customer'
 import { validateCP, isValidPostalCode, getZoneByPostalCode } from '@/lib/address-validation'
 import type { Customer } from '@/lib/types'
+import { F } from '@/lib/ui-fonts'
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
-const F = {
-  display: `Franchise,'Big Shoulders Display',sans-serif`,
-  body: `Barlow,system-ui,sans-serif`,
-  cond: `'Barlow Condensed',Barlow,sans-serif`,
-}
 const C = {
   page:    '#0f0d0c',
   card:    '#141110',

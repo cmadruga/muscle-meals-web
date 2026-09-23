@@ -1,11 +1,12 @@
 import { Big_Shoulders, Barlow, Barlow_Condensed } from 'next/font/google'
 
 /**
- * Big Shoulders Display — titulares, botones, etiquetas uppercase
- * Equivalente a Franchise pero disponible en Google Fonts y auto-hosteada.
+ * Big Shoulders — familia display condensed con soporte completo de acentos (á, é, í, ó, ú, ñ).
+ * Visualmente muy similar a Franchise pero disponible en Google Fonts y auto-hosteada.
+ * Nota: en el API de next/font esta familia se llama Big_Shoulders (sin _Display).
  */
 export const bigShoulders = Big_Shoulders({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   weight: ['700', '800'],
   variable: '--font-display',
   display: 'swap',

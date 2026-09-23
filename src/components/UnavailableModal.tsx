@@ -1,9 +1,6 @@
 'use client'
 
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-}
+import { F } from '@/lib/ui-fonts'
 
 export type UnavailableItem = {
   name: string

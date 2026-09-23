@@ -275,7 +275,7 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
         style={{
           width: '100%', padding: '12px 16px', cursor: isCreating ? 'not-allowed' : 'pointer',
           opacity: isCreating ? 0.6 : 1, background: colors.orange, color: colors.white,
-          border: 'none', borderRadius: 8, fontFamily: 'Franchise, sans-serif',
+          border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)',
           fontSize: 20, textTransform: 'uppercase', lineHeight: 1,
         }}
       >

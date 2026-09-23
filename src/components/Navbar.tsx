@@ -8,9 +8,9 @@ import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { getMyMembership } from '@/app/actions/customer'
 import LoginModal from './LoginModal'
+import { F } from '@/lib/ui-fonts'
 
 const C = { orange: '#F79138', text: '#F5F1EC', card: '#191614' }
-const F = { body: 'Barlow,system-ui,sans-serif', display: `Franchise,'Big Shoulders Display',sans-serif` }
 
 /** Back navigation config for the current route, or null on home. */
 function getBack(pathname: string): { label: string; href: string } | null {

@@ -13,10 +13,11 @@ import LoginModal from '@/components/LoginModal'
 import UnavailableModal from '@/components/UnavailableModal'
 import type { UnavailableItem } from '@/components/UnavailableModal'
 import type { ReorderCookie } from '@/lib/types/reorder'
+import { F } from '@/lib/ui-fonts'
 
-// ─── Modal de info "Que son las porciones" — copy editable ────────
+// ─── Modal de info "Qué son las porciones" — copy editable ────────
 const PORCIONES_MODAL = {
-  title: 'Que son las porciones',
+  title: 'Qué son las porciones',
   intro: 'Cada platillo se arma con tres porciones: proteína, carbohidratos y verdura. El tamaño que eliges define cuantos gramos lleva cada una — el platillo es el mismo, lo que cambia es la cantidad.',
   sections: [
     {
@@ -59,12 +60,6 @@ const C = {
   border:  'rgba(255,255,255,.09)',
   border2: 'rgba(255,255,255,.12)',
 }
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-  cond:    `'Franchise','Barlow Condensed',sans-serif`,
-}
-
 // ─── Types ────────────────────────────────────────────────────────
 // ids: uno o más ingredient_id que comparten el mismo nombre público (ej. todas las variantes de "Pasta")
 // El slider representa a todos; al guardar el mismo valor se escribe para cada id del grupo
@@ -163,7 +158,7 @@ export default function MenuClient({
   // Category filter
   const [activeCategory] = useState<CategoryFilter>('all')
 
-  // Info modal "Que son las porciones"
+  // Info modal "Qué son las porciones"
   const [showInfoModal, setShowInfoModal] = useState(false)
   // Editar tamaño personalizado
   const [editingSizeId, setEditingSizeId] = useState<string | null>(null)
@@ -765,7 +760,7 @@ export default function MenuClient({
         /* ─── Size selector cards ──────────────────────────────── */
         .size-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 10px; margin-bottom: 16px; }
         .size-card { position: relative; padding: 16px 15px; border-radius: 11px; cursor: pointer; }
-        .size-name { font: 700 26px/1 'Franchise','Big Shoulders Display',sans-serif; text-transform: uppercase; }
+        .size-name { font: 700 clamp(18px, 2vw, 26px)/1 var(--font-display),sans-serif; text-transform: uppercase; white-space: nowrap; }
         .badge-featured-text { display: inline; }
         .badge-featured-star { display: none !important; }
         .info-btn-desktop { display: flex; }
@@ -780,7 +775,7 @@ export default function MenuClient({
         .portion-row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 5px 0; }
         .portion-name { font: 400 12.5px/1.2 Barlow,sans-serif; color: rgba(245,241,236,.62); }
         .portion-grams { flex: none; font: 700 16px/1 Barlow,sans-serif; color: #F5F1EC; }
-        .portion-label { font: 700 11.5px/1 'Franchise','Big Shoulders Display',sans-serif; letter-spacing: .16em; text-transform: uppercase; }
+        .portion-label { font: 700 11.5px/1 var(--font-display),sans-serif; letter-spacing: .16em; text-transform: uppercase; }
 
         /* ─── Custom panel sliders ─────────────────────────────── */
         .custom-grid { display: grid; grid-template-columns: 1fr 240px 132px; align-items: center; gap: 18px; }
@@ -918,7 +913,7 @@ export default function MenuClient({
               <button className="info-btn-desktop" onClick={() => setShowInfoModal(true)}
                 style={{ alignItems: 'center', gap: 7, flexShrink: 0, padding: '7px 11px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 8, background: 'rgba(255,255,255,.03)', color: 'rgba(245,241,236,.7)', font: `500 12.5px/1 ${F.body}`, cursor: 'pointer' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', border: '1px solid rgba(245,241,236,.4)', font: `700 10px/1 ${F.body}`, flexShrink: 0 }}>i</span>
-                Que son las porciones
+                Qué son las porciones
               </button>
               {/* Mobile info button */}
               <button className="info-btn-mobile" onClick={() => setShowInfoModal(true)}
@@ -988,7 +983,7 @@ export default function MenuClient({
                   }
                 }}
                 style={{ display: 'flex', alignItems: 'center', border: `1px dashed ${inCriticalPeriod ? 'rgba(255,255,255,.1)' : showCustom && !editingSizeId ? C.orange : 'rgba(255,255,255,.22)'}`, background: showCustom && !editingSizeId ? 'rgba(247,145,56,.04)' : 'transparent', cursor: inCriticalPeriod ? 'default' : 'pointer', opacity: inCriticalPeriod ? 0.35 : 1 }}>
-                <div style={{ font: `700 22px/1 ${F.display}`, textTransform: 'uppercase', color: inCriticalPeriod ? 'rgba(245,241,236,.4)' : showCustom && !editingSizeId ? C.orange : 'rgba(245,241,236,.8)' }}>
+                <div style={{ font: `700 clamp(14px, 1.7vw, 22px)/1 ${F.display}`, textTransform: 'uppercase', color: inCriticalPeriod ? 'rgba(245,241,236,.4)' : showCustom && !editingSizeId ? C.orange : 'rgba(245,241,236,.8)', whiteSpace: 'nowrap' }}>
                   <span className="new-label-desktop">+ Personalizado</span>
                   <span className="new-label-mobile" style={{ fontSize: 18 }}>+ Nuevo</span>
                 </div>
@@ -1315,7 +1310,7 @@ export default function MenuClient({
                 )}
                 <button onClick={() => setShowInfoModal(true)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(245,241,236,.25)', background: 'transparent', color: 'rgba(245,241,236,.6)', font: `700 12px/1 ${F.body}`, cursor: 'pointer', flexShrink: 0 }}
-                  title="Que son las porciones">
+                  title="Qué son las porciones">
                   i
                 </button>
               </div>
@@ -1385,7 +1380,7 @@ export default function MenuClient({
         document.body
       )}
 
-      {/* ── Modal "Que son las porciones" — portal bypasses zoom:1.1 ── */}
+      {/* ── Modal "Qué son las porciones" — portal bypasses zoom:1.1 ── */}
       {showInfoModal && mounted && createPortal(
         <div className="info-modal-portal" onClick={() => setShowInfoModal(false)}>
           <div className="info-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
@@ -1546,7 +1541,7 @@ function MealCard({
       {/* Content */}
       <div style={{ padding: '13px 14px 12px' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 10, marginBottom: 11 }}>
-          <div style={{ font: `700 21px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{meal.name}</div>
+          <div style={{ font: `700 18px/1.15 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{meal.name}</div>
           {isSoldOut ? (
             <span style={{ font: `500 11px/1 ${F.body}`, color: C.faint, flexShrink: 0 }}>Vuelve pronto</span>
           ) : isPackage ? (

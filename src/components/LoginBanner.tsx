@@ -3,11 +3,8 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import LoginModal from './LoginModal'
+import { F } from '@/lib/ui-fonts'
 
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-}
 const C = {
   orange:  '#F79138',
   text:    '#F5F1EC',
@@ -79,7 +76,7 @@ export default function LoginBanner() {
               letterSpacing: '.04em',
               color: C.orange,
             }}>
-              Inicia sesion o registrate
+              Inicia sesión o regístrate
             </span>
           </div>
           <span style={{

@@ -4,6 +4,7 @@ import { useEffect } from 'react'
 import Link from 'next/link'
 import { useCartStore } from '@/lib/store/cart'
 import { trackPurchase } from '@/lib/pixel'
+import { F } from '@/lib/ui-fonts'
 
 export type OrderStatus = 'success' | 'pending' | 'failed'
 
@@ -14,10 +15,6 @@ interface Props {
 }
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-}
 
 const STATUS = {
   success: {
@@ -73,7 +70,7 @@ const STATUS = {
       <path d="M6 6l12 12M18 6L6 18" strokeWidth="2.6" strokeLinecap="round" />
     ),
     svgSize: { desk: 30, mob: 27 },
-    heading: 'Pago rechazado',
+    heading: 'Pago no completado',
     para: 'No se hizo ningún cargo a tu tarjeta. Tu pedido sigue guardado, puedes intentar de nuevo.',
     paraMbDesk: 8,
     paraMbMob:  8,

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { getReferralStatsByUserId } from '@/app/actions/referrals'
+import { F } from '@/lib/ui-fonts'
 
 const C = {
   orange: '#F79138',
@@ -12,10 +13,6 @@ const C = {
   textDim: 'rgba(245,241,236,.6)',
   headerBg: '#191614',
   bodyBg: '#0c0a09',
-}
-const F = {
-  body: 'Barlow,system-ui,sans-serif',
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
 }
 
 interface Props {

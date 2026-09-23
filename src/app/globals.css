@@ -1,10 +1,8 @@
-@font-face {
-  font-family: 'Franchise';
-  src: url('/fonts/Franchise-Free-Bold.ttf') format('truetype');
-  font-weight: bold;
-  font-style: normal;
-  font-display: swap;
-}
+/* Franchise Free Bold no incluye caracteres acentuados (á, é, í, ó, ú, ñ).
+   Se omite el @font-face para que todos los stacks que declaran
+   font-family: Franchise,'Big Shoulders Display',...
+   caigan directamente a Big Shoulders Display, que sí los soporta
+   y tiene métricas muy similares (condensed bold uppercase). */
 
 * {
   box-sizing: border-box;
@@ -22,7 +20,7 @@ html {
 
 body {
   /* Barlow Condensed como fuente principal del sitio */
-  font-family: var(--font-condensed), 'Franchise', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-condensed), -apple-system, BlinkMacSystemFont, sans-serif;
   line-height: 1.6;
   background: #151515;
   color: #FFFFFF;
@@ -32,7 +30,7 @@ body {
 
 /* Big Shoulders Display en titulares */
 h1, h2, h3, h4, h5, h6 {
-  font-family: var(--font-display), 'Franchise', sans-serif;
+  font-family: var(--font-display), sans-serif;
 }
 
 /* --font-display, --font-body, --font-condensed son inyectadas por next/font

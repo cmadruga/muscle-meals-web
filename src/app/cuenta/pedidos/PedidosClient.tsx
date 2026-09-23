@@ -1,12 +1,9 @@
 'use client'
 
 import { useState } from 'react'
+import { F } from '@/lib/ui-fonts'
 
 /* ── Design tokens ── */
-const F = {
-  display: `Franchise,'Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-}
 const C = {
   page:    '#0f0d0c',
   card:    '#141110',

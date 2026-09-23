@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
+import { F } from '@/lib/ui-fonts'
 
 type Mode = 'signin' | 'signup' | 'forgot'
 
@@ -32,11 +33,6 @@ const C = {
   error:     '#ef4444',
   success:   '#7ac77a',
 }
-const F = {
-  display: `'Franchise','Big Shoulders Display',sans-serif`,
-  body:    `Barlow,system-ui,sans-serif`,
-}
-
 // ── Google SVG ────────────────────────────────────────────────────────────────
 function GoogleIcon() {
   return (
