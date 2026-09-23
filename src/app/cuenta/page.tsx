@@ -45,13 +45,13 @@ export default async function CuentaPage() {
     }
   }
 
-  /* ── Fetch orders, referral stats, and membership plan in parallel ── */
+  /* ── Fetch orders (only paid | pending | cancelled), referral stats, and membership plan in parallel ── */
   const [ordersRes, referralStats, membershipOrderRes] = await Promise.all([
     customer
       ? admin.from('orders')
           .select('id, created_at, total_amount, status, shipping_cost, order_number')
           .eq('customer_id', customer.id)
-          .not('status', 'in', '("extra","admin")')
+          .in('status', ['paid', 'pending', 'cancelled'])
           .order('created_at', { ascending: false })
           .limit(4)
       : Promise.resolve({ data: [] }),
@@ -80,32 +80,30 @@ export default async function CuentaPage() {
   /* eslint-enable @typescript-eslint/no-explicit-any */
 
   const allOrders = (ordersRes.data ?? []) as OrderRow[]
-  const lastOrder     = allOrders[0] ?? null
-  const historyOrders = allOrders.slice(1, 3)
+  const lastPaidOrder  = allOrders.find(o => o.status === 'paid') ?? null
 
-  /* ── Fetch last order items ── */
-  const { data: rawItems } = lastOrder
+  /* ── Fetch last paid order items ── */
+  const { data: rawItems } = lastPaidOrder
     ? await admin.from('order_items')
         .select('id, order_id, meal_id, size_id, qty, unit_price, package_instance_id, meals:meal_id(name), sizes:size_id(name)')
-        .eq('order_id', lastOrder.id)
+        .eq('order_id', lastPaidOrder.id)
     : { data: [] }
 
   const lastOrderItems = (rawItems ?? []) as unknown as ItemRow[]
 
-  /* ── Order count (all non-extra/admin) ── */
+  /* ── Order count (only paid | pending | cancelled) ── */
   const { count: orderCount } = customer
     ? await admin.from('orders')
         .select('id', { count: 'exact', head: true })
         .eq('customer_id', customer.id)
-        .not('status', 'in', '("extra","admin")')
+        .in('status', ['paid', 'pending', 'cancelled'])
     : { count: 0 }
 
   return (
     <CuentaClient
       customer={customer}
-      lastOrder={lastOrder}
+      lastPaidOrder={lastPaidOrder}
       lastOrderItems={lastOrderItems}
-      historyOrders={historyOrders}
       orderCount={orderCount ?? 0}
       referralCode={referralStats?.referralCode ?? null}
       totalReferrals={referralStats?.totalReferrals ?? 0}

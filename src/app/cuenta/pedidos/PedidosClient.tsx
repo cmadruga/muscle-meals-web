@@ -16,7 +16,93 @@ function fmtDate(iso: string) {
   return new Date(iso).toLocaleDateString('es-MX', { day: 'numeric', month: 'long', year: 'numeric' })
 }
 function fmtAmt(cents: number) { return `$${(cents / 100).toFixed(0)} MXN` }
-function fmtAmtShort(cents: number) { return `$${(cents / 100).toFixed(0)} MXN` }
+function fmtAmtShort(cents: number) { return `$${(cents / 100).toFixed(0)}` }
+
+/* ── Types ── */
+type SizeGroup = {
+  sizeName: string
+  items: { name: string; qty: number; unitPrice: number }[]
+}
+
+/* ── groupBySize — aggregates same-meal same-size into one row ── */
+function groupBySize(items: ItemRow[]): SizeGroup[] {
+  const SIZE_ORDER = ['LOW', 'FIT', 'PLUS', 'CUSTOM']
+  const sizeMap = new Map<string, Map<string, { qty: number; unitPrice: number }>>()
+  for (const item of items) {
+    const sizeName = (item.sizes?.name ?? '?').toUpperCase()
+    const mealName = item.meals?.name ?? 'Platillo'
+    if (!sizeMap.has(sizeName)) sizeMap.set(sizeName, new Map())
+    const mealMap = sizeMap.get(sizeName)!
+    const existing = mealMap.get(mealName)
+    if (existing) {
+      existing.qty += item.qty
+    } else {
+      mealMap.set(mealName, { qty: item.qty, unitPrice: item.unit_price })
+    }
+  }
+  return Array.from(sizeMap.entries())
+    .sort(([a], [b]) => {
+      const ai = SIZE_ORDER.indexOf(a)
+      const bi = SIZE_ORDER.indexOf(b)
+      if (ai === -1 && bi === -1) return a.localeCompare(b)
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+    .map(([sizeName, mealMap]) => ({
+      sizeName,
+      items: Array.from(mealMap.entries()).map(([name, { qty, unitPrice }]) => ({ name, qty, unitPrice })),
+    }))
+}
+
+/* ── SizeBlock component ── */
+function SizeBlock({ group, isMobile = false }: { group: SizeGroup; isMobile?: boolean }) {
+  const totalQty = group.items.reduce((s, i) => s + i.qty, 0)
+  const subtotal = group.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)
+  return (
+    <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, background: 'rgba(0,0,0,.22)', overflow: 'hidden' }}>
+      {/* Left rail — desktop only */}
+      {!isMobile && (
+        <div style={{ width: 92, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,.06)', padding: '14px 0 14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ font: `700 24px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{group.sizeName}</div>
+          <div style={{ marginTop: 4, font: `400 11.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>{totalQty} platillo{totalQty !== 1 ? 's' : ''}</div>
+        </div>
+      )}
+      {/* Right content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Mobile header */}
+        {isMobile && (
+          <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+            <span style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{group.sizeName}</span>
+            <span style={{ font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', marginLeft: 4 }}>· {totalQty} platillo{totalQty !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {/* Items */}
+        {group.items.map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: isMobile ? '8px 14px' : '9px 16px', borderTop: i > 0 ? '1px solid rgba(255,255,255,.06)' : undefined }}>
+            <span style={{
+              minWidth: 30, textAlign: 'center', padding: '3px 6px', borderRadius: 5, fontSize: 12, fontWeight: 700,
+              background: item.qty === 1 ? 'rgba(255,255,255,.06)' : 'rgba(247,145,56,.14)',
+              color: item.qty === 1 ? 'rgba(245,241,236,.6)' : C.orange,
+            }}>{item.qty}×</span>
+            <span style={{ flex: 1, font: `500 ${isMobile ? 14 : 14.5}px/1.25 ${F.body}`, color: C.text }}>{item.name}</span>
+            {item.qty > 1 && (
+              <span style={{ font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{fmtAmtShort(item.unitPrice)} c/u</span>
+            )}
+            <span style={{ width: 58, textAlign: 'right', font: `600 14px/1 ${F.body}`, color: 'rgba(245,241,236,.85)' }}>{fmtAmtShort(item.qty * item.unitPrice)}</span>
+          </div>
+        ))}
+        {/* Block footer */}
+        <div style={{ borderTop: '1px dashed rgba(255,255,255,.08)', padding: '9px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ font: `400 11.5px/1 ${F.body}`, color: 'rgba(245,241,236,.42)' }}>
+            {group.sizeName} · {totalQty} platillo{totalQty !== 1 ? 's' : ''}
+          </span>
+          <span style={{ font: `600 13px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>{fmtAmtShort(subtotal)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function StatusBadge({ status, size = 'sm' }: { status: string; size?: 'sm' | 'md' }) {
   const cfg: Record<string, { label: string; bg: string; border?: string; color: string }> = {
@@ -59,7 +145,7 @@ export type ItemRow = {
   meals: { name: string } | null
   sizes: { name: string } | null
 }
-type Counts = { paid: number; cancelled: number; total: number }
+type Counts = { paid: number; pending: number; cancelled: number; total: number }
 
 /* ── Component ── */
 export default function PedidosClient({
@@ -73,7 +159,7 @@ export default function PedidosClient({
   counts: Counts
   totalCount: number
 }) {
-  type Filter = 'todos' | 'paid' | 'cancelled'
+  type Filter = 'todos' | 'paid' | 'pending' | 'cancelled'
   const [filter, setFilter]   = useState<Filter>('todos')
   const [openId, setOpenId]   = useState<string | null>(initialOrders[0]?.id ?? null)
   const [page, setPage]       = useState(1)
@@ -85,9 +171,7 @@ export default function PedidosClient({
 
   const filtered = initialOrders.filter(o => {
     if (filter === 'todos') return true
-    if (filter === 'paid') return o.status === 'paid'
-    if (filter === 'cancelled') return o.status === 'cancelled'
-    return true
+    return o.status === filter
   })
   const displayed = filtered.slice(0, page * PAGE_SIZE)
   const hasMore   = filtered.length > displayed.length
@@ -100,9 +184,10 @@ export default function PedidosClient({
   }
 
   const filterPills: { key: Filter; label: string; count: number }[] = [
-    { key: 'todos',     label: 'Todos',     count: counts.total },
-    { key: 'paid',      label: 'Pagados',   count: counts.paid },
-    { key: 'cancelled', label: 'Cancelados',count: counts.cancelled },
+    { key: 'todos',     label: 'Todos',      count: counts.total },
+    { key: 'paid',      label: 'Pagados',    count: counts.paid },
+    { key: 'pending',   label: 'Pendientes', count: counts.pending },
+    { key: 'cancelled', label: 'Cancelados', count: counts.cancelled },
   ]
 
   return (
@@ -151,6 +236,7 @@ export default function PedidosClient({
             const totalItems = orderItems.reduce((s, i) => s + i.qty, 0)
             const shipping   = order.shipping_cost ?? 0
             const subtotal   = order.total_amount - shipping
+            const groups     = groupBySize(orderItems)
 
             return (
               <div key={order.id} style={{ borderBottom: idx < displayed.length - 1 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>
@@ -167,12 +253,12 @@ export default function PedidosClient({
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ font: `600 15px/1 ${F.body}`, color: C.text }}>{fmtDate(order.created_at)}</div>
                     <div style={{ marginTop: 5, font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>
-                      {totalItems} platillo{totalItems !== 1 ? 's' : ''}{isOpen ? ' · entregado' : ''}
+                      {totalItems} platillo{totalItems !== 1 ? 's' : ''}
                     </div>
                   </div>
                   <StatusBadge status={order.status} size="md" />
                   <span style={{ width: 92, textAlign: 'right', font: isOpen ? `700 19px/1 ${F.display}` : `600 15px/1 ${F.body}`, color: order.status === 'cancelled' ? 'rgba(245,241,236,.45)' : C.text }}>
-                    {fmtAmtShort(order.total_amount)}
+                    {fmtAmt(order.total_amount)}
                   </span>
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isOpen ? C.orange : 'rgba(245,241,236,.45)'} strokeWidth="2.6" strokeLinecap="round" style={{ flexShrink: 0 }}>
                     <path d={isOpen ? 'M18 15l-6-6-6 6' : 'M6 9l6 6 6-6'} />
@@ -182,27 +268,26 @@ export default function PedidosClient({
                 {/* Expanded content */}
                 {isOpen && (
                   <div style={{ padding: '0 22px 20px', background: 'rgba(247,145,56,.05)' }}>
-                    <div style={{ border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, overflow: 'hidden', background: 'rgba(0,0,0,.2)' }}>
-                      {orderItems.map((item, i) => (
-                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '11px 16px', borderBottom: i < orderItems.length - 1 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>
-                          <span style={{ flex: 1, font: `500 13.5px/1 ${F.body}`, color: C.text }}>
-                            {item.meals?.name ?? 'Platillo'}{' '}
-                            <span style={{ color: 'rgba(245,241,236,.42)', fontSize: '11.5px', letterSpacing: '.1em', textTransform: 'uppercase' }}>{item.sizes?.name}</span>
-                          </span>
-                          <span style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.42)' }}>×{item.qty}</span>
-                          <span style={{ width: 80, textAlign: 'right', font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.8)' }}>
-                            ${((item.unit_price * item.qty) / 100).toFixed(0)}
-                          </span>
-                        </div>
+                    {/* Bloques por tamaño */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, paddingTop: 4 }}>
+                      {groups.map((group) => (
+                        <SizeBlock key={group.sizeName} group={group} />
                       ))}
                     </div>
+
+                    {/* Footer: subtotals + reorder */}
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, marginTop: 14 }}>
                       <div style={{ font: `400 12.5px/1.4 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>
-                        Subtotal ${(subtotal / 100).toFixed(0)}
-                        {shipping > 0 && ` · envío $${(shipping / 100).toFixed(0)}`}
+                        Subtotal {fmtAmtShort(subtotal)}
+                        {shipping > 0 && ` · envío ${fmtAmtShort(shipping)}`}
                       </div>
                       {order.id === lastPaidId && (
-                        <a href="/reorder" className="pd-btn" style={{ flexShrink: 0, padding: '13px 22px', border: 'none', borderRadius: 8, background: C.orange, color: C.onOrange, font: `700 17px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none' }}>
+                        <a href="/reorder" className="pd-btn" style={{
+                          flexShrink: 0, padding: '13px 22px', border: 'none', borderRadius: 8,
+                          background: C.orange, color: C.onOrange,
+                          font: `700 17px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
+                          textDecoration: 'none',
+                        }}>
                           Volver a pedir →
                         </a>
                       )}
@@ -255,10 +340,12 @@ export default function PedidosClient({
             const totalItems = orderItems.reduce((s, i) => s + i.qty, 0)
             const shipping   = order.shipping_cost ?? 0
             const subtotal   = order.total_amount - shipping
+            const groups     = groupBySize(orderItems)
 
             if (isOpen) {
               return (
                 <div key={order.id} style={{ background: C.card, border: '1px solid rgba(247,145,56,.3)', borderRadius: 12, overflow: 'hidden', marginBottom: 12 }}>
+                  {/* Open header */}
                   <div onClick={() => setOpenId(null)} style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12, padding: '15px 16px 13px', background: 'rgba(247,145,56,.05)', cursor: 'pointer' }}>
                     <div style={{ minWidth: 0 }}>
                       <div style={{ font: `600 14.5px/1 ${F.body}`, color: C.text }}>{fmtDate(order.created_at)}</div>
@@ -269,26 +356,33 @@ export default function PedidosClient({
                       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="2.6" strokeLinecap="round"><path d="M18 15l-6-6-6 6"/></svg>
                     </div>
                   </div>
-                  <div style={{ padding: '0 16px 16px', background: 'rgba(247,145,56,.05)' }}>
-                    <div style={{ border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, overflow: 'hidden', background: 'rgba(0,0,0,.22)' }}>
-                      {orderItems.map((item, i) => (
-                        <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '10px 13px', borderBottom: i < orderItems.length - 1 ? '1px solid rgba(255,255,255,.06)' : 'none' }}>
-                          <span style={{ flex: 1, font: `500 13px/1 ${F.body}`, color: C.text }}>
-                            {item.meals?.name ?? 'Platillo'}{' '}
-                            <span style={{ color: 'rgba(245,241,236,.42)', fontSize: '10.5px', letterSpacing: '.1em', textTransform: 'uppercase' }}>{item.sizes?.name}</span>
-                          </span>
-                          <span style={{ font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.75)' }}>${((item.unit_price * item.qty) / 100).toFixed(0)}</span>
-                        </div>
+
+                  {/* Open body */}
+                  <div style={{ padding: '12px 14px 16px', background: 'rgba(247,145,56,.03)' }}>
+                    {/* Bloques por tamaño (mobile) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 12 }}>
+                      {groups.map((group) => (
+                        <SizeBlock key={group.sizeName} group={group} isMobile />
                       ))}
                     </div>
+
+                    {/* Subtotals */}
                     <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginTop: 13 }}>
                       <span style={{ font: `400 11.5px/1.4 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>
-                        Subtotal ${(subtotal / 100).toFixed(0)}{shipping > 0 ? ` · envío $${(shipping / 100).toFixed(0)}` : ''}
+                        Subtotal {fmtAmtShort(subtotal)}{shipping > 0 ? ` · envío ${fmtAmtShort(shipping)}` : ''}
                       </span>
-                      <span style={{ flexShrink: 0, font: `700 18px/1 ${F.display}`, color: C.text }}>${(order.total_amount / 100).toFixed(0)}</span>
+                      <span style={{ flexShrink: 0, font: `700 18px/1 ${F.display}`, color: C.text }}>{fmtAmtShort(order.total_amount)}</span>
                     </div>
+
+                    {/* Reorder */}
                     {order.id === lastPaidId && (
-                      <a href="/reorder" className="pd-btn" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 14, padding: '15px 0', border: 'none', borderRadius: 9, background: C.orange, color: C.onOrange, font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none', textAlign: 'center' }}>
+                      <a href="/reorder" className="pd-btn" style={{
+                        display: 'block', width: '100%', boxSizing: 'border-box',
+                        marginTop: 14, padding: '15px 0', border: 'none', borderRadius: 9,
+                        background: C.orange, color: C.onOrange,
+                        font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
+                        textDecoration: 'none', textAlign: 'center',
+                      }}>
                         Volver a pedir →
                       </a>
                     )}
@@ -309,6 +403,9 @@ export default function PedidosClient({
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.45)" strokeWidth="2.6" strokeLinecap="round"><path d="M6 9l6 6 6-6"/></svg>
               </div>
             )
+
+            // suppress unused var warning
+            void idx
           })}
 
           {hasMore && (

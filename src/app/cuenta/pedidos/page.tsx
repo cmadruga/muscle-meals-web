@@ -16,12 +16,12 @@ export default async function PedidosPage() {
 
   if (!customer) redirect('/cuenta')
 
-  /* ── Fetch all orders (up to 50 for client-side filter) ── */
+  /* ── Fetch orders (only paid | pending | cancelled, up to 50) ── */
   const { data: ordersRaw } = await admin
     .from('orders')
     .select('id, created_at, total_amount, status, shipping_cost, order_number')
     .eq('customer_id', customer.id)
-    .not('status', 'in', '("extra","admin")')
+    .in('status', ['paid', 'pending', 'cancelled'])
     .order('created_at', { ascending: false })
     .limit(50)
 
@@ -39,15 +39,16 @@ export default async function PedidosPage() {
 
   /* ── Counts per status ── */
   const paid      = orders.filter(o => o.status === 'paid').length
+  const pending   = orders.filter(o => o.status === 'pending').length
   const cancelled = orders.filter(o => o.status === 'cancelled').length
   const total     = orders.length
-  const counts    = { paid, cancelled, total }
+  const counts    = { paid, pending, cancelled, total }
 
   /* ── Real total count (may exceed 50) ── */
   const { count: totalCount } = await admin
     .from('orders').select('id', { count: 'exact', head: true })
     .eq('customer_id', customer.id)
-    .not('status', 'in', '("extra","admin")')
+    .in('status', ['paid', 'pending', 'cancelled'])
 
   return (
     <PedidosClient

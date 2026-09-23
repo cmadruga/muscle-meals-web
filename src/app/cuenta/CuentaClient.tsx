@@ -30,6 +30,92 @@ function fmtAmtShort(cents: number) {
   return `$${(cents / 100).toFixed(0)}`
 }
 
+/* ── Types ─────────────────────────────────────────────────────────────────── */
+type SizeGroup = {
+  sizeName: string
+  items: { name: string; qty: number; unitPrice: number }[]
+}
+
+/* ── groupBySize — aggregates same-meal same-size into one row ─────────────── */
+function groupBySize(items: ItemRow[]): SizeGroup[] {
+  const SIZE_ORDER = ['LOW', 'FIT', 'PLUS', 'CUSTOM']
+  const sizeMap = new Map<string, Map<string, { qty: number; unitPrice: number }>>()
+  for (const item of items) {
+    const sizeName = (item.sizes?.name ?? '?').toUpperCase()
+    const mealName = item.meals?.name ?? 'Platillo'
+    if (!sizeMap.has(sizeName)) sizeMap.set(sizeName, new Map())
+    const mealMap = sizeMap.get(sizeName)!
+    const existing = mealMap.get(mealName)
+    if (existing) {
+      existing.qty += item.qty
+    } else {
+      mealMap.set(mealName, { qty: item.qty, unitPrice: item.unit_price })
+    }
+  }
+  return Array.from(sizeMap.entries())
+    .sort(([a], [b]) => {
+      const ai = SIZE_ORDER.indexOf(a)
+      const bi = SIZE_ORDER.indexOf(b)
+      if (ai === -1 && bi === -1) return a.localeCompare(b)
+      if (ai === -1) return 1
+      if (bi === -1) return -1
+      return ai - bi
+    })
+    .map(([sizeName, mealMap]) => ({
+      sizeName,
+      items: Array.from(mealMap.entries()).map(([name, { qty, unitPrice }]) => ({ name, qty, unitPrice })),
+    }))
+}
+
+/* ── SizeBlock component ────────────────────────────────────────────────────── */
+function SizeBlock({ group, isMobile = false }: { group: SizeGroup; isMobile?: boolean }) {
+  const totalQty = group.items.reduce((s, i) => s + i.qty, 0)
+  const subtotal = group.items.reduce((s, i) => s + i.qty * i.unitPrice, 0)
+  return (
+    <div style={{ display: 'flex', border: '1px solid rgba(255,255,255,.08)', borderRadius: 10, background: 'rgba(0,0,0,.22)', overflow: 'hidden' }}>
+      {/* Left rail — desktop only */}
+      {!isMobile && (
+        <div style={{ width: 92, flexShrink: 0, borderRight: '1px solid rgba(255,255,255,.06)', padding: '14px 0 14px 16px', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+          <div style={{ font: `700 24px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{group.sizeName}</div>
+          <div style={{ marginTop: 4, font: `400 11.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>{totalQty} platillo{totalQty !== 1 ? 's' : ''}</div>
+        </div>
+      )}
+      {/* Right content */}
+      <div style={{ flex: 1, minWidth: 0 }}>
+        {/* Mobile header */}
+        {isMobile && (
+          <div style={{ padding: '10px 16px', display: 'flex', alignItems: 'baseline', gap: 4, borderBottom: '1px solid rgba(255,255,255,.06)' }}>
+            <span style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>{group.sizeName}</span>
+            <span style={{ font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', marginLeft: 4 }}>· {totalQty} platillo{totalQty !== 1 ? 's' : ''}</span>
+          </div>
+        )}
+        {/* Items */}
+        {group.items.map((item, i) => (
+          <div key={i} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '9px 16px', borderTop: i > 0 ? '1px solid rgba(255,255,255,.06)' : undefined }}>
+            <span style={{
+              minWidth: 30, textAlign: 'center', padding: '3px 6px', borderRadius: 5, fontSize: 12, fontWeight: 700,
+              background: item.qty === 1 ? 'rgba(255,255,255,.06)' : 'rgba(247,145,56,.14)',
+              color: item.qty === 1 ? 'rgba(245,241,236,.6)' : C.orange,
+            }}>{item.qty}×</span>
+            <span style={{ flex: 1, font: `500 14.5px/1.25 ${F.body}`, color: C.text }}>{item.name}</span>
+            {item.qty > 1 && (
+              <span style={{ font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{fmtAmtShort(item.unitPrice)} c/u</span>
+            )}
+            <span style={{ width: 58, textAlign: 'right', font: `600 14px/1 ${F.body}`, color: 'rgba(245,241,236,.85)' }}>{fmtAmtShort(item.qty * item.unitPrice)}</span>
+          </div>
+        ))}
+        {/* Block footer */}
+        <div style={{ borderTop: '1px dashed rgba(255,255,255,.08)', padding: '9px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ font: `400 11.5px/1 ${F.body}`, color: 'rgba(245,241,236,.42)' }}>
+            {group.sizeName} · {totalQty} platillo{totalQty !== 1 ? 's' : ''}
+          </span>
+          <span style={{ font: `600 13px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>{fmtAmtShort(subtotal)}</span>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function StatusBadge({ status }: { status: string }) {
   const cfg: Record<string, { label: string; bg: string; border?: string; color: string }> = {
     paid:      { label: 'Pagado',    bg: 'rgba(47,168,116,.14)', border: '1px solid rgba(47,168,116,.4)',  color: '#4fce93' },
@@ -126,19 +212,18 @@ export type ItemRow = {
 
 type Props = {
   customer: Customer | null
-  lastOrder: OrderRow | null
+  lastPaidOrder: OrderRow | null
   lastOrderItems: ItemRow[]
-  historyOrders: OrderRow[]   // next 2 orders after lastOrder
   orderCount: number
   referralCode: string | null
   totalReferrals: number
   pendingRewards: number
-  membershipWeeksTotal: number  // 4 | 8 | 12 — from most recent membership order
+  membershipWeeksTotal: number
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
 export default function CuentaClient({
-  customer, lastOrder, lastOrderItems, historyOrders,
+  customer, lastPaidOrder, lastOrderItems,
   orderCount, referralCode, totalReferrals, pendingRewards, membershipWeeksTotal,
 }: Props) {
   const router = useRouter()
@@ -193,7 +278,7 @@ export default function CuentaClient({
   /* ── Membership ── */
   const isMember   = customer?.is_member ?? false
   const weeksLeft  = customer?.membership_weeks_left ?? 0
-  const weeksTotal = membershipWeeksTotal  // 4 | 8 | 12 from most recent membership order
+  const weeksTotal = membershipWeeksTotal
   const weeksUsed  = Math.max(0, weeksTotal - weeksLeft)
   const progress   = weeksTotal === 0 ? 0 : Math.round((weeksUsed / weeksTotal) * 100)
   const isExpired  = isMember && weeksLeft === 0
@@ -209,12 +294,8 @@ export default function CuentaClient({
     ? new Date(customer.created_at).toLocaleDateString('es-MX', { month: 'long', year: 'numeric' })
     : null
 
-  /* ── Last order items as chips ── */
-  const chips = lastOrderItems.map(i => ({
-    meal: i.meals?.name ?? 'Platillo',
-    size: i.sizes?.name ?? '',
-    qty: i.qty,
-  }))
+  /* ── Last paid order items grouped by size ── */
+  const sizeGroups = groupBySize(lastOrderItems)
 
   /* ── Address display ── */
   const hasAddress = !!customer?.address
@@ -435,23 +516,26 @@ export default function CuentaClient({
               <span style={{ font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>{orderCount} en total</span>
             </div>
 
-            {lastOrder ? (
+            {lastPaidOrder ? (
               <>
-                {/* Last order block */}
+                {/* Last paid order block */}
                 <div style={{ padding: '16px 22px 18px', borderTop: '1px solid rgba(255,255,255,.07)', background: 'rgba(255,255,255,.02)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 12 }}>
+                  {/* Row: label + date + status pill */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 14 }}>
                     <span style={{ font: `600 10.5px/1 ${F.body}`, letterSpacing: '.18em', textTransform: 'uppercase', color: C.orange }}>Último pedido</span>
-                    <span style={{ font: `500 13px/1 ${F.body}`, color: C.text }}>{fmtDate(lastOrder.created_at)}</span>
-                    <StatusBadge status={lastOrder.status} />
+                    <span style={{ flex: 1, font: `500 13.5px/1 ${F.body}`, color: C.text }}>{fmtDate(lastPaidOrder.created_at)}</span>
+                    <StatusBadge status={lastPaidOrder.status} />
                   </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginBottom: 16 }}>
-                    {chips.map((c, i) => (
-                      <span key={i} style={{ padding: '6px 11px', borderRadius: 7, background: 'rgba(255,255,255,.05)', font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.8)' }}>
-                        {c.meal}{c.qty > 1 ? ` ×${c.qty}` : ''} <span style={{ color: 'rgba(245,241,236,.45)' }}>{c.size}</span>
-                      </span>
+
+                  {/* Bloques por tamaño */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 16 }}>
+                    {sizeGroups.map((group) => (
+                      <SizeBlock key={group.sizeName} group={group} />
                     ))}
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+
+                  {/* Action row */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
                     <a href="/reorder" className="ct-btn-orange" style={{
                       flex: 1, padding: '14px 0', border: 'none', borderRadius: 8,
                       background: C.orange, color: C.onOrange,
@@ -463,19 +547,12 @@ export default function CuentaClient({
                       border: '1px solid rgba(255,255,255,.14)', borderRadius: 8,
                       font: `600 12.5px/1 ${F.body}`, color: C.text, textDecoration: 'none',
                     }}>Ver detalle</Link>
-                    <span style={{ flexShrink: 0, font: `700 17px/1 ${F.display}`, color: C.text }}>{fmtAmt(lastOrder.total_amount)}</span>
+                    <div style={{ flexShrink: 0, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 }}>
+                      <span style={{ font: `600 10.5px/1 ${F.body}`, letterSpacing: '.14em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>Total</span>
+                      <span style={{ font: `700 20px/1 ${F.display}`, color: C.text }}>{fmtAmt(lastPaidOrder.total_amount)}</span>
+                    </div>
                   </div>
                 </div>
-
-                {/* History rows */}
-                {historyOrders.map((o) => (
-                  <div key={o.id} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.06)' }}>
-                    <span style={{ flex: 1, font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.78)' }}>{fmtDate(o.created_at)}</span>
-                    <span style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.42)' }}>{/* items count from items — approximate */}pedido</span>
-                    <StatusBadge status={o.status} />
-                    <span style={{ width: 74, textAlign: 'right', font: `600 13.5px/1 ${F.body}`, color: o.status === 'cancelled' ? 'rgba(245,241,236,.45)' : C.text }}>{fmtAmtShort(o.total_amount)}</span>
-                  </div>
-                ))}
 
                 {/* Footer link */}
                 <Link href="/cuenta/pedidos" className="ct-link-ver" style={{ display: 'block', padding: '14px 22px', borderTop: '1px solid rgba(255,255,255,.06)', font: `600 12.5px/1 ${F.body}`, color: C.orange, textDecoration: 'none' }}>
@@ -484,9 +561,9 @@ export default function CuentaClient({
               </>
             ) : (
               <div style={{ padding: '52px 24px', textAlign: 'center' }}>
-                <div style={{ font: `700 24px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Todavia no tienes pedidos</div>
-                <p style={{ margin: '11px auto 20px', maxWidth: '40ch', font: `400 13.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Cuando hagas el primero lo verás aquí y podrás repetirlo en un clic.</p>
-                <Link href="/menu" style={{ display: 'inline-block', padding: '14px 26px', background: C.orange, color: C.onOrange, border: `1px solid ${C.orange}`, borderRadius: 8, font: `600 13px/1 ${F.body}`, textDecoration: 'none' }}>Ver el menú de la semana →</Link>
+                <div style={{ font: `700 24px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Aún no tienes pedidos pagados</div>
+                <p style={{ margin: '11px auto 20px', maxWidth: '40ch', font: `400 13.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Cuando completes tu primer pago lo verás aquí y podrás repetirlo en un clic.</p>
+                <Link href="/menu" className="ct-btn-orange" style={{ display: 'inline-block', padding: '14px 26px', background: C.orange, color: C.onOrange, borderRadius: 8, font: `600 13px/1 ${F.body}`, textDecoration: 'none' }}>Ver el menú →</Link>
               </div>
             )}
           </div>
@@ -623,34 +700,48 @@ export default function CuentaClient({
             {/* Mobile membership band */}
             {mobileMembershipBand()}
 
-            {/* Last order card */}
+            {/* Last paid order card */}
             <div style={{ marginTop: 16, background: C.card, border: '1px solid rgba(255,255,255,.08)', borderRadius: 12, overflow: 'hidden' }}>
-              {lastOrder ? (
+              {lastPaidOrder ? (
                 <>
-                  <div style={{ padding: '16px 18px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: 10 }}>
-                      <span style={{ font: `600 10px/1 ${F.body}`, letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange }}>Último pedido</span>
-                      <StatusBadge status={lastOrder.status} />
+                  <div style={{ padding: '16px 18px 18px' }}>
+                    {/* Header row */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                      <span style={{ font: `600 10.5px/1 ${F.body}`, letterSpacing: '.18em', textTransform: 'uppercase', color: C.orange }}>Último pedido</span>
+                      <span style={{ flex: 1, font: `500 13px/1 ${F.body}`, color: C.text }}>{fmtDate(lastPaidOrder.created_at)}</span>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', gap: 12 }}>
-                      <span style={{ font: `600 14.5px/1 ${F.body}`, color: C.text }}>{fmtDate(lastOrder.created_at)}</span>
-                      <span style={{ font: `700 17px/1 ${F.display}`, color: C.text }}>{fmtAmt(lastOrder.total_amount)}</span>
+
+                    {/* Bloques por tamaño (mobile) */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 14 }}>
+                      {sizeGroups.map((group) => (
+                        <SizeBlock key={group.sizeName} group={group} isMobile />
+                      ))}
                     </div>
-                    {/* Items as prose */}
-                    <div style={{ marginTop: 6, font: `400 12.5px/1.45 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>
-                      {chips.map(c => `${c.meal}${c.qty > 1 ? ` ×${c.qty}` : ''}`).join(', ')}
-                      {chips.length > 0 && chips[0].size ? ` · todos ${chips[0].size}` : ''}
-                    </div>
-                    <a href="/reorder" className="ct-btn-orange" style={{ display: 'block', width: '100%', boxSizing: 'border-box', marginTop: 15, padding: '15px 0', border: 'none', borderRadius: 9, background: C.orange, color: C.onOrange, font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', textDecoration: 'none', textAlign: 'center' }}>Volver a pedir →</a>
+
+                    {/* "Volver a pedir" button */}
+                    <a href="/reorder" className="ct-btn-orange" style={{
+                      display: 'block', width: '100%', boxSizing: 'border-box',
+                      padding: '15px 0', borderRadius: 9,
+                      background: C.orange, color: C.onOrange,
+                      font: `700 18px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
+                      textDecoration: 'none', textAlign: 'center',
+                    }}>Volver a pedir →</a>
                   </div>
-                  <Link href="/cuenta/pedidos" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.07)', font: `600 12.5px/1 ${F.body}`, color: C.orange, textDecoration: 'none' }}>
+
+                  {/* Footer link */}
+                  <Link href="/cuenta/pedidos" className="ct-link-ver" style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '14px 18px', borderTop: '1px solid rgba(255,255,255,.07)',
+                    font: `600 12.5px/1 ${F.body}`, color: C.orange, textDecoration: 'none',
+                  }}>
                     Ver mis {orderCount} pedidos <span>→</span>
                   </Link>
                 </>
               ) : (
                 <div style={{ padding: '32px 18px', textAlign: 'center' }}>
-                  <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.text }}>Todavia no tienes pedidos</div>
-                  <Link href="/menu" style={{ display: 'inline-block', marginTop: 14, font: `600 13px/1 ${F.body}`, color: C.orange, textDecoration: 'none' }}>Ver el menú →</Link>
+                  <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.text }}>Aún no tienes pedidos pagados</div>
+                  <p style={{ margin: '10px auto 18px', font: `400 12.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Cuando completes tu primer pago lo verás aquí.</p>
+                  <Link href="/menu" className="ct-btn-orange" style={{ display: 'inline-block', padding: '13px 24px', background: C.orange, color: C.onOrange, borderRadius: 8, font: `600 13px/1 ${F.body}`, textDecoration: 'none' }}>Ver el menú →</Link>
                 </div>
               )}
             </div>
