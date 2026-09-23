@@ -8,18 +8,20 @@ interface LoginModalProps {
   onClose: () => void
   redirectTo?: string
   context?: 'reorder'
+  /** Called after a successful email/password login (before close). Defaults to onClose. */
+  onSuccess?: () => void
   /** Ignored — LoginForm owns the card title */
   title?: string
   /** Ignored — LoginForm owns the card description */
   description?: string
 }
 
-export default function LoginModal({ isOpen, onClose, redirectTo, context }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, redirectTo, context, onSuccess }: LoginModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose}>
       <LoginForm
         next={redirectTo}
-        onSuccess={onClose}
+        onSuccess={onSuccess ?? onClose}
         onClose={onClose}
         context={context}
       />

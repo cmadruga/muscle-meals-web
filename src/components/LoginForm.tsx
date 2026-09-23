@@ -58,8 +58,9 @@ function passwordStrength(pw: string): { score: number; label: string } {
 
 // ── Component ─────────────────────────────────────────────────────────────────
 export default function LoginForm({ next, onSuccess, onClose, context }: LoginFormProps) {
-  // Reorder context redirects back to /reorder so the server can build the cart
-  const resolvedNext = next ?? (context === 'reorder' ? '/reorder' : '/cuenta')
+  // Reorder context redirects back to /reorder; otherwise redirect back to current page
+  const resolvedNext = next
+    ?? (context === 'reorder' ? '/reorder' : (typeof window !== 'undefined' ? window.location.pathname : '/cuenta'))
   const [mode, setMode] = useState<Mode>('signin')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')

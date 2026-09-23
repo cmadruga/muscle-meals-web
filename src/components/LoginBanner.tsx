@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import LoginModal from './LoginModal'
 import { F } from '@/lib/ui-fonts'
@@ -14,6 +15,7 @@ const C = {
 
 export default function LoginBanner() {
   const { user, loading } = useAuth()
+  const router = useRouter()
   const [showModal,  setShowModal]  = useState(false)
   const [open,       setOpen]       = useState(true)
   const [dismissed,  setDismissed]  = useState(false)
@@ -183,7 +185,11 @@ export default function LoginBanner() {
         </div>
       </div>
 
-      <LoginModal isOpen={showModal} onClose={() => setShowModal(false)} />
+      <LoginModal
+        isOpen={showModal}
+        onClose={() => setShowModal(false)}
+        onSuccess={() => { setShowModal(false); router.refresh() }}
+      />
     </>
   )
 }

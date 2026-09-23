@@ -120,6 +120,16 @@ export default function CheckoutClient({
     ? true
     : addressOption === 'saved' ? true : isAddressComplete
 
+  // Sync contact fields when the user logs in mid-session (email login triggers router.refresh()
+  // which re-passes prefill from the server without a full page reload).
+  useEffect(() => {
+    if (!prefill?.customerId) return
+    if (prefill.name)  setCustomerName(prefill.name)
+    if (prefill.phone) setCustomerPhone(prefill.phone)
+    if (prefill.address) setAddressOption('saved')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prefill?.customerId])
+
   // Membresía
   const [membershipMode, setMembershipMode] = useState(false)
   const [membershipWeeks, setMembershipWeeks] = useState<4 | 8 | 12>(4)
