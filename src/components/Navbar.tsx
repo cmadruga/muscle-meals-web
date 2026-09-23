@@ -7,6 +7,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { useAuth } from '@/hooks/useAuth'
 import { createClient } from '@/lib/supabase/client'
 import { getMyMembership } from '@/app/actions/customer'
+import { getMyOrderCount } from '@/app/actions/orders'
 import LoginModal from './LoginModal'
 import { F } from '@/lib/ui-fonts'
 
@@ -33,11 +34,12 @@ interface DropdownPanelProps {
   email: string | undefined
   isMember: boolean
   weeksLeft: number | null
+  orderCount: number | null
   onClose: () => void
   onLogout: () => void
 }
 
-function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, weeksLeft, onClose, onLogout }: DropdownPanelProps) {
+function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, weeksLeft, orderCount, onClose, onLogout }: DropdownPanelProps) {
   return (
     <div ref={dropdownRef} style={{
       position: 'fixed', top: 74, right: 16, zIndex: 1100,
@@ -77,7 +79,7 @@ function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, we
 
         <DropdownItem href="/cuenta/pedidos" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>
-        } onClick={onClose}>Mis pedidos</DropdownItem>
+        } right={orderCount !== null ? <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{orderCount}</span> : undefined} onClick={onClose}>Mis pedidos</DropdownItem>
 
         <DropdownItem href="/cuenta#invitar" icon={
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>
@@ -90,7 +92,13 @@ function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, we
           <div style={{ font: `600 13.5px/1.35 ${F.body}`, color: C.text }}>
             {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
           </div>
-          {/* Ver planes — pendiente */}
+          <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
+            display: 'block', width: '100%', boxSizing: 'border-box',
+            marginTop: 11, padding: '11px 0', borderRadius: 8,
+            background: C.orange, color: '#17140f', border: 'none',
+            font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
+            textDecoration: 'none', textAlign: 'center',
+          }}>{isMember ? 'Renovar membresia' : 'Ver planes'}</Link>
         </div>
       )}
 
@@ -114,11 +122,12 @@ interface BottomSheetProps {
   email: string | undefined
   isMember: boolean
   weeksLeft: number | null
+  orderCount: number | null
   onClose: () => void
   onLogout: () => void
 }
 
-function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, onClose, onLogout }: BottomSheetProps) {
+function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, orderCount, onClose, onLogout }: BottomSheetProps) {
   return (
     <>
       {/* Backdrop */}
@@ -152,7 +161,7 @@ function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, onClos
         {/* Nav items */}
         <div style={{ padding: '6px 0' }}>
           <SheetItem href="/cuenta" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><circle cx="12" cy="8" r="3.4"/><path d="M5.5 20c.6-3.6 3.3-5.4 6.5-5.4s5.9 1.8 6.5 5.4"/></svg>} onClick={onClose}>Mi cuenta</SheetItem>
-          <SheetItem href="/cuenta/pedidos" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>} onClick={onClose}>Mis pedidos</SheetItem>
+          <SheetItem href="/cuenta/pedidos" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.6)" strokeWidth="1.9" strokeLinecap="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9.5h8M8 14h5"/></svg>} right={orderCount !== null ? <span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.4)' }}>{orderCount}</span> : undefined} onClick={onClose}>Mis pedidos</SheetItem>
           <SheetItem href="/cuenta#invitar" icon={<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={C.orange} strokeWidth="1.9" strokeLinecap="round"><path d="M4 8h16v12H4z"/><path d="M12 8v12M4 8l2.5-4 5.5 4 5.5-4L20 8"/></svg>} onClick={onClose}>Invitar y ganar 10%</SheetItem>
         </div>
 
@@ -161,7 +170,12 @@ function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, onClos
             <div style={{ font: `600 13px/1.35 ${F.body}`, color: C.text }}>
               {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
             </div>
-            {/* Ver planes — pendiente */}
+            <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
+              display: 'block', marginTop: 13, padding: '13px 0', borderRadius: 8,
+              background: C.orange, color: '#17140f',
+              font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
+              textDecoration: 'none', textAlign: 'center',
+            }}>{isMember ? 'Renovar membresia' : 'Ver planes'}</Link>
           </div>
         )}
 
@@ -188,6 +202,7 @@ export default function Navbar() {
   const [showSheet, setShowSheet]         = useState(false)
   const [weeksLeft, setWeeksLeft]         = useState<number | null>(null)
   const [isMember, setIsMember]           = useState(false)
+  const [orderCount, setOrderCount]       = useState<number | null>(null)
   const { user, loading } = useAuth()
   const dropdownRef   = useRef<HTMLDivElement>(null)
   const desktopBtnRef = useRef<HTMLButtonElement>(null)
@@ -200,9 +215,10 @@ export default function Navbar() {
   /* ── Fetch membership once user is available ── */
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (!user) { setIsMember(false); setWeeksLeft(null); return }
-    getMyMembership().then(m => {
+    if (!user) { setIsMember(false); setWeeksLeft(null); setOrderCount(null); return }
+    Promise.all([getMyMembership(), getMyOrderCount()]).then(([m, cnt]) => {
       if (m) { setIsMember(m.isMember); setWeeksLeft(m.weeksLeft) }
+      setOrderCount(cnt)
     })
   }, [user])
 
@@ -230,7 +246,7 @@ export default function Navbar() {
     const supabase = createClient()
     await supabase.auth.signOut()
     setShowDropdown(false); setShowSheet(false)
-    router.push('/'); router.refresh()
+    router.refresh()
   }
 
   const back        = getBack(pathname)
@@ -254,6 +270,7 @@ export default function Navbar() {
     email: user?.email,
     isMember,
     weeksLeft,
+    orderCount,
     onLogout: handleLogout,
   }
 
