@@ -5,6 +5,7 @@ import type { TouchEvent } from 'react'
 import Link from 'next/link'
 import { F } from '@/lib/ui-fonts'
 import { isValidPostalCode } from '@/lib/address-validation'
+import type { MealBasic } from '@/lib/types/meal'
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -29,23 +30,23 @@ const PHOTOS = [
 const STEPS = [
   {
     title: 'Elige tu tamaño',
-    desc:  'LOW, FIT o PLUS según la proteína que buscas — o arma el tuyo gramo por gramo.',
+    desc:  'LOW, FIT o PLUS según la porciones que buscas — o arma el tuyo gramo por gramo.',
   },
   {
     title: 'Arma tu menú',
-    desc:  'Mezcla los platillos de la semana. Al llegar a 5 entra solo el precio de paquete.',
+    desc:  'Mezcla los meals de la semana. Al agregar 5 o más ahorras.',
   },
   {
     title: 'Hazte miembro',
-    desc:  'El descuento se aplica solo, en cada pedido. Opcional: también puedes pedir sin membresía.',
+    desc:  'Despreocupate de tus meals por 4, 8 o 12 semanas. Tus semanas listas sin preocupaciones.',
   },
   {
     title: 'Paga y coordina',
-    desc:  'Domicilio o pickup, tus datos y el pago en una sola pantalla.',
+    desc:  'Domicilio o pickup, paga con MercadoPago rapido y seguro.',
   },
   {
-    title: 'Listo el domingo',
-    desc:  'Llega cocinado y porcionado. Calienta y come.',
+    title: 'Recibe tu pedido',
+    desc:  'Calienta y listo para comer.',
     isLast: true,
   },
 ]
@@ -84,7 +85,7 @@ function Slide1Web() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 18px', border: '1px dashed rgba(255,255,255,.25)', borderRadius: 12 }}>
         <div style={{ font: `700 19px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>+ A tu medida</div>
         <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-          {['Proteina', 'Carbo', 'Verdura'].map(t => (
+          {['Proteina', 'Carbohidrato', 'Verdura'].map(t => (
             <span key={t} style={{ padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,.07)', font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.65)' }}>{t}</span>
           ))}
         </div>
@@ -93,33 +94,37 @@ function Slide1Web() {
   )
 }
 
-function Slide2Web() {
+const MEAL_FALLBACK_PHOTOS = ['/media/meals-tray.jpg', '/media/photo-desk.jpg', '/media/photo-lifestyle.jpg']
+
+function Slide2Web({ meals }: { meals: MealBasic[] }) {
+  const shown = meals.slice(0, 3)
   return (
     <div style={{ width: 640, boxSizing: 'border-box', padding: '34px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 14 }}>
       <div style={{ font: `700 12px/1 ${F.cond}`, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>2 · Tu menú de la semana</div>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 12 }}>
-        {[
-          { src: '/media/meals-tray.jpg',      name: 'Pollo teriyaki', tag: '×2 agregado', active: true },
-          { src: '/media/photo-desk.jpg',       name: 'Res con arroz',  tag: '×2 agregado', active: true },
-          { src: '/media/photo-lifestyle.jpg',  name: 'Salmón y quinoa', tag: 'Agregar +',  active: false },
-        ].map(m => (
-          <div key={m.name} style={{ border: `1px solid ${m.active ? C.orange : 'rgba(255,255,255,.12)'}`, borderRadius: 12, overflow: 'hidden', background: m.active ? 'rgba(247,145,56,.08)' : 'rgba(255,255,255,.03)' }}>
-            <div style={{ height: 74, background: `url(${m.src}) center/cover`, opacity: m.active ? 1 : .7 }} />
-            <div style={{ padding: '10px 12px' }}>
-              <div style={{ font: `600 13.5px/1.25 ${F.body}`, color: C.text }}>{m.name}</div>
-              <div style={{ marginTop: 5, font: `700 11px/1 ${F.body}`, letterSpacing: '.06em', textTransform: 'uppercase', color: m.active ? C.orange : 'rgba(245,241,236,.5)' }}>{m.tag}</div>
+        {shown.map((m, i) => {
+          const active = i < 2
+          const src = m.img ?? MEAL_FALLBACK_PHOTOS[i % MEAL_FALLBACK_PHOTOS.length]
+          const tag = active ? '×2 agregado' : 'Agregar +'
+          return (
+            <div key={m.id} style={{ border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`, borderRadius: 12, overflow: 'hidden', background: active ? 'rgba(247,145,56,.08)' : 'rgba(255,255,255,.03)' }}>
+              <div style={{ height: 74, background: `url(${src}) center/cover`, opacity: active ? 1 : .7 }} />
+              <div style={{ padding: '10px 12px' }}>
+                <div style={{ font: `600 13.5px/1.25 ${F.body}`, color: C.text }}>{m.name}</div>
+                <div style={{ marginTop: 5, font: `700 11px/1 ${F.body}`, letterSpacing: '.06em', textTransform: 'uppercase', color: active ? C.orange : 'rgba(245,241,236,.5)' }}>{tag}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '14px 18px', border: '1px solid rgba(247,145,56,.45)', borderRadius: 12, background: 'rgba(247,145,56,.1)' }}>
         <div style={{ display: 'flex', gap: 5 }}>
           {Array.from({ length: 5 }).map((_, i) => <span key={i} style={{ width: 11, height: 11, borderRadius: '50%', background: C.orange, display: 'inline-block' }} />)}
         </div>
-        <div style={{ font: `600 15px/1.3 ${F.body}`, color: C.text }}>5 platillos · precio de paquete aplicado</div>
+        <div style={{ font: `600 15px/1.3 ${F.body}`, color: C.text }}>5 platillos · descuento aplicado</div>
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <div style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$750</div>
-          <div style={{ marginTop: 3, font: `700 20px/1 ${F.display}`, color: C.orange }}>$650</div>
+          <div style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$850</div>
+          <div style={{ marginTop: 3, font: `700 20px/1 ${F.display}`, color: C.orange }}>$800</div>
         </div>
       </div>
     </div>
@@ -133,22 +138,22 @@ function Slide3Web() {
       <div style={{ display: 'flex', gap: 14 }}>
         <div style={{ flex: 1, padding: 20, border: '1px solid rgba(255,255,255,.12)', borderRadius: 14, background: 'rgba(255,255,255,.03)' }}>
           <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>Sin membresia</div>
-          <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Pides cuando quieras, al precio normal.</div>
-          <div style={{ marginTop: 18, font: `700 26px/1 ${F.display}`, color: C.text }}>$650<span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}> / semana</span></div>
+          <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Pides cuando quieras, al ritmo que quieras.</div>
+          <div style={{ marginTop: 18, font: `700 26px/1 ${F.display}`, color: C.text }}>$800<span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}> / semana</span></div>
         </div>
         <div style={{ position: 'relative', flex: 1, padding: 20, border: `1px solid ${C.orange}`, borderRadius: 14, background: 'rgba(247,145,56,.1)' }}>
           <span style={{ position: 'absolute', top: -9, left: 20, padding: '3px 9px', borderRadius: 4, background: C.orange, font: `700 10px/1 ${F.body}`, letterSpacing: '.06em', textTransform: 'uppercase', color: C.ink }}>Activa</span>
           <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>Con membresia</div>
-          <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>El descuento entra solo en cada pedido.</div>
+          <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>Planea tu mes y ahorra aún más al pagar.</div>
           <div style={{ marginTop: 18, display: 'flex', alignItems: 'baseline', gap: 9 }}>
-            <div style={{ font: `700 26px/1 ${F.display}`, color: C.orange }}>$552</div>
-            <div style={{ font: `400 14px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$650</div>
+            <div style={{ font: `400 14px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$800</div>
+            <div style={{ font: `700 26px/1 ${F.display}`, color: C.orange }}>$720<span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}> / semana</span></div>
           </div>
         </div>
       </div>
       <div style={{ padding: '14px 18px', border: '1px solid rgba(255,255,255,.1)', borderRadius: 12, background: 'rgba(255,255,255,.03)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>
-          <span>Tu membresía</span><span style={{ color: C.text }}>6 de 8 semanas</span>
+          <span>Tu membresía</span><span style={{ color: C.text }}>3 de 4 semanas</span>
         </div>
         <div style={{ marginTop: 10, height: 8, borderRadius: 5, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
           <div style={{ width: '75%', height: '100%', background: C.orange }} />
@@ -165,56 +170,59 @@ function Slide4Web() {
       <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ flex: 1, padding: '16px 18px', border: `1px solid ${C.orange}`, borderRadius: 12, background: 'rgba(247,145,56,.1)' }}>
           <div style={{ font: `700 17px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>A domicilio</div>
-          <div style={{ marginTop: 7, font: `400 13px/1.35 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Domingo, 9 am – 2 pm</div>
+          <div style={{ marginTop: 7, font: `400 13px/1.35 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Domingo, 9 am – 4 pm</div>
         </div>
         <div style={{ flex: 1, padding: '16px 18px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 12, background: 'rgba(255,255,255,.03)' }}>
           <div style={{ font: `700 17px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>Pickup</div>
           <div style={{ marginTop: 7, font: `400 13px/1.35 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>Elige el punto más cercano</div>
         </div>
       </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+      {/* <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ padding: '13px 15px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, font: `500 14px/1 ${F.body}`, color: C.text }}>Carlos Medina</div>
         <div style={{ padding: '13px 15px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, font: `500 14px/1 ${F.body}`, color: C.text }}>662 000 0000</div>
         <div style={{ gridColumn: '1/-1', padding: '13px 15px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 10, font: `500 14px/1 ${F.body}`, color: C.text }}>Blvd. Solidaridad 233, Hermosillo</div>
-      </div>
+      </div> */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '15px 18px', borderRadius: 12, background: C.orange }}>
-        <span style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $552</span>
-        <span style={{ marginLeft: 'auto', font: `600 13.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · tarjeta o transferencia</span>
+        <span style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $720</span>
+        <span style={{ marginLeft: 'auto', font: `600 13.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rapido</span>
       </div>
     </div>
   )
 }
 
-function Slide5Web() {
+function Slide5Web({ meals }: { meals: MealBasic[] }) {
+  const shown = meals.slice(0, 2)
+  const rest  = Math.max(0, meals.length - 2)
   return (
     <div style={{ width: 640, boxSizing: 'border-box', padding: '34px 36px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
-      <div style={{ font: `700 12px/1 ${F.cond}`, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>5 · Domingo</div>
+      <div style={{ font: `700 12px/1 ${F.cond}`, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>5 · Recibe</div>
       <div style={{ display: 'flex', gap: 14, alignItems: 'stretch' }}>
         <div style={{ flex: 1.1, borderRadius: 14, overflow: 'hidden', background: 'url(/media/meals-tray.jpg) center/cover', minHeight: 186 }} />
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {[
-            { name: 'Pollo teriyaki',  detail: '180 g prot. · listo para calentar' },
-            { name: 'Res con arroz',   detail: '180 g prot. · listo para calentar' },
-          ].map(m => (
-            <div key={m.name} style={{ padding: '13px 15px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 11, background: 'rgba(255,255,255,.03)' }}>
+          {shown.map(m => (
+            <div key={m.id} style={{ padding: '13px 15px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 11, background: 'rgba(255,255,255,.03)' }}>
               <div style={{ font: `600 14px/1 ${F.body}`, color: C.text }}>{m.name}</div>
-              <div style={{ marginTop: 5, font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>{m.detail}</div>
+              <div style={{ marginTop: 5, font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.5)' }}>Listo para calentar</div>
             </div>
           ))}
-          <div style={{ padding: '13px 15px', border: '1px solid rgba(247,145,56,.45)', borderRadius: 11, background: 'rgba(247,145,56,.1)' }}>
-            <div style={{ font: `600 14px/1 ${F.body}`, color: C.orange }}>+ 3 platillos más</div>
-          </div>
+          {rest > 0 && (
+            <div style={{ padding: '13px 15px', border: '1px solid rgba(247,145,56,.45)', borderRadius: 11, background: 'rgba(247,145,56,.1)' }}>
+              <div style={{ font: `600 14px/1 ${F.body}`, color: C.orange }}>+ {rest} platillo{rest !== 1 ? 's' : ''} más</div>
+            </div>
+          )}
         </div>
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '14px 18px', borderRadius: 12, background: 'rgba(247,145,56,.12)', border: '1px solid rgba(247,145,56,.4)' }}>
         <span style={{ font: `700 17px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.orange }}>Entregado</span>
-        <span style={{ font: `500 14.5px/1 ${F.body}`, color: C.text }}>Solo calienta y come — cero minutos de cocina.</span>
+        <span style={{ font: `500 14.5px/1 ${F.body}`, color: C.text }}>Refrigera tus meals de la semana, estarán listos en minutos.</span>
       </div>
     </div>
   )
 }
 
-const WEB_SLIDES = [<Slide1Web key={0} />, <Slide2Web key={1} />, <Slide3Web key={2} />, <Slide4Web key={3} />, <Slide5Web key={4} />]
+function makeWebSlides(meals: MealBasic[]) {
+  return [<Slide1Web key={0} />, <Slide2Web key={1} meals={meals} />, <Slide3Web key={2} />, <Slide4Web key={3} />, <Slide5Web key={4} meals={meals} />]
+}
 
 /* ── Mobile Slide illustrations ──────────────────────────────────────────── */
 function Slide1Mobile() {
@@ -238,29 +246,31 @@ function Slide1Mobile() {
   )
 }
 
-function Slide2Mobile() {
+function Slide2Mobile({ meals }: { meals: MealBasic[] }) {
+  const shown = meals.slice(0, 3)
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 8 }}>
-        {[
-          { src: '/media/meals-tray.jpg',     name: 'Teriyaki', tag: '×2',       active: true },
-          { src: '/media/photo-desk.jpg',      name: 'Res',      tag: '×2',       active: true },
-          { src: '/media/photo-lifestyle.jpg', name: 'Salmón',   tag: 'Agregar +', active: false },
-        ].map(m => (
-          <div key={m.name} style={{ border: `1px solid ${m.active ? C.orange : 'rgba(255,255,255,.12)'}`, borderRadius: 10, overflow: 'hidden' }}>
-            <div style={{ height: 62, background: `url(${m.src}) center/cover` }} />
-            <div style={{ padding: '7px 8px', font: `600 12px/1.2 ${F.body}`, color: C.text }}>
-              {m.name}
-              <div style={{ marginTop: 3, font: `700 10px/1 ${F.body}`, textTransform: 'uppercase', color: m.active ? C.orange : 'rgba(245,241,236,.45)' }}>{m.tag}</div>
+        {shown.map((m, i) => {
+          const active = i < 2
+          const src = m.img ?? MEAL_FALLBACK_PHOTOS[i % MEAL_FALLBACK_PHOTOS.length]
+          const tag = active ? '×2' : 'Agregar +'
+          return (
+            <div key={m.id} style={{ border: `1px solid ${active ? C.orange : 'rgba(255,255,255,.12)'}`, borderRadius: 10, overflow: 'hidden' }}>
+              <div style={{ height: 62, background: `url(${src}) center/cover` }} />
+              <div style={{ padding: '7px 8px', font: `600 12px/1.2 ${F.body}`, color: C.text }}>
+                <div style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{m.name}</div>
+                <div style={{ marginTop: 3, font: `700 10px/1 ${F.body}`, textTransform: 'uppercase', color: active ? C.orange : 'rgba(245,241,236,.45)' }}>{tag}</div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', border: '1px solid rgba(247,145,56,.45)', borderRadius: 10, background: 'rgba(247,145,56,.1)' }}>
-        <div style={{ font: `600 13px/1.25 ${F.body}`, color: C.text }}>5 platillos · precio de paquete</div>
+        <div style={{ font: `600 13px/1.25 ${F.body}`, color: C.text }}>5 platillos · descuento aplicado</div>
         <div style={{ marginLeft: 'auto', textAlign: 'right' }}>
-          <div style={{ font: `400 11px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$750</div>
-          <div style={{ font: `700 18px/1 ${F.display}`, color: C.orange }}>$650</div>
+          <div style={{ font: `400 11px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$850</div>
+          <div style={{ font: `700 18px/1 ${F.display}`, color: C.orange }}>$800</div>
         </div>
       </div>
     </>
@@ -272,21 +282,22 @@ function Slide3Mobile() {
     <>
       <div style={{ display: 'flex', gap: 9 }}>
         {[
-          { label: 'Sin membresia', price: '$650',  accent: false },
-          { label: 'Con membresia', price: '$552',  accent: true, orig: '$650' },
+          { label: 'Sin membresia', desc: 'Pides cuando quieras, al ritmo que quieras.', price: '$800',  accent: false },
+          { label: 'Con membresia', desc: 'Planea tu mes y ahorra aún más al pagar.', price: '$720',  accent: true, orig: '$800' },
         ].map(c => (
           <div key={c.label} style={{ flex: 1, padding: 12, border: c.accent ? `1px solid ${C.orange}` : '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: c.accent ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
             <div style={{ font: `700 15px/1 ${F.display}`, textTransform: 'uppercase', color: c.accent ? C.orange : 'rgba(245,241,236,.8)' }}>{c.label}</div>
+            <div style={{ marginTop: 7, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>{c.desc}</div>
             <div style={{ marginTop: 12, display: 'flex', alignItems: 'baseline', gap: 6 }}>
-              <span style={{ font: `700 22px/1 ${F.display}`, color: c.accent ? C.orange : C.text }}>{c.price}</span>
               {c.orig && <span style={{ font: `400 12px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>{c.orig}</span>}
+              <span style={{ font: `700 22px/1 ${F.display}`, color: c.accent ? C.orange : C.text }}>{c.price}<span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}> / semana</span></span>
             </div>
           </div>
         ))}
       </div>
       <div style={{ padding: '11px 13px', border: '1px solid rgba(255,255,255,.1)', borderRadius: 10 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>
-          <span>Tu membresía</span><span style={{ color: C.text }}>6 de 8 semanas</span>
+          <span>Tu membresía</span><span style={{ color: C.text }}>3 de 4 semanas</span>
         </div>
         <div style={{ marginTop: 8, height: 7, borderRadius: 4, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
           <div style={{ width: '75%', height: '100%', background: C.orange }} />
@@ -301,7 +312,7 @@ function Slide4Mobile() {
     <>
       <div style={{ display: 'flex', gap: 9 }}>
         {[
-          { label: 'A domicilio', detail: 'Dom 9 am – 2 pm', accent: true },
+          { label: 'A domicilio', detail: 'Dom 9 am – 4 pm', accent: true },
           { label: 'Pickup',       detail: 'Punto cercano',   accent: false },
         ].map(o => (
           <div key={o.label} style={{ flex: 1, padding: 12, border: o.accent ? `1px solid ${C.orange}` : '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: o.accent ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
@@ -310,28 +321,30 @@ function Slide4Mobile() {
           </div>
         ))}
       </div>
-      <div style={{ padding: '11px 13px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 9, font: `500 13px/1 ${F.body}`, color: C.text }}>Carlos Medina · 662 000 0000</div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '13px 15px', borderRadius: 10, background: C.orange }}>
-        <span style={{ font: `700 16px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $552</span>
-        <span style={{ marginLeft: 'auto', font: `600 11.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso</span>
+        <span style={{ font: `700 16px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $720</span>
+        <span style={{ marginLeft: 'auto', font: `600 11.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rapido</span>
       </div>
     </>
   )
 }
 
-function Slide5Mobile() {
+function Slide5Mobile({ }: { meals: MealBasic[] }) {
   return (
     <>
-      <div style={{ flex: 1, minHeight: 130, borderRadius: 11, background: 'url(/media/meals-tray.jpg) center/cover' }} />
+      <div style={{ flex: 1, minHeight: 100, borderRadius: 11, background: 'url(/media/meals-tray.jpg) center/cover' }} />
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', borderRadius: 10, background: 'rgba(247,145,56,.12)', border: '1px solid rgba(247,145,56,.4)' }}>
         <span style={{ font: `700 15px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.orange }}>Entregado</span>
-        <span style={{ font: `500 12.5px/1.3 ${F.body}`, color: C.text }}>Solo calienta y come</span>
+        <span style={{ font: `500 12.5px/1.3 ${F.body}`, color: C.text }}>Refrigera tus meals de la semana, estarán listos en minutos.
+</span>
       </div>
     </>
   )
 }
 
-const MOBILE_SLIDES = [<Slide1Mobile key={0} />, <Slide2Mobile key={1} />, <Slide3Mobile key={2} />, <Slide4Mobile key={3} />, <Slide5Mobile key={4} />]
+function makeMobileSlides(meals: MealBasic[]) {
+  return [<Slide1Mobile key={0} />, <Slide2Mobile key={1} meals={meals} />, <Slide3Mobile key={2} />, <Slide4Mobile key={3} />, <Slide5Mobile key={4} meals={meals} />]
+}
 
 /* ── Icon components ─────────────────────────────────────────────────────── */
 function IgIcon() {
@@ -359,14 +372,17 @@ function WaIcon() {
 }
 
 /* ── Main component ──────────────────────────────────────────────────────── */
-export default function LandingClient() {
+export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
 
   // Slideshow
   const [heroIdx, setHeroIdx] = useState(0)
 
   // Steps carousel
-  const [step, setStep]     = useState(0)
-  const [paused, setPaused] = useState(false)
+  const [step, setStep]       = useState(0)
+  const [paused, setPaused]   = useState(false)  // user toggle
+  const [hovering, setHovering] = useState(false) // hover/focus
+  const webSlides    = makeWebSlides(meals)
+  const mobileSlides = makeMobileSlides(meals)
 
   // CP validator
   const [cpInput,    setCpInput]    = useState('')
@@ -389,11 +405,10 @@ export default function LandingClient() {
 
   // Steps auto-advance
   useEffect(() => {
-    const t = setInterval(() => {
-      if (!paused) setStep(i => (i + 1) % 5)
-    }, 5000)
+    if (paused || hovering) return
+    const t = setInterval(() => setStep(i => (i + 1) % 5), 5000)
     return () => clearInterval(t)
-  }, [paused])
+  }, [paused, hovering])
 
   const goStep = useCallback((n: number) => setStep(n), [])
   const prev   = useCallback(() => setStep(i => (i + 4) % 5), [])
@@ -611,12 +626,18 @@ export default function LandingClient() {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <button onClick={prev} className="lp-nav-arrow" style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, font: `400 18px/1 ${F.body}`, cursor: 'pointer' }}>←</button>
+            <button onClick={() => setPaused(p => !p)} className="lp-nav-arrow" aria-label={paused ? 'Reproducir' : 'Pausar'} style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {paused
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              }
+            </button>
             <button onClick={next} className="lp-nav-arrow" style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, font: `400 18px/1 ${F.body}`, cursor: 'pointer' }}>→</button>
           </div>
         </div>
 
         {/* Web grid */}
-        <div onMouseEnter={() => setPaused(true)} onMouseLeave={() => setPaused(false)} className="lp-steps-grid">
+        <div onMouseEnter={() => setHovering(true)} onMouseLeave={() => setHovering(false)} className="lp-steps-grid">
 
           {/* Step list */}
           <div className="lp-steps-list" style={{ flexDirection: 'column' }}>
@@ -636,7 +657,7 @@ export default function LandingClient() {
             <div style={{ position: 'relative', width: 640, height: 430, overflow: 'hidden', border: '1px solid rgba(255,255,255,.1)', borderRadius: 16, background: '#121110 url(/media/Fondo.jpg) center/700px repeat' }}>
               <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,7,.86)' }} />
               <div className="lp-steps-track" style={{ position: 'absolute', top: 0, left: 0, display: 'flex', width: `${640 * 5}px`, height: '100%', transition: 'transform .5s cubic-bezier(.4,0,.2,1)', transform: `translateX(${-640 * step}px)` }}>
-                {WEB_SLIDES}
+                {webSlides}
               </div>
             </div>
             {/* Progress */}
@@ -667,7 +688,7 @@ export default function LandingClient() {
                   <div style={{ position: 'relative', height: 246, overflow: 'hidden', border: '1px solid rgba(255,255,255,.1)', borderRadius: 14, background: '#121110 url(/media/Fondo.jpg) center/500px repeat' }}>
                     <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,7,.86)' }} />
                     <div style={{ position: 'relative', height: '100%', boxSizing: 'border-box', padding: 18, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 9 }}>
-                      {MOBILE_SLIDES[i]}
+                      {mobileSlides[i]}
                     </div>
                   </div>
                   {/* Text */}
@@ -690,6 +711,12 @@ export default function LandingClient() {
               ))}
             </div>
             <button onClick={prev} style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, font: `400 18px/1 ${F.body}`, cursor: 'pointer' }}>←</button>
+            <button onClick={() => setPaused(p => !p)} aria-label={paused ? 'Reproducir' : 'Pausar'} style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              {paused
+                ? <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                : <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+              }
+            </button>
             <button onClick={next} style={{ width: 44, height: 44, border: '1px solid rgba(255,255,255,.18)', borderRadius: '50%', background: 'transparent', color: C.text, font: `400 18px/1 ${F.body}`, cursor: 'pointer' }}>→</button>
           </div>
           <Link href="/menu" style={{ display: 'block', marginTop: 24, padding: 16, borderRadius: 10, background: C.orange, textAlign: 'center', font: `700 17px/1 ${F.display}`, letterSpacing: '.06em', textTransform: 'uppercase', color: C.ink, textDecoration: 'none' }}>
@@ -732,6 +759,7 @@ export default function LandingClient() {
             <label style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
               <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>Código postal</span>
               <input
+                suppressHydrationWarning
                 type="text"
                 inputMode="numeric"
                 maxLength={5}
@@ -856,7 +884,7 @@ export default function LandingClient() {
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,6,.85)' }} />
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 22 }}>
             {[
-              { label: 'Entregas',           body: <>Domingos, 9:00 am – 2:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>A domicilio en Hermosillo o en punto de pickup</span></> },
+              { label: 'Entregas',           body: <>Domingos, 9:00 am – 4:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>A domicilio en Monterrey o en punto de pickup</span></> },
               { label: 'Cierre de pedidos',  body: <>Jueves 8:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>Lo que entre despues va a la semana siguiente</span></> },
               { label: 'Atención',           body: 'Lunes a sabado, 9:00 am – 7:00 pm' },
             ].map(row => (
