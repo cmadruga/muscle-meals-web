@@ -100,7 +100,7 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
           redirectTo: `${origin}/auth/callback?next=/auth/update-password`,
         })
         if (error) throw error
-        setSuccess('Te enviamos un correo para restablecer tu contraseña.')
+        setSuccess('Te enviamos un correo para restablecer tu contraseña. Si no lo ves, revisa tu carpeta de spam.')
         setLoading(false)
         return
       }
@@ -446,7 +446,7 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
                   textTransform: 'uppercase', color: C.text,
                 }}>Restablecer</p>
                 <p style={{ margin: 0, font: `400 14px/1.5 ${F.body}`, color: C.muted }}>
-                  Te enviamos un enlace para crear una nueva contraseña.
+                  Te enviamos un enlace para confirmar tu cuenta. Si no lo ves, revisa tu carpeta de spam.
                 </p>
               </div>
             ) : (

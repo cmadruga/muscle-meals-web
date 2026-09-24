@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import type { TouchEvent } from 'react'
 import Link from 'next/link'
 import { F } from '@/lib/ui-fonts'
+import { isValidPostalCode } from '@/lib/address-validation'
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -60,7 +61,7 @@ function Slide1Web() {
         <div style={{ flex: 1, height: 9, borderRadius: 5, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
           <div style={{ width: '38%', height: '100%', background: 'rgba(247,145,56,.55)' }} />
         </div>
-        <div style={{ width: 80, textAlign: 'right', font: `500 14px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>120 g prot.</div>
+        <div style={{ width: 80, textAlign: 'right', font: `500 14px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>160 g prot.</div>
       </div>
       {/* FIT */}
       <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 14, padding: '15px 18px', border: `1px solid ${C.orange}`, borderRadius: 12, background: 'rgba(247,145,56,.1)' }}>
@@ -77,7 +78,7 @@ function Slide1Web() {
         <div style={{ flex: 1, height: 9, borderRadius: 5, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
           <div style={{ width: '86%', height: '100%', background: 'rgba(247,145,56,.55)' }} />
         </div>
-        <div style={{ width: 80, textAlign: 'right', font: `500 14px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>240 g prot.</div>
+        <div style={{ width: 80, textAlign: 'right', font: `500 14px/1 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>220 g prot.</div>
       </div>
       {/* Custom */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 18px', border: '1px dashed rgba(255,255,255,.25)', borderRadius: 12 }}>
@@ -220,9 +221,9 @@ function Slide1Mobile() {
   return (
     <>
       {[
-        { label: 'Low', pct: '38%', dim: true, text: '120 g prot.' },
+        { label: 'Low', pct: '38%', dim: true, text: '160 g prot.' },
         { label: 'Fit', pct: '62%', dim: false, text: '180 g prot.' },
-        { label: 'Plus', pct: '86%', dim: true, text: '240 g prot.' },
+        { label: 'Plus', pct: '86%', dim: true, text: '220 g prot.' },
       ].map(s => (
         <div key={s.label} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', border: s.label === 'Fit' ? `1px solid ${C.orange}` : '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: s.label === 'Fit' ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
           <div style={{ width: 44, font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: s.label === 'Fit' ? C.orange : C.text }}>{s.label}</div>
@@ -367,6 +368,12 @@ export default function LandingClient() {
   const [step, setStep]     = useState(0)
   const [paused, setPaused] = useState(false)
 
+  // CP validator
+  const [cpInput,    setCpInput]    = useState('')
+  const [cpStatus,   setCpStatus]   = useState<'idle'|'ok'|'no'|'bad'>('idle')
+  const [cpVerified, setCpVerified] = useState('')
+  const [cpLoading,  setCpLoading]  = useState(false)
+
   // Touch
   const touchStartX = useRef<number | null>(null)
 
@@ -391,6 +398,21 @@ export default function LandingClient() {
   const goStep = useCallback((n: number) => setStep(n), [])
   const prev   = useCallback(() => setStep(i => (i + 4) % 5), [])
   const next   = useCallback(() => setStep(i => (i + 1) % 5), [])
+
+  const handleVerify = useCallback(() => {
+    const cp = cpInput.trim()
+    if (cp.length < 5) { setCpStatus('bad'); return }
+    setCpLoading(true)
+    setTimeout(() => {
+      const valid = isValidPostalCode(cp)
+      setCpVerified(cp)
+      setCpStatus(valid ? 'ok' : 'no')
+      setCpLoading(false)
+      if (valid) {
+        try { localStorage.setItem('mm_cp', cp) } catch {}
+      }
+    }, 300)
+  }, [cpInput])
 
   // Cintillo height is the scroll offset to avoid hiding section headings
   const CINCH_H_PX = 51
@@ -446,6 +468,9 @@ export default function LandingClient() {
         .lp-contact-btns   { display: flex; flex-wrap: wrap; }
         .lp-footer         { padding: 22px 56px; flex-direction: row; }
         .lp-footer-copy    { display: inline; }
+        .lp-cp-section     { padding: 52px 56px; display: grid; grid-template-columns: minmax(0,1fr) 520px; gap: 48px; align-items: center; }
+        .lp-cp-text-short  { display: none; }
+        .lp-cp-text-full   { display: inline; }
 
         @media (max-width: 960px) {
           .lp-hero-overlay-h { display: none; }
@@ -474,6 +499,10 @@ export default function LandingClient() {
           .lp-contact-btns   { flex-direction: column; }
           .lp-footer         { padding: 18px 22px; flex-direction: column; align-items: center; gap: 10px; }
           .lp-footer-copy    { display: block; font-size: 11.5px !important; }
+          .lp-cp-section     { padding: 34px 22px; display: block; }
+          .lp-cp-right       { margin-top: 14px; }
+          .lp-cp-text-short  { display: inline; }
+          .lp-cp-text-full   { display: none; }
         }
 
         /* Hover states */
@@ -666,6 +695,134 @@ export default function LandingClient() {
           <Link href="/menu" style={{ display: 'block', marginTop: 24, padding: 16, borderRadius: 10, background: C.orange, textAlign: 'center', font: `700 17px/1 ${F.display}`, letterSpacing: '.06em', textTransform: 'uppercase', color: C.ink, textDecoration: 'none' }}>
             Empezar mi pedido
           </Link>
+        </div>
+      </div>
+
+      {/* ══════════════════════════════════════════════════════════════════════
+          CÓDIGO POSTAL
+      ══════════════════════════════════════════════════════════════════════ */}
+      <div
+        className="lp-cp-section"
+        style={{
+          borderTop: '1px solid rgba(255,255,255,.08)',
+          background: `#0a0908 url(/media/Fondo.jpg) center/900px repeat`,
+          position: 'relative',
+        }}
+      >
+        {/* overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: 'rgba(8,8,7,.88)', pointerEvents: 'none' }} />
+
+        {/* Left — text */}
+        <div style={{ position: 'relative' }}>
+          <div style={{ font: `600 12px/1 ${F.body}`, letterSpacing: '.2em', textTransform: 'uppercase', color: C.orange, marginBottom: 14 }}>
+            Cobertura
+          </div>
+          <h2 style={{ margin: '0 0 14px', font: `700 46px/1.05 ${F.display}`, textTransform: 'uppercase', color: C.text }}>
+            ¿Llegamos a tu zona?
+          </h2>
+          <p style={{ margin: 0, font: `400 16px/1.55 ${F.body}`, color: 'rgba(245,241,236,.6)', maxWidth: '42ch' }}>
+            <span className="lp-cp-text-full">Escribe tu codigo postal y te decimos al momento si hay entrega a domicilio.</span>
+            <span className="lp-cp-text-short">Escríbelo y te decimos al momento.</span>
+          </p>
+        </div>
+
+        {/* Right — input + result */}
+        <div className="lp-cp-right" style={{ position: 'relative' }}>
+          <div style={{ display: 'flex', gap: 10 }}>
+            <label style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+              <span style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0,0,0,0)' }}>Código postal</span>
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={5}
+                value={cpInput}
+                placeholder="Ej. 64000"
+                onChange={e => {
+                  const v = e.target.value.replace(/\D/g, '').slice(0, 5)
+                  setCpInput(v)
+                  if (cpStatus === 'bad') setCpStatus('idle')
+                }}
+                onKeyDown={e => e.key === 'Enter' && handleVerify()}
+                style={{
+                  height: 56,
+                  padding: '0 18px',
+                  borderRadius: 10,
+                  border: '1.5px solid rgba(255,255,255,.18)',
+                  background: 'rgba(0,0,0,.35)',
+                  color: C.text,
+                  font: `600 16px/1 ${F.body}`,
+                  letterSpacing: '.12em',
+                  outline: 'none',
+                  WebkitAppearance: 'none',
+                  fontSize: 16,
+                }}
+                onFocus={e => (e.currentTarget.style.borderColor = C.orange)}
+                onBlur={e => (e.currentTarget.style.borderColor = 'rgba(255,255,255,.18)')}
+              />
+            </label>
+            <button
+              onClick={handleVerify}
+              disabled={cpLoading}
+              style={{
+                flexShrink: 0,
+                height: 56,
+                padding: '0 26px',
+                borderRadius: 10,
+                border: 'none',
+                background: C.orange,
+                color: C.ink,
+                font: `700 18px/1 ${F.display}`,
+                letterSpacing: '.08em',
+                textTransform: 'uppercase',
+                cursor: cpLoading ? 'wait' : 'pointer',
+                opacity: cpLoading ? .7 : 1,
+              }}
+            >
+              {cpLoading ? '…' : 'Verificar'}
+            </button>
+          </div>
+
+          {/* Status */}
+          <div aria-live="polite" style={{ marginTop: 12 }}>
+            {cpStatus === 'idle' && (
+              <p style={{ margin: 0, font: `400 13.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>
+                Entregamos a domicilio los domingos. Si no llegamos a tu zona, puedes recoger en un punto de pickup.
+              </p>
+            )}
+            {cpStatus === 'bad' && (
+              <p style={{ margin: 0, font: `400 13.5px/1 ${F.body}`, color: '#e08078' }}>
+                Escribe un codigo postal de 5 dígitos.
+              </p>
+            )}
+            {cpStatus === 'ok' && (
+              <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(47,168,116,.45)', background: 'rgba(47,168,116,.12)' }}>
+                <div style={{ flexShrink: 0, width: 26, height: 26, borderRadius: '50%', background: '#2fa874', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12l5 5L19 7"/></svg>
+                </div>
+                <div>
+                  <p style={{ margin: '0 0 6px', font: `500 14px/1.4 ${F.body}`, color: C.text }}>
+                    ¡Si llegamos al <strong>{cpVerified}</strong>! Entrega a domicilio el domingo.
+                  </p>
+                  <Link href="/menu" style={{ font: `700 13px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', color: '#4fce93', textDecoration: 'none' }}>
+                    Ordenar →
+                  </Link>
+                </div>
+              </div>
+            )}
+            {cpStatus === 'no' && (
+              <div style={{ padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(247,145,56,.45)', background: 'rgba(247,145,56,.1)' }}>
+                <p style={{ margin: '0 0 6px', font: `500 14px/1.4 ${F.body}`, color: C.text }}>
+                  Aun no entregamos en el <strong>{cpVerified}</strong>, pero puedes recoger en un punto de pickup.
+                </p>
+                <button
+                  onClick={() => scrollTo(contactRef)}
+                  style={{ background: 'none', border: 'none', padding: 0, font: `700 13px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase', color: C.orange, cursor: 'pointer' }}
+                >
+                  Escríbenos →
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
