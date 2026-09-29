@@ -6,7 +6,7 @@ import Navbar from './Navbar'
 /**
  * Wrapper del layout raíz.
  * - /admin: sin Navbar, sin paddingTop
- * - /: sin Navbar, sin paddingTop (landing tiene su propio avatar inline)
+ * - /: sin Navbar, sin paddingTop (landing tiene su propio chip de cuenta)
  * - resto:  Navbar global (64px) + paddingTop 64px
  */
 export default function SiteShell({ children }: { children: React.ReactNode }) {

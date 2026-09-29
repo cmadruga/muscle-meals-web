@@ -358,7 +358,7 @@ export default function CuentaClient({
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ font: `700 22px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresía</div>
             <div style={{ marginTop: 9, font: `400 13px/1.45 ${F.body}`, color: 'rgba(245,241,236,.62)' }}>
-              Los miembros fijan su plan semanal y pagan menos por platillo. Puedes activarla cuando quieras — nada se cobra automatico.
+              Los miembros fijan su plan semanal y pagan menos por platillo - puedes activarla cuando quieras.
             </div>
           </div>
           {/* Ver planes — pendiente */}
@@ -460,7 +460,7 @@ export default function CuentaClient({
 
   /* ── Referral footer copy ── */
   const referralFooter = () => {
-    if (totalReferrals === 0) return 'Aún nadie lo ha usado — compártelo por WhatsApp.'
+    if (totalReferrals === 0) return 'Nadie lo ha usado aún — compártelo por WhatsApp.'
     return `${totalReferrals} amigo${totalReferrals !== 1 ? 's' : ''} ya lo ${totalReferrals !== 1 ? 'usaron' : 'usó'}${pendingRewards > 0 ? ` · ${pendingRewards} recompensa${pendingRewards !== 1 ? 's' : ''} pendiente${pendingRewards !== 1 ? 's' : ''}` : ''}.`
   }
 
@@ -595,7 +595,7 @@ export default function CuentaClient({
                   <div style={{ marginTop: 6, font: `500 14.5px/1.45 ${F.body}`, color: hasAddress ? C.text : 'rgba(245,241,236,.45)' }}>
                     {hasAddress
                       ? <>{addrParsed.calle}{addrParsed.numExt ? ` ${addrParsed.numExt}` : ''}{addrParsed.colonia ? `, Col. ${addrParsed.colonia}` : ''}<br /><span style={{ color: 'rgba(245,241,236,.55)', fontWeight: 400 }}>{addrParsed.cp ? `C.P. ${addrParsed.cp}` : ''}{addrParsed.ciudad ? ` · ${addrParsed.ciudad}, N.L.` : ''}</span></>
-                      : 'Sin dirección guardada — la pides en tu primer pedido.'}
+                      : 'Sin dirección guardada — se guarda con tu primer pedido.'}
                   </div>
                 </div>
               </div>
@@ -755,7 +755,7 @@ export default function CuentaClient({
               <div style={{ font: `500 13.5px/1.5 ${F.body}`, color: C.text }}>
                 {customer?.phone ?? <span style={{ color: 'rgba(245,241,236,.45)' }}>Sin teléfono</span>}
                 {hasAddress && <><br /><span style={{ fontWeight: 400, color: 'rgba(245,241,236,.55)' }}>{addrParsed.calle}{addrParsed.colonia ? `, Col. ${addrParsed.colonia}` : ''}, C.P. {addrParsed.cp} · {addrParsed.ciudad}, N.L.</span></>}
-                {!hasAddress && <><br /><span style={{ fontWeight: 400, color: 'rgba(245,241,236,.45)' }}>Sin dirección guardada — la pides en tu primer pedido.</span></>}
+                {!hasAddress && <><br /><span style={{ fontWeight: 400, color: 'rgba(245,241,236,.45)' }}>Sin dirección guardada — se guarda con tu primer pedido.</span></>}
               </div>
             </div>
 

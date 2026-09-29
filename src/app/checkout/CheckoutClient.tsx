@@ -978,14 +978,14 @@ function ShippingCards({ selected, onSelect, shippingStandard, membershipMode }:
       name: 'Estándar',
       price: membershipMode ? 'Gratis' : `$${(shippingStandard / 100).toFixed(0)}.00`,
       priceColor: membershipMode ? C.success : undefined,
-      desc: 'Domingo 9AM – 4PM',
+      desc: 'Domingo 9AM – 2PM',
     },
     {
       type: 'pickup',
       name: 'Pickup',
       price: 'Gratis',
       priceColor: C.success,
-      desc: 'Recoges en el local',
+      desc: 'Recoge en el punto más cercano',
     },
     {
       type: 'priority',
@@ -1595,8 +1595,8 @@ function SidebarTotals({
         </>
       ) : (
         <>
-          {packageDiscountAmount > 0 && row('Descuento por paquete', `−${fmt(packageDiscountAmount)}`, C.success)}
-          {/* Subtotal — valor ya con descuento de paquete aplicado */}
+          {packageDiscountAmount > 0 && row('Descuento', `−${fmt(packageDiscountAmount)}`, C.success)}
+          {/* Subtotal — valor ya con descuento de aplicado */}
           {row('Subtotal', fmt(subtotal))}
           {isActiveMember ? (
             // Membresía activa: envío cubierto → tachado + Gratis

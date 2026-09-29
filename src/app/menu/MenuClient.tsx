@@ -1144,8 +1144,8 @@ export default function MenuClient({
                       )}
                     </span>
                     <span style={{ font: `600 13px/1 ${F.body}`, color: C.green }}>
-                      <span className="new-label-desktop">en paquete desde 5</span>
-                      <span className="new-label-mobile">en paquete</span>
+                      <span className="new-label-desktop">desde 5 meals</span>
+                      <span className="new-label-mobile">desde 5 meals</span>
                     </span>
                   </div>
                   <span style={{ font: `400 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}>
@@ -1213,12 +1213,11 @@ export default function MenuClient({
                       </span>
                     </div>
                     <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-                      <span style={{ font: `400 12px/1 ${F.body}`, color: C.faint }}>paq</span>
                       <span style={{ font: `700 22px/1 ${F.display}`, color: C.green }}>
                         ${(customPreviewPrice.packagePrice / 100).toFixed(0)}
                         {customPriceIsRange && customPriceMax && <span> – ${(customPriceMax.packagePrice / 100).toFixed(0)}</span>}
                       </span>
-                      <span style={{ font: `400 11px/1 ${F.body}`, color: C.faint }}>desde 5</span>
+                      <span style={{ font: `400 11px/1 ${F.body}`, color: C.faint }}>desde 5 meals</span>
                     </div>
                   </div>
                 ) : (

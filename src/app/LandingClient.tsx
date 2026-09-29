@@ -6,6 +6,10 @@ import Link from 'next/link'
 import { F } from '@/lib/ui-fonts'
 import { isValidPostalCode } from '@/lib/address-validation'
 import type { MealBasic } from '@/lib/types/meal'
+import { useAuth } from '@/hooks/useAuth'
+import LoginModal from '@/components/LoginModal'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
 
 /* ── Design tokens ─────────────────────────────────────────────────────────── */
 const C = {
@@ -374,6 +378,35 @@ function WaIcon() {
 /* ── Main component ──────────────────────────────────────────────────────── */
 export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
 
+  // Auth chip
+  const { user, loading } = useAuth()
+  const [mounted, setMounted]       = useState(false)
+  const [showLogin, setShowLogin]   = useState(false)
+  const [showAccMenu, setShowAccMenu] = useState(false)
+  const accMenuRef = useRef<HTMLDivElement>(null)
+  const accBtnRef  = useRef<HTMLButtonElement>(null)
+  useEffect(() => { setMounted(true) }, [])
+  useEffect(() => {
+    if (!showAccMenu) return
+    const close = (e: MouseEvent) => {
+      const t = e.target as Node
+      if (!accMenuRef.current?.contains(t) && !accBtnRef.current?.contains(t)) setShowAccMenu(false)
+    }
+    document.addEventListener('mousedown', close)
+    return () => document.removeEventListener('mousedown', close)
+  }, [showAccMenu])
+
+  const router = useRouter()
+  const handleLogout = async () => {
+    await createClient().auth.signOut()
+    setShowAccMenu(false)
+    router.refresh()
+  }
+
+  const userName   = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email || ''
+  const firstName  = userName.split(' ')[0] || 'Mi cuenta'
+  const userInitial = (userName[0] || '?').toUpperCase()
+
   // Slideshow
   const [heroIdx, setHeroIdx] = useState(0)
 
@@ -454,6 +487,68 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
 
   return (
     <div style={{ background: C.page, color: C.text, fontFamily: F.body }}>
+
+      {/* ── Floating auth chip ────────────────────────────────────────────── */}
+      {mounted && !loading && (
+        <div style={{ position: 'fixed', top: 16, right: 20, zIndex: 200 }}>
+          {user ? (
+            <>
+              <button
+                ref={accBtnRef}
+                onClick={() => setShowAccMenu(v => !v)}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: 8,
+                  padding: '7px 12px 7px 7px',
+                  border: showAccMenu ? '1px solid rgba(255,255,255,.22)' : '1px solid rgba(255,255,255,.14)',
+                  borderRadius: 22,
+                  background: showAccMenu ? 'rgba(255,255,255,.1)' : 'rgba(12,10,9,.7)',
+                  backdropFilter: 'blur(12px)',
+                  cursor: 'pointer',
+                }}
+              >
+                <span style={{ width: 26, height: 26, borderRadius: '50%', background: C.orange, color: C.ink, font: `700 12px/26px ${F.body}`, textAlign: 'center', display: 'inline-block', flexShrink: 0 }}>{userInitial}</span>
+                <span style={{ font: `600 13px/1 ${F.body}`, color: C.text }}>{firstName}</span>
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(245,241,236,.55)" strokeWidth="2.6" strokeLinecap="round" style={{ transform: showAccMenu ? 'rotate(180deg)' : 'none', transition: 'transform .2s', flexShrink: 0 }}>
+                  <path d="M6 9l6 6 6-6"/>
+                </svg>
+              </button>
+              {showAccMenu && (
+                <div
+                  ref={accMenuRef}
+                  style={{
+                    position: 'absolute', top: 'calc(100% + 8px)', right: 0,
+                    minWidth: 180, background: '#1a1714', border: '1px solid rgba(255,255,255,.1)',
+                    borderRadius: 10, overflow: 'hidden',
+                    boxShadow: '0 12px 32px rgba(0,0,0,.5)',
+                  }}
+                >
+                  <Link href="/cuenta" onClick={() => setShowAccMenu(false)} style={{ display: 'block', padding: '13px 16px', font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.8)', textDecoration: 'none' }}>Mi cuenta</Link>
+                  <Link href="/cuenta/pedidos" onClick={() => setShowAccMenu(false)} style={{ display: 'block', padding: '13px 16px', font: `500 13.5px/1 ${F.body}`, color: 'rgba(245,241,236,.8)', textDecoration: 'none', borderTop: '1px solid rgba(255,255,255,.07)' }}>Mis pedidos</Link>
+                  <button onClick={handleLogout} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '13px 16px', font: `500 13.5px/1 ${F.body}`, color: '#ff8080', background: 'none', border: 'none', borderTop: '1px solid rgba(255,255,255,.07)', cursor: 'pointer' }}>Cerrar sesión</button>
+                </div>
+              )}
+            </>
+          ) : (
+            <button
+              onClick={() => setShowLogin(true)}
+              style={{
+                padding: '9px 14px',
+                border: '1px solid rgba(255,255,255,.18)',
+                borderRadius: 9,
+                background: 'rgba(12,10,9,.65)',
+                backdropFilter: 'blur(12px)',
+                cursor: 'pointer',
+                font: `600 13px/1 ${F.body}`,
+                color: 'rgba(245,241,236,.8)',
+              }}
+            >
+              Iniciar sesión
+            </button>
+          )}
+        </div>
+      )}
+      <LoginModal isOpen={showLogin} onClose={() => setShowLogin(false)} />
+
       <style>{`
         /* Responsive */
         .lp-hero-overlay-h { display: block; }

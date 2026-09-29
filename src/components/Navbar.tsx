@@ -92,13 +92,13 @@ function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, we
           <div style={{ font: `600 13.5px/1.35 ${F.body}`, color: C.text }}>
             {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
           </div>
-          <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
+          {/* <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
             display: 'block', width: '100%', boxSizing: 'border-box',
             marginTop: 11, padding: '11px 0', borderRadius: 8,
             background: C.orange, color: '#17140f', border: 'none',
             font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
             textDecoration: 'none', textAlign: 'center',
-          }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link>
+          }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link> */}
         </div>
       )}
 
@@ -170,12 +170,12 @@ function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, orderC
             <div style={{ font: `600 13px/1.35 ${F.body}`, color: C.text }}>
               {isMember ? 'Renueva tu membresía y vuelve a ahorrar' : 'Hazte miembro y ahorra en cada semana'}
             </div>
-            <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
+            {/* <Link href={isMember ? '/membresia/renovar' : '/membresia'} onClick={onClose} style={{
               display: 'block', marginTop: 13, padding: '13px 0', borderRadius: 8,
               background: C.orange, color: '#17140f',
               font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
               textDecoration: 'none', textAlign: 'center',
-            }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link>
+            }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link> */}
           </div>
         )}
 
