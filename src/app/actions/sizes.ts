@@ -45,15 +45,22 @@ export async function createCustomSize(
   const proteinQty = data.protein_qty
   const carbQty = data.carb_qty
 
-  // Fetch one main size as reference to derive ingredient ratios.
-  // ratio = ref_qty / BASE_GR → normalizedQty = custom_qty / ratio = custom_qty * BASE_GR / ref_qty
-  // Esto permite que papa (ratio 5x) tenga el mismo tier de precio que arroz a cantidad equivalente.
-  const { data: refSize } = await supabase
-    .from('sizes')
-    .select('protein_qty, carb_qty')
-    .eq('is_main', true)
-    .ilike('name', 'fit')
-    .single()
+  // Fetch FIT (ratio reference) and LOW (price anchor) in parallel
+  const [{ data: refSize }, { data: lowSizeRow }] = await Promise.all([
+    supabase
+      .from('sizes')
+      .select('protein_qty, carb_qty')
+      .eq('is_main', true)
+      .ilike('name', 'fit')
+      .single(),
+    supabase
+      .from('sizes')
+      .select('price')
+      .eq('is_main', true)
+      .ilike('name', 'low')
+      .single(),
+  ])
+  const lowPrice = lowSizeRow?.price ?? 14500
 
   function normalizeQtys(
     qtys: Record<string, number>,
@@ -73,7 +80,7 @@ export async function createCustomSize(
   // Esto hace que un ingrediente con ratio ×5 (papa) mapee al mismo tier que el arroz equivalente.
   const proteinForPrice = normalizeQtys(proteinQty, refSize?.protein_qty, PROTEIN_BASE.FIT)
   const carbForPrice    = normalizeQtys(carbQty,    refSize?.carb_qty,    CARB_BASE.FIT)
-  const { price, packagePrice } = calculateCustomSizePrice(proteinForPrice, carbForPrice, data.veg_qty)
+  const { price, packagePrice } = calculateCustomSizePrice(proteinForPrice, carbForPrice, data.veg_qty, lowPrice)
 
   // Check if user is authenticated (usar client con cookies, no admin)
   const serverClient = await createClient()
