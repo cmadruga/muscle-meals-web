@@ -563,7 +563,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
         .lp-dots-web       { display: flex; }
         .lp-dots-mob       { display: none; }
         .lp-desliza        { display: flex; }
-        .lp-avatar-name    { display: inline; }
+
         .lp-cintillo-inner { gap: 34px; padding: 16px 56px; }
         .lp-cintillo-text  { font: 700 19px/1 ${F.display}; }
         .lp-cintillo-dot   { width: 5px; height: 5px; }
