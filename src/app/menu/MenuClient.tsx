@@ -15,31 +15,31 @@ import type { UnavailableItem } from '@/components/UnavailableModal'
 import type { ReorderCookie } from '@/lib/types/reorder'
 import { F } from '@/lib/ui-fonts'
 
-// ─── Modal de info "Qué son las porciones" — copy editable ────────
+// ─── Modal de info "Qué son las porciones?" — copy editable ────────
 const PORCIONES_MODAL = {
-  title: 'Qué son las porciones',
-  intro: 'Cada platillo se arma con tres porciones: proteína, carbohidratos y verdura. El tamaño que eliges define cuantos gramos lleva cada una — el platillo es el mismo, lo que cambia es la cantidad.',
+  title: 'Qué son las porciones?',
+  intro: 'Cada platillo se arma con tres porciones: proteína, carbohidratos y verdura. El tamaño que eliges define cuántos gramos de cada ingrediente lleva cada una — el platillo es el mismo, lo que cambia es la cantidad.',
   sections: [
     {
       key: 'protein' as const,
       label: 'Proteína',
       color: '#F79138' as string,
       note: 'Se pesa en crudo',
-      description: 'La base del platillo. Es la porcion que mas cambia entre tamaños y la que define la proteína total del dia.',
+      description: 'Elige cuántos gramos de ingrediente proteico quieres. Estos gramos son del ingrediente en crudo, no del macronutriente — la proteína real que terminas comiendo depende de la receta.',
     },
     {
       key: 'carb' as const,
       label: 'Carbohidratos',
       color: '#e8c07d' as string,
       note: 'Se pesa en crudo',
-      description: 'El acompañamiento que da la energia. Se pesa antes de cocerse o hidratarse, asi que en el plato se ve mas volumen del que dice el gramaje.',
+      description: 'Similar a la proteína, los gramos que eliges son del ingrediente en crudo. Al cocinarse el volumen cambia, pero tus calorías y macros ya están calculados.',
     },
     {
       key: 'veggie' as const,
       label: 'Verdura',
       color: '#7ac77a' as string,
       note: 'Se pesa en crudo',
-      description: 'La porcion de verdura, siempre fresca. Va en todos los tamaños y aporta volumen y fibra sin subir mucho las calorias.',
+      description: 'Gramos del vegetal antes de prepararse. Aporta volumen, fibra y micronutrientes sin impactar mucho las calorías.',
     },
   ],
   cta: 'Entendido',
@@ -195,7 +195,7 @@ export default function MenuClient({
   // Category filter
   const [activeCategory] = useState<CategoryFilter>('all')
 
-  // Info modal "Qué son las porciones"
+  // Info modal "Qué son las porciones?"
   const [showInfoModal, setShowInfoModal] = useState(false)
   // Editar tamaño personalizado
   const [editingSizeId, setEditingSizeId] = useState<string | null>(null)
@@ -646,16 +646,15 @@ export default function MenuClient({
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '11px 13px', borderRadius: 11, background: 'rgba(122,199,122,.1)', border: '1px solid rgba(122,199,122,.3)' }}>
               <span style={{ width: 20, height: 20, flexShrink: 0, borderRadius: '50%', background: C.green, color: '#0f0d0c', font: `700 11px/20px ${F.body}`, textAlign: 'center', display: 'inline-block' }}>✓</span>
               <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ font: `700 14px/1 ${F.cond}`, letterSpacing: '.1em', textTransform: 'uppercase', color: C.green }}>Precio de paquete activo</div>
+                <div style={{ font: `700 14px/1 ${F.cond}`, letterSpacing: '.1em', textTransform: 'uppercase', color: C.green }}>Descuento activo</div>
               </div>
             </div>
           ) : totalQty > 0 ? (
             <div style={{ padding: '12px 14px', borderRadius: 11, background: 'rgba(247,145,56,.08)', border: '1px solid rgba(247,145,56,.22)' }}>
               <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 8 }}>
                 <span style={{ font: `600 13px/1.3 ${F.body}`, color: C.text }}>
-                  Te falt{toDiscount === 1 ? 'a' : 'an'} minimo {toDiscount} para paquete
+                  Te falt{toDiscount === 1 ? 'a' : 'an'} mínimo {toDiscount} para ahorrar
                 </span>
-                <span style={{ font: `700 13px/1 ${F.body}`, color: C.orange }}>{totalQty}/5</span>
               </div>
               <div style={{ height: 6, borderRadius: 3, background: 'rgba(255,255,255,.1)', overflow: 'hidden' }}>
                 <div style={{ height: '100%', borderRadius: 3, background: C.orange, width: `${progressPct}%` }} />
@@ -679,8 +678,8 @@ export default function MenuClient({
                 Toca un meal y aparecer&#225; aqu&#237;. Puedes repetirlo y mezclar tama&#241;os.
               </p>
               <div style={{ marginTop: 16, padding: 15, borderRadius: 11, background: 'rgba(247,145,56,.07)', border: '1px solid rgba(247,145,56,.18)', textAlign: 'left' }}>
-                <div style={{ font: `700 15px/1 ${F.cond}`, letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange }}>Mas meals, mas ahorro</div>
-                <p style={{ margin: '7px 0 0', font: `400 13px/1.5 ${F.body}`, color: 'rgba(245,241,236,.65)' }}>Al llegar a 5 meals cada meal baja al precio de paquete. No necesitas hacer nada.</p>
+                <div style={{ font: `700 15px/1 ${F.cond}`, letterSpacing: '.12em', textTransform: 'uppercase', color: C.orange }}>Más meals, más ahorro</div>
+                <p style={{ margin: '7px 0 0', font: `400 13px/1.5 ${F.body}`, color: 'rgba(245,241,236,.65)' }}>Al llegar a 5 meals baja al precio. </p>
               </div>
             </div>
           )}
@@ -774,7 +773,7 @@ export default function MenuClient({
               </div>
               {isPackage && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', color: C.green }}>
-                  <span>Descuento paquete</span>
+                  <span>Descuento</span>
                   <span>{savings > 0 ? `−$${(savings / 100).toFixed(0)}` : '—'}</span>
                 </div>
               )}
@@ -957,7 +956,7 @@ export default function MenuClient({
             Arma tu semana
           </h1>
           <p style={{ margin: '0 0 26px', font: `400 15px/1.5 ${F.body}`, color: C.muted, maxWidth: '56ch' }}>
-            Elige tu tamaño, agrega los meals que quieras y mira el total en vivo. Desde 5 el precio baja a paquete automaticamente.
+            Elige tu tamaño, agrega los meals que quieras y mira el total en vivo. Agrega 5 o más y el precio baja.
           </p>
 
           {/* ── 1 · Tamaño ──────────────────────────────────────────────── */}
@@ -972,7 +971,7 @@ export default function MenuClient({
               <button className="info-btn-desktop" onClick={() => setShowInfoModal(true)}
                 style={{ alignItems: 'center', gap: 7, flexShrink: 0, padding: '7px 11px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 8, background: 'rgba(255,255,255,.03)', color: 'rgba(245,241,236,.7)', font: `500 12.5px/1 ${F.body}`, cursor: 'pointer' }}>
                 <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 16, height: 16, borderRadius: '50%', border: '1px solid rgba(245,241,236,.4)', font: `700 10px/1 ${F.body}`, flexShrink: 0 }}>i</span>
-                Qué son las porciones
+                Qué son las porciones?
               </button>
               {/* Mobile info button */}
               <button className="info-btn-mobile" onClick={() => setShowInfoModal(true)}
@@ -997,7 +996,7 @@ export default function MenuClient({
                         <span className="badge-featured-text" style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
                           {/* eslint-disable-next-line @next/next/no-img-element */}
                           <img src="/media/mascota-badge.png" alt="" aria-hidden="true" style={{ width: 13, height: 13, objectFit: 'contain', display: 'inline-block', verticalAlign: 'middle', mixBlendMode: 'multiply' }} />
-                          El mas pedido
+                          El más pedido
                         </span>
                         <span className="badge-featured-star">
                           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1369,7 +1368,7 @@ export default function MenuClient({
                 )}
                 <button onClick={() => setShowInfoModal(true)}
                   style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 28, height: 28, borderRadius: '50%', border: '1px solid rgba(245,241,236,.25)', background: 'transparent', color: 'rgba(245,241,236,.6)', font: `700 12px/1 ${F.body}`, cursor: 'pointer', flexShrink: 0 }}
-                  title="Qué son las porciones">
+                  title="Qué son las porciones?">
                   i
                 </button>
               </div>
@@ -1439,7 +1438,7 @@ export default function MenuClient({
         document.body
       )}
 
-      {/* ── Modal "Qué son las porciones" — portal bypasses zoom:1.1 ── */}
+      {/* ── Modal "Qué son las porciones?" — portal bypasses zoom:1.1 ── */}
       {showInfoModal && mounted && createPortal(
         <div className="info-modal-portal" onClick={() => setShowInfoModal(false)}>
           <div className="info-modal" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true">
@@ -1487,7 +1486,7 @@ export default function MenuClient({
               {/* Orange "Todo se pesa en crudo" note */}
               <div style={{ margin: '4px 0 18px', padding: '14px 16px', border: '1px solid rgba(247,145,56,.18)', borderRadius: 11, background: 'rgba(247,145,56,.07)' }}>
                 <div style={{ font: `700 13px/1 ${F.display}`, letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange }}>Todo se pesa en crudo</div>
-                <p style={{ margin: '8px 0 0', font: `400 13px/1.5 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Los gramos que ves son el peso antes de cocinar. Al cocinarse el peso baja, pero las calorias y macros de cada platillo ya estan calculados sobre el platillo terminado. Los ingredientes de cada porcion rotan segun el menu de la semana.</p>
+                <p style={{ margin: '8px 0 0', font: `400 13px/1.5 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Los gramos que ves son el peso antes de cocinar. Al cocinarse el peso cambia, pero las calorías y macros ya están calculados sobre el platillo terminado.</p>
               </div>
             </div>
             {/* Footer */}

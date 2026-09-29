@@ -7,7 +7,7 @@ import { bigShoulders, barlow, barlowCondensed } from '@/lib/fonts'
 
 export const metadata: Metadata = {
   title: 'Muscle Meals | Comida preparada saludable en Monterrey',
-  description: 'Comida preparada, porcionada y cocinada con los macros exactos para tus metas fitness. Elige tus porciones, arma tu menú semanal o mensual y recíbelo cada semana listo para comer.',
+  description: 'Tus comidas de la semana, con las porciones que tus objetivos necesitan.. Elige tus porciones, arma tu menú semanal o mensual y recíbelo cada semana listo para comer.',
 }
 
 export default function RootLayout({

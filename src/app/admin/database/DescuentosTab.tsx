@@ -213,7 +213,7 @@ function DiscountModal({ discount, onClose }: { discount: Discount | null; onClo
 
             {/* Código */}
             <div>
-              <label style={lbl}>Código promo <span style={{ color: '#555' }}>(dejar vacío = se activa automático sin codigo si aplica)</span></label>
+              <label style={lbl}>Código promo <span style={{ color: '#555' }}>(dejar vacío = se activa automático sin código si aplica)</span></label>
               <div style={{ display: 'flex', gap: 8 }}>
                 <input
                   style={{ ...inp, textTransform: 'uppercase', flex: 1 }}

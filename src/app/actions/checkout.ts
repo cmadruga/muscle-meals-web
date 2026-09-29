@@ -340,7 +340,7 @@ export async function purchaseMembership(
     customerEmail: '',
     customerPhone: data.customerPhone,
     items: [{
-      name: `Membresia Muscle Meals - ${data.membershipWeeks} sem - ${totalQty} platillos sem - ${discountPct}% dto`,
+      name: `Membresía Muscle Meals - ${data.membershipWeeks} sem - ${totalQty} platillos sem - ${discountPct}% dto`,
       unit_price: totalAmount,
       quantity: 1,
     }],

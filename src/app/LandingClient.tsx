@@ -30,19 +30,19 @@ const PHOTOS = [
 const STEPS = [
   {
     title: 'Elige tu tamaño',
-    desc:  'LOW, FIT o PLUS según la porciones que buscas — o arma el tuyo gramo por gramo.',
+    desc:  'LOW, FIT o PLUS según las porciones que buscas — o arma el tuyo gramo por gramo.',
   },
   {
     title: 'Arma tu menú',
-    desc:  'Mezcla los meals de la semana. Al agregar 5 o más ahorras.',
+    desc:  'Escoge tus meals de la semana. Al agregar 5 o más ahorras.',
   },
   {
     title: 'Hazte miembro',
-    desc:  'Despreocupate de tus meals por 4, 8 o 12 semanas. Tus semanas listas sin preocupaciones.',
+    desc:  'Despreocúpate de tus meals por 4, 8 o 12 semanas y ahorra aún más.',
   },
   {
     title: 'Paga y coordina',
-    desc:  'Domicilio o pickup, paga con MercadoPago rapido y seguro.',
+    desc:  'Domicilio o pickup, paga con MercadoPago rápido y seguro.',
   },
   {
     title: 'Recibe tu pedido',
@@ -85,7 +85,7 @@ function Slide1Web() {
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '15px 18px', border: '1px dashed rgba(255,255,255,.25)', borderRadius: 12 }}>
         <div style={{ font: `700 19px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>+ A tu medida</div>
         <div style={{ display: 'flex', gap: 8, marginLeft: 'auto' }}>
-          {['Proteina', 'Carbohidrato', 'Verdura'].map(t => (
+          {['Proteína', 'Carbohidrato', 'Verdura'].map(t => (
             <span key={t} style={{ padding: '5px 10px', borderRadius: 999, background: 'rgba(255,255,255,.07)', font: `500 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.65)' }}>{t}</span>
           ))}
         </div>
@@ -137,13 +137,13 @@ function Slide3Web() {
       <div style={{ font: `700 12px/1 ${F.cond}`, letterSpacing: '.18em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>3 · Membresía</div>
       <div style={{ display: 'flex', gap: 14 }}>
         <div style={{ flex: 1, padding: 20, border: '1px solid rgba(255,255,255,.12)', borderRadius: 14, background: 'rgba(255,255,255,.03)' }}>
-          <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>Sin membresia</div>
+          <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>Sin membresía</div>
           <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.55)' }}>Pides cuando quieras, al ritmo que quieras.</div>
           <div style={{ marginTop: 18, font: `700 26px/1 ${F.display}`, color: C.text }}>$800<span style={{ font: `500 13px/1 ${F.body}`, color: 'rgba(245,241,236,.45)' }}> / semana</span></div>
         </div>
         <div style={{ position: 'relative', flex: 1, padding: 20, border: `1px solid ${C.orange}`, borderRadius: 14, background: 'rgba(247,145,56,.1)' }}>
           <span style={{ position: 'absolute', top: -9, left: 20, padding: '3px 9px', borderRadius: 4, background: C.orange, font: `700 10px/1 ${F.body}`, letterSpacing: '.06em', textTransform: 'uppercase', color: C.ink }}>Activa</span>
-          <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>Con membresia</div>
+          <div style={{ font: `700 20px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>Con membresía</div>
           <div style={{ marginTop: 14, font: `400 14px/1.5 ${F.body}`, color: 'rgba(245,241,236,.7)' }}>Planea tu mes y ahorra aún más al pagar.</div>
           <div style={{ marginTop: 18, display: 'flex', alignItems: 'baseline', gap: 9 }}>
             <div style={{ font: `400 14px/1 ${F.body}`, color: 'rgba(245,241,236,.45)', textDecoration: 'line-through' }}>$800</div>
@@ -170,7 +170,7 @@ function Slide4Web() {
       <div style={{ display: 'flex', gap: 12 }}>
         <div style={{ flex: 1, padding: '16px 18px', border: `1px solid ${C.orange}`, borderRadius: 12, background: 'rgba(247,145,56,.1)' }}>
           <div style={{ font: `700 17px/1 ${F.display}`, textTransform: 'uppercase', color: C.orange }}>A domicilio</div>
-          <div style={{ marginTop: 7, font: `400 13px/1.35 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Domingo, 9 am – 4 pm</div>
+          <div style={{ marginTop: 7, font: `400 13px/1.35 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Domingo, 9 am – 2 pm</div>
         </div>
         <div style={{ flex: 1, padding: '16px 18px', border: '1px solid rgba(255,255,255,.12)', borderRadius: 12, background: 'rgba(255,255,255,.03)' }}>
           <div style={{ font: `700 17px/1 ${F.display}`, textTransform: 'uppercase', color: 'rgba(245,241,236,.8)' }}>Pickup</div>
@@ -184,7 +184,7 @@ function Slide4Web() {
       </div> */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, padding: '15px 18px', borderRadius: 12, background: C.orange }}>
         <span style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $720</span>
-        <span style={{ marginLeft: 'auto', font: `600 13.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rapido</span>
+        <span style={{ marginLeft: 'auto', font: `600 13.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rápido</span>
       </div>
     </div>
   )
@@ -282,8 +282,8 @@ function Slide3Mobile() {
     <>
       <div style={{ display: 'flex', gap: 9 }}>
         {[
-          { label: 'Sin membresia', desc: 'Pides cuando quieras, al ritmo que quieras.', price: '$800',  accent: false },
-          { label: 'Con membresia', desc: 'Planea tu mes y ahorra aún más al pagar.', price: '$720',  accent: true, orig: '$800' },
+          { label: 'Sin membresía', desc: 'Pides cuando quieras, al ritmo que quieras.', price: '$800',  accent: false },
+          { label: 'Con membresía', desc: 'Planea tu mes y ahorra aún más al pagar.', price: '$720',  accent: true, orig: '$800' },
         ].map(c => (
           <div key={c.label} style={{ flex: 1, padding: 12, border: c.accent ? `1px solid ${C.orange}` : '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: c.accent ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
             <div style={{ font: `700 15px/1 ${F.display}`, textTransform: 'uppercase', color: c.accent ? C.orange : 'rgba(245,241,236,.8)' }}>{c.label}</div>
@@ -312,7 +312,7 @@ function Slide4Mobile() {
     <>
       <div style={{ display: 'flex', gap: 9 }}>
         {[
-          { label: 'A domicilio', detail: 'Dom 9 am – 4 pm', accent: true },
+          { label: 'A domicilio', detail: 'Dom 9 am – 2 pm', accent: true },
           { label: 'Pickup',       detail: 'Punto cercano',   accent: false },
         ].map(o => (
           <div key={o.label} style={{ flex: 1, padding: 12, border: o.accent ? `1px solid ${C.orange}` : '1px solid rgba(255,255,255,.12)', borderRadius: 10, background: o.accent ? 'rgba(247,145,56,.1)' : 'rgba(255,255,255,.03)' }}>
@@ -323,7 +323,7 @@ function Slide4Mobile() {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', padding: '13px 15px', borderRadius: 10, background: C.orange }}>
         <span style={{ font: `700 16px/1 ${F.display}`, letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink }}>Pagar $720</span>
-        <span style={{ marginLeft: 'auto', font: `600 11.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rapido</span>
+        <span style={{ marginLeft: 'auto', font: `600 11.5px/1 ${F.body}`, color: 'rgba(23,20,15,.72)' }}>Un solo paso · seguro y rápido</span>
       </div>
     </>
   )
@@ -560,8 +560,8 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/media/logo-color.png" alt="Muscle Meals" className="lp-hero-logo" style={{ maxWidth: '100%', display: 'block' }} />
           <div className="lp-hero-bar" />
-          <h1 className="lp-hero-h1" style={{ margin: 0, maxWidth: 600, textTransform: 'uppercase', color: C.text, textWrap: 'balance' } as React.CSSProperties}>
-            Comida preparada con <span style={{ color: C.orange }}>los macros exactos</span> para alcanzar tus metas
+          <h1 className="lp-hero-h1" style={{ margin: 0, maxWidth: 700, textTransform: 'uppercase', color: C.text, textWrap: 'balance' } as React.CSSProperties}>
+            tus comidas de la semana, <span style={{ color: C.orange }}>con las porciones</span> que tus objetivos necesitan
           </h1>
           <div className="lp-hero-btns" style={{ display: 'flex', flexDirection: 'column', gap: 12, marginTop: 6 }}>
             <Link href="/menu" className="lp-hero-btn-p" style={{ display: 'block', borderRadius: 10, background: C.orange, letterSpacing: '.07em', textTransform: 'uppercase', color: C.ink, textAlign: 'center', textDecoration: 'none' }}>
@@ -604,7 +604,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
       ══════════════════════════════════════════════════════════════════════ */}
       <div style={{ position: 'sticky', top: 0, zIndex: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', background: C.orange, boxShadow: '0 6px 18px rgba(0,0,0,.35)', overflow: 'hidden' }}>
         <div className="lp-cintillo-inner" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flexWrap: 'nowrap', overflow: 'hidden' }}>
-          {['Macros exactos', 'Cocinado y porcionado', 'Entregas semanales'].map((text, i) => (
+          {['Elige tus porciones', 'Entregas semanales', 'calienta y disfruta'].map((text, i) => (
             <React.Fragment key={text}>
               {i > 0 && <span className="lp-cintillo-dot" style={{ flexShrink: 0, borderRadius: '50%', background: 'rgba(23,20,15,.5)' }} />}
               <span className="lp-cintillo-text" style={{ letterSpacing: '.05em', textTransform: 'uppercase', color: C.ink, whiteSpace: 'nowrap' }}>{text}</span>
@@ -621,7 +621,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
         {/* Header — web only */}
         <div className="lp-steps-head" style={{ alignItems: 'flex-end', justifyContent: 'space-between', gap: 30, marginBottom: 34 }}>
           <div>
-            <div style={{ font: `600 12px/1 ${F.body}`, letterSpacing: '.2em', textTransform: 'uppercase', color: C.orange }}>Así funciona</div>
+            <div style={{ font: `600 12px/1 ${F.body}`, letterSpacing: '.2em', textTransform: 'uppercase', color: C.orange }}>¿Cómo funciona?</div>
             <h2 style={{ margin: '12px 0 0', font: `700 54px/.93 ${F.display}`, textTransform: 'uppercase', color: C.text }}>Tu semana resuelta<br />en cinco pasos</h2>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -748,7 +748,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
             ¿Llegamos a tu zona?
           </h2>
           <p style={{ margin: 0, font: `400 16px/1.55 ${F.body}`, color: 'rgba(245,241,236,.6)', maxWidth: '42ch' }}>
-            <span className="lp-cp-text-full">Escribe tu codigo postal y te decimos al momento si hay entrega a domicilio.</span>
+            <span className="lp-cp-text-full">Escribe tu código postal y te decimos al momento si hay entrega a domicilio.</span>
             <span className="lp-cp-text-short">Escríbelo y te decimos al momento.</span>
           </p>
         </div>
@@ -819,7 +819,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
             )}
             {cpStatus === 'bad' && (
               <p style={{ margin: 0, font: `400 13.5px/1 ${F.body}`, color: '#e08078' }}>
-                Escribe un codigo postal de 5 dígitos.
+                Escribe un código postal de 5 dígitos.
               </p>
             )}
             {cpStatus === 'ok' && (
@@ -840,7 +840,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
             {cpStatus === 'no' && (
               <div style={{ padding: '14px 18px', borderRadius: 10, border: '1px solid rgba(247,145,56,.45)', background: 'rgba(247,145,56,.1)' }}>
                 <p style={{ margin: '0 0 6px', font: `500 14px/1.4 ${F.body}`, color: C.text }}>
-                  Aun no entregamos en el <strong>{cpVerified}</strong>, pero puedes recoger en un punto de pickup.
+                  Aún no entregamos en el <strong>{cpVerified}</strong>, pero puedes recoger en un punto de pickup.
                 </p>
                 <button
                   onClick={() => scrollTo(contactRef)}
@@ -864,7 +864,7 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
           <div style={{ font: `600 12px/1 ${F.body}`, letterSpacing: '.2em', textTransform: 'uppercase', color: C.orange }}>Contacto</div>
           <h2 style={{ margin: '12px 0 14px', font: `700 48px/.95 ${F.display}`, textTransform: 'uppercase', color: C.text }}>¿Dudas antes<br />de ordenar?</h2>
           <p style={{ margin: '0 0 30px', maxWidth: 420, font: `400 16px/1.55 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>
-            Escribenos y te contestamos el mismo dia: dudas de macros, cambios en tu pedido o la zona de entrega.
+            Escríbenos y te contestamos el mismo día: dudas de macros, cambios en tu pedido o la zona de entrega.
           </p>
           <div className="lp-contact-btns" style={{ gap: 12 }}>
             {[
@@ -884,9 +884,9 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
           <div style={{ position: 'absolute', inset: 0, background: 'rgba(6,6,6,.85)' }} />
           <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', gap: 22 }}>
             {[
-              { label: 'Entregas',           body: <>Domingos, 9:00 am – 4:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>A domicilio en Monterrey o en punto de pickup</span></> },
-              { label: 'Cierre de pedidos',  body: <>Jueves 8:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>Lo que entre despues va a la semana siguiente</span></> },
-              { label: 'Atención',           body: 'Lunes a sabado, 9:00 am – 7:00 pm' },
+              { label: 'Entregas',           body: <>Domingos, 9:00 am – 2:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>A domicilio en Monterrey o en punto de pickup</span></> },
+              { label: 'Cierre de pedidos',  body: <>Viernes 4:00 pm<br /><span style={{ color: 'rgba(245,241,236,.55)' }}>Pedidos sujetos a disponibilidad después del cierre.</span></> },
+              { label: 'Atención',           body: 'Lunes a domingo, 9:00 am – 7:00 pm' },
             ].map(row => (
               <div key={row.label}>
                 <div style={{ font: `700 13px/1 ${F.cond}`, letterSpacing: '.16em', textTransform: 'uppercase', color: 'rgba(245,241,236,.45)' }}>{row.label}</div>

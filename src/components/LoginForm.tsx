@@ -160,7 +160,7 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
   const benefits = [
     'Repite tu última orden en un toque',
     'Guarda direcciones y macros',
-    'Compra membresia y ahorra aun más',
+    'Compra membresía y ahorra aún más',
   ]
 
   const isReorder = context === 'reorder'

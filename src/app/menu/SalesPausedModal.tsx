@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { colors } from '@/lib/theme'
 
-const DEFAULT_MESSAGE = 'Estaremos de vuelta el Lunes para recibir tu pedido!💪🏼\n(Proxima entrega Domingo 3 Mayo)'
+const DEFAULT_MESSAGE = 'Estaremos de vuelta el Lunes para recibir tu pedido!💪🏼\n(Próxima entrega Domingo 3 Mayo)'
 
 export default function SalesPausedModal() {
   const [open, setOpen] = useState(true)

@@ -244,10 +244,10 @@ export default function CheckoutClient({
     if (shippingType === 'pickup' && !selectedPickupSpot) return 'Elige un pickup spot'
     if (!addressValidated) {
       if (shippingType !== 'pickup' && addressOption === 'new' && codigoPostal.length === 5 && !isPostalCodeValid)
-        return 'CP fuera del area de entrega'
+        return 'CP fuera del área de entrega'
       if (shippingType !== 'pickup' && addressOption === 'new' && codigoPostal.length < 5)
         return 'Falta el CP'
-      return 'Completa la direccion'
+      return 'Completa la dirección'
     }
     return null
   }
@@ -417,8 +417,8 @@ export default function CheckoutClient({
   // CTA label
   const ctaLabel = isProcessing
     ? 'Procesando…'
-    : isMembershipMatch   ? 'Confirmar con membresia'
-    : membershipMode      ? 'Activar membresia'
+    : isMembershipMatch   ? 'Confirmar con membresía'
+    : membershipMode      ? 'Activar membresía'
     :                       'Proceder al pago'
 
   // ── Empty state ───────────────────────────────────────────────────────────────
@@ -431,7 +431,7 @@ export default function CheckoutClient({
       }}>
         <div style={{ fontSize: 48, color: C.orange, fontFamily: F.display, letterSpacing: '.05em' }}>[ ]</div>
         <h2 style={{ fontFamily: F.display, fontSize: 32, textTransform: 'uppercase', margin: 0, color: C.text }}>
-          Tu carrito esta vacio
+          Tu carrito está vacío
         </h2>
         <p style={{ fontFamily: F.body, color: C.textSub, margin: 0 }}>Agrega platillos para continuar</p>
         <Link href="/menu" style={{
@@ -616,7 +616,7 @@ export default function CheckoutClient({
           {/* 2 · Contacto y dirección */}
           <SectionLabel
             n="2"
-            title={shippingType === 'pickup' ? 'Contacto' : 'Contacto y direccion'}
+            title={shippingType === 'pickup' ? 'Contacto' : 'Contacto y dirección'}
             hint={shippingType === 'pickup' ? 'recoges tú, no pedimos dirección' : undefined}
             style={{ marginTop: 16, marginBottom: 14 }}
             className="co-section2-label"
@@ -779,7 +779,7 @@ function MembershipBand({
             {!mode && (
               <div className="co-memb-chips" style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 12 }}>
                 <Chip color={C.orange} bg="rgba(247,145,56,.14)">Desde -10%</Chip>
-                <Chip color={C.success} bg="rgba(122,199,122,.14)">Envio siempre gratis</Chip>
+                <Chip color={C.success} bg="rgba(122,199,122,.14)">Envío siempre gratis</Chip>
               </div>
             )}
 
@@ -1064,7 +1064,7 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
         <>
           <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
             letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>
-            Horario segun tu zona
+            Horario según tu zona
           </div>
           <div style={{ fontFamily: F.body, fontSize: 12.5, color: C.textSub, lineHeight: 1.45 }}>
             Te escribimos el <strong style={{ color: C.text, fontWeight: 600 }}>sábado</strong> por WhatsApp con la hora estimada del domingo.
@@ -1375,7 +1375,7 @@ function CheckoutSidebar(p: SidebarProps) {
       {/* Header */}
       <div style={{ padding: '7px 18px 7px', display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
         <span style={{ fontFamily: F.display, fontSize: 26, textTransform: 'uppercase', color: C.text }}>
-          {p.membershipMode ? 'Tu membresia' : 'Tu pedido'}
+          {p.membershipMode ? 'Tu membresía' : 'Tu pedido'}
         </span>
         <span style={{ fontFamily: F.body, fontSize: 13, color: C.textFaint }}>
           {p.membershipMode ? `${p.membershipWeeks} semanas` : `${totalQty} platillo${totalQty !== 1 ? 's' : ''}`}
@@ -1728,7 +1728,7 @@ function MobileSummaryCollapsible(p: MobileSummaryProps) {
       }}>
         <div style={{ textAlign: 'left' }}>
           <div style={{ fontFamily: F.display, fontSize: 19, textTransform: 'uppercase', color: C.text }}>
-            {p.membershipMode ? 'Tu membresia' : 'Tu pedido'}
+            {p.membershipMode ? 'Tu membresía' : 'Tu pedido'}
           </div>
           <div style={{ fontFamily: F.body, fontSize: 12, color: C.textSub, marginTop: 4 }}>
             {p.membershipMode

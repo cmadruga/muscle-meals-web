@@ -98,7 +98,7 @@ function DropdownPanel({ dropdownRef, userInitial, userName, email, isMember, we
             background: C.orange, color: '#17140f', border: 'none',
             font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
             textDecoration: 'none', textAlign: 'center',
-          }}>{isMember ? 'Renovar membresia' : 'Ver planes'}</Link>
+          }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link>
         </div>
       )}
 
@@ -175,7 +175,7 @@ function BottomSheet({ userInitial, userName, email, isMember, weeksLeft, orderC
               background: C.orange, color: '#17140f',
               font: `700 15px/1 ${F.display}`, letterSpacing: '.08em', textTransform: 'uppercase',
               textDecoration: 'none', textAlign: 'center',
-            }}>{isMember ? 'Renovar membresia' : 'Ver planes'}</Link>
+            }}>{isMember ? 'Renovar membresía' : 'Ver planes'}</Link>
           </div>
         )}
 

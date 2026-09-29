@@ -356,7 +356,7 @@ export default function CuentaClient({
           border: '1px solid rgba(255,255,255,.12)', background: 'rgba(255,255,255,.03)',
         }}>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ font: `700 22px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresia</div>
+            <div style={{ font: `700 22px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresía</div>
             <div style={{ marginTop: 9, font: `400 13px/1.45 ${F.body}`, color: 'rgba(245,241,236,.62)' }}>
               Los miembros fijan su plan semanal y pagan menos por platillo. Puedes activarla cuando quieras — nada se cobra automatico.
             </div>
@@ -428,7 +428,7 @@ export default function CuentaClient({
   const mobileMembershipBand = () => {
     if (!isMember) return (
       <div style={{ marginTop: 20, padding: '16px 18px', borderRadius: 12, border: '1px solid rgba(255,255,255,.12)', background: 'rgba(255,255,255,.03)' }}>
-        <div style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresia</div>
+        <div style={{ font: `700 18px/1 ${F.display}`, letterSpacing: '.02em', textTransform: 'uppercase', color: C.text }}>Sin membresía</div>
         <div style={{ marginTop: 8, font: `400 12.5px/1.45 ${F.body}`, color: 'rgba(245,241,236,.6)' }}>Puedes activarla cuando quieras — nada se cobra automatico.</div>
         {/* Ver planes — pendiente */}
       </div>
