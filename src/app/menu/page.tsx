@@ -25,6 +25,9 @@ export type MealMenuData = {
   ingredientGroups: { name: string | null; ingredients: string[] }[]
   /** categoría inferida del tipo de proteína principal */
   category: 'pollo' | 'res' | 'pescado' | 'otro'
+  /** IDs de ingredientes de tipo pro/carb usados por este meal (para precio por-meal en custom size) */
+  proIngIds: string[]
+  carbIngIds: string[]
 }
 
 export type MenuPageProps = {
@@ -158,6 +161,8 @@ export default async function MenuPage() {
     // Fixed ingredients appear where they were placed in the recipe, not at the end
     const seen = new Set<string>()
     const proteinIngNames: string[] = []
+    const proIngIds: string[] = []
+    const carbIngIds: string[] = []
 
     // Main recipe — keep original DB order
     const mainIngredients: string[] = []
@@ -166,7 +171,8 @@ export default async function MenuPage() {
       if (!ing) continue
       const label = ing.public_name ?? ing.name
       if (!seen.has(label)) { seen.add(label); mainIngredients.push(label) }
-      if (ing.type === 'pro') proteinIngNames.push(label)
+      if (ing.type === 'pro') { proteinIngNames.push(label); proIngIds.push(ri.ingredient_id) }
+      else if (ing.type === 'carb') carbIngIds.push(ri.ingredient_id)
     }
 
     const ingredientGroups: MealMenuData['ingredientGroups'] = []
@@ -180,7 +186,8 @@ export default async function MenuPage() {
         if (!ing) continue
         const label = ing.public_name ?? ing.name
         if (!seen.has(label)) { seen.add(label); subIngredients.push(label) }
-        if (ing.type === 'pro') proteinIngNames.push(label)
+        if (ing.type === 'pro') { proteinIngNames.push(label); proIngIds.push(ri.ingredient_id) }
+        else if (ing.type === 'carb') carbIngIds.push(ri.ingredient_id)
       }
       if (subIngredients.length > 0) ingredientGroups.push({ name: sub.name, ingredients: subIngredients })
     }
@@ -193,6 +200,8 @@ export default async function MenuPage() {
       macros: macrosBySizeId,
       ingredientGroups,
       category: inferCategory(proteinIngNames),
+      proIngIds,
+      carbIngIds,
     }
   })
 

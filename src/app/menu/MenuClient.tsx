@@ -98,7 +98,7 @@ function sizeVegQty(size: Size): number {
   return Number(size.veg_qty)
 }
 /** Calcula rango min–max de precio de un tamaño con ingredientes múltiples, usando FIT como referencia */
-function computeSizePriceRange(size: Size, fitSize: Size | null) {
+function computeSizePriceRange(size: Size, fitSize: Size | null, lowPrice = 14500) {
   if (!size.protein_qty || !size.carb_qty || !fitSize?.protein_qty || !fitSize?.carb_qty) return null
   const fitPro = fitSize.protein_qty as Record<string, number>
   const fitCarb = fitSize.carb_qty as Record<string, number>
@@ -115,12 +115,45 @@ function computeSizePriceRange(size: Size, fitSize: Size | null) {
   if (proNorm.length === 0 || carbNorm.length === 0) return null
   const proMin = Math.min(...proNorm), proMax = Math.max(...proNorm)
   const carbMin = Math.min(...carbNorm), carbMax = Math.max(...carbNorm)
-  const rMin = calculateCustomSizePrice(proMin, carbMin, size.veg_qty ?? 0)
-  const rMax = calculateCustomSizePrice(proMax, carbMax, size.veg_qty ?? 0)
+  const rMin = calculateCustomSizePrice(proMin, carbMin, size.veg_qty ?? 0, lowPrice)
+  const rMax = calculateCustomSizePrice(proMax, carbMax, size.veg_qty ?? 0, lowPrice)
   return {
     rMin, rMax,
     isRange: rMin.price !== rMax.price || rMin.packagePrice !== rMax.packagePrice,
   }
+}
+
+/** Precio exacto de un meal para un tamaño personalizado, según los ingredientes que usa ese meal */
+function getMealCustomPrice(
+  meal: MealMenuData,
+  size: Size,
+  fitSize: Size | null,
+  lowPrice: number,
+  isPackage: boolean,
+): number {
+  const sizeProQty = (size.protein_qty ?? {}) as Record<string, number>
+  const sizeCarbQty = (size.carb_qty ?? {}) as Record<string, number>
+  const fitProQty = fitSize?.protein_qty as Record<string, number> | undefined
+  const fitCarbQty = fitSize?.carb_qty as Record<string, number> | undefined
+
+  let proNorm = 0
+  for (const id of meal.proIngIds) {
+    const qty = sizeProQty[id] ?? 0
+    const fitRef = fitProQty?.[id] ?? 0
+    const norm = fitRef > 0 ? qty * PROTEIN_BASE.FIT / fitRef : qty
+    if (norm > proNorm) proNorm = norm
+  }
+
+  let carbNorm = 0
+  for (const id of meal.carbIngIds) {
+    const qty = sizeCarbQty[id] ?? 0
+    const fitRef = fitCarbQty?.[id] ?? 0
+    const norm = fitRef > 0 ? qty * CARB_BASE.FIT / fitRef : qty
+    if (norm > carbNorm) carbNorm = norm
+  }
+
+  const { price, packagePrice } = calculateCustomSizePrice(proNorm, carbNorm, size.veg_qty ?? 0, lowPrice)
+  return isPackage ? packagePrice : price
 }
 
 /** Gramos de un ingrediente en un tamaño: busca por ID, cae a 'default' si no hay clave específica */
@@ -139,6 +172,10 @@ export default function MenuClient({
 }: Props) {
   const router = useRouter()
   const cart = useCartStore()
+
+  // LOW price anchors the custom size pricing table
+  const lowSize  = sizes.find(s => s.name.toUpperCase() === 'LOW') ?? sizes[0]
+  const lowPrice = lowSize?.price ?? 14500
 
   // Active size (which size pill is selected for NEW items)
   const [activeSizeId, setActiveSizeId] = useState<string>(
@@ -246,10 +283,18 @@ export default function MenuClient({
   const activeSize = allSizes.find(s => s.id === activeSizeId) ?? sizes[0]
   // Un size personalizado está activo cuando es de un cliente O es el recién creado
   const isCustomActive = !!activeSize?.customer_id || (!!customSizeData && activeSizeId === customSizeData.id)
-  // Rango de precio para el tamaño activo (solo custom, usando FIT como referencia)
-  const activeSizePriceRange = (!showCustom && isCustomActive && activeSize)
-    ? computeSizePriceRange(activeSize, fitSize)
-    : null
+  // Rango real de precio para custom size: min–max de getMealCustomPrice sobre todos los meals
+  const activeSizePriceRange = (!showCustom && isCustomActive && activeSize && meals.length > 0) ? (() => {
+    const prices    = meals.map(m => getMealCustomPrice(m, activeSize, fitSize, lowPrice, false))
+    const pkgPrices = meals.map(m => getMealCustomPrice(m, activeSize, fitSize, lowPrice, true))
+    const minP = Math.min(...prices), maxP = Math.max(...prices)
+    const minPkg = Math.min(...pkgPrices), maxPkg = Math.max(...pkgPrices)
+    return {
+      rMin: { price: minP, packagePrice: minPkg },
+      rMax: { price: maxP, packagePrice: maxPkg },
+      isRange: minP !== maxP || minPkg !== maxPkg,
+    }
+  })() : null
   // Si showCustom está abierto, ningún tamaño default muestra como activo
   const activeSizeForUI = (showCustom && !editingSizeId) ? '' : activeSizeId
 
@@ -277,11 +322,10 @@ export default function MenuClient({
   // Custom size live price preview — replica la lógica del CustomSizePanel viejo:
   // normaliza cada ingrediente por su fitRef, luego toma min y max para mostrar rango.
   // normQty = qty * BASE.FIT / fitRef  (idéntico a: qty * PROTEIN_BASE.FIT / fitSize.protein_qty[id])
+  // Incluye ingredientes en 0 para que el rango refleje la mezcla (ej: Pechuga=225 y Carne=0 → rango)
   const proNormValues = customPro
-    .filter(r => r.value > 0)
     .map(r => r.fitRef > 0 ? r.value * PROTEIN_BASE.FIT / r.fitRef : r.value)
   const carbNormValues = customCarb
-    .filter(r => r.value > 0)
     .map(r => r.fitRef > 0 ? r.value * CARB_BASE.FIT / r.fitRef : r.value)
 
   const proMin = proNormValues.length > 0 ? Math.min(...proNormValues) : 0
@@ -289,8 +333,10 @@ export default function MenuClient({
   const carbMin = carbNormValues.length > 0 ? Math.min(...carbNormValues) : 0
   const carbMax = carbNormValues.length > 0 ? Math.max(...carbNormValues) : 0
 
-  const customPriceMin = proMin > 0 ? calculateCustomSizePrice(proMin, carbMin, customVeg) : null
-  const customPriceMax = proMax > 0 ? calculateCustomSizePrice(proMax, carbMax, customVeg) : null
+  // Mostrar precio solo cuando el usuario ha movido al menos un slider a > 0
+  const anyCustomValue = customPro.some(r => r.value > 0) || customCarb.some(r => r.value > 0) || customVeg > 0
+  const customPriceMin = anyCustomValue ? calculateCustomSizePrice(proMin, carbMin, customVeg, lowPrice) : null
+  const customPriceMax = anyCustomValue ? calculateCustomSizePrice(proMax, carbMax, customVeg, lowPrice) : null
   // Alias para compat con código existente (si no hay rango, min === max)
   const customPreviewPrice = customPriceMin
   const customPriceIsRange = !!(customPriceMin && customPriceMax &&
@@ -415,14 +461,20 @@ export default function MenuClient({
     if (!activeSize) return
     const limit = stockLimits[meal.id]
     if (limit !== undefined && getMealTotalQty(meal.id) >= limit) return
+    const mealUnit = isCustomActive
+      ? getMealCustomPrice(meal, activeSize, fitSize, lowPrice, false)
+      : activeSize.price
+    const mealPkg = isCustomActive
+      ? getMealCustomPrice(meal, activeSize, fitSize, lowPrice, true)
+      : activeSize.package_price
     cart.addItem({
       mealId: meal.id,
       mealName: meal.name,
       sizeId: activeSize.id,
       sizeName: activeSize.name,
       qty: 1,
-      unitPrice: activeSize.price,
-      packagePrice: activeSize.package_price,
+      unitPrice: mealUnit,
+      packagePrice: mealPkg,
     })
   }
 
@@ -442,14 +494,21 @@ export default function MenuClient({
     } else {
       if (getQty(meal.id, sizeId) === 0) {
         if (!size) return
+        const isThisSizeCustom = !!size.customer_id || (!!customSizeData && size.id === customSizeData.id)
+        const itemUnit = isThisSizeCustom
+          ? getMealCustomPrice(meal, size, fitSize, lowPrice, false)
+          : size.price
+        const itemPkg = isThisSizeCustom
+          ? getMealCustomPrice(meal, size, fitSize, lowPrice, true)
+          : size.package_price
         cart.addItem({
           mealId: meal.id,
           mealName: meal.name,
           sizeId: size.id,
           sizeName: size.name,
           qty: cappedQty,
-          unitPrice: size.price,
-          packagePrice: size.package_price,
+          unitPrice: itemUnit,
+          packagePrice: itemPkg,
         })
       } else {
         cart.updateQty(meal.id, sizeId, cappedQty)
@@ -1128,8 +1187,8 @@ export default function MenuClient({
                   La marca en cada barra es la cantidad del tamaño FIT como referencia. Los ajustes van de 5 en 5 gramos.
                 </p>
 
-                <CustomIngGroup label="Proteína" accent={C.orange} rows={customPro} maxG={400} onChange={setCustomPro} />
-                <CustomIngGroup label="Carbohidratos" accent={C.yellow} rows={customCarb} maxG={200} onChange={setCustomCarb} />
+                <CustomIngGroup label="Proteína" accent={C.orange} rows={customPro} maxG={300} onChange={setCustomPro} />
+                <CustomIngGroup label="Carbohidratos" accent={C.yellow} rows={customCarb} maxG={100} onChange={setCustomCarb} />
                 <div style={{ marginBottom: 22 }}>
                   <div style={{ font: `700 13px/1 ${F.cond}`, letterSpacing: '.18em', textTransform: 'uppercase', color: C.green }}>Verdura</div>
                   <div style={{ padding: '16px 0 13px', borderTop: `1px solid rgba(255,255,255,.06)` }}>
@@ -1138,8 +1197,8 @@ export default function MenuClient({
                         <div style={{ font: `600 14.5px/1.2 ${F.body}`, color: C.text }}>Mezcla de vegetales</div>
                         <div style={{ marginTop: 3, font: `400 12px/1 ${F.body}`, color: C.faint }}>Referencia FIT: {fitSize ? sizeVegQty(fitSize) : 70}g</div>
                       </div>
-                      <SliderWithRef value={customVeg} max={200} fitRef={fitSize ? sizeVegQty(fitSize) : 70} accent={C.green} onChange={v => setCustomVeg(v)} />
-                      <StepperInput value={customVeg} onChange={setCustomVeg} step={5} />
+                      <SliderWithRef value={customVeg} max={150} fitRef={fitSize ? sizeVegQty(fitSize) : 70} accent={C.green} onChange={v => setCustomVeg(v)} />
+                      <StepperInput value={customVeg} onChange={setCustomVeg} step={5} max={150} />
                     </div>
                   </div>
                 </div>
@@ -1241,8 +1300,8 @@ export default function MenuClient({
                     atStockLimit={atStockLimit}
                     stockLimit={stockLimit}
                     macros={macros}
-                    displayPrice={activeSize ? (isPackage ? activeSize.package_price : activeSize.price) : 0}
-                    unitPrice={activeSize?.price ?? 0}
+                    displayPrice={activeSize ? (isCustomActive ? getMealCustomPrice(meal, activeSize, fitSize, lowPrice, isPackage) : (isPackage ? activeSize.package_price : activeSize.price)) : 0}
+                    unitPrice={activeSize ? (isCustomActive ? getMealCustomPrice(meal, activeSize, fitSize, lowPrice, false) : activeSize.price) : 0}
                     isPackage={isPackage}
                     onAdd={() => addMeal(meal)}
                     onQtyChange={q => setMealQty(meal, activeSizeId, q)}
@@ -1634,7 +1693,7 @@ function CustomIngGroup({ label, accent, rows, maxG, onChange }: {
               const next = [...rows]; next[idx] = { ...next[idx], value: v }
               onChange(next)
             }} />
-          <StepperInput value={row.value} step={5}
+          <StepperInput value={row.value} step={5} max={maxG}
             onChange={v => {
               const next = [...rows]; next[idx] = { ...next[idx], value: v }
               onChange(next)
@@ -1669,16 +1728,16 @@ function SliderWithRef({ value, max, fitRef, accent, onChange }: {
 }
 
 // ── Stepper input ────────────────────────────────────────────────
-function StepperInput({ value, step = 5, onChange }: {
-  value: number; step?: number; onChange: (v: number) => void
+function StepperInput({ value, step = 5, max = Infinity, onChange }: {
+  value: number; step?: number; max?: number; onChange: (v: number) => void
 }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', gap: 2, padding: 3, borderRadius: 9, background: 'rgba(255,255,255,.05)', justifySelf: 'end' }}>
       <button type="button" onClick={() => onChange(Math.max(0, value - step))}
         style={{ width: 30, height: 30, borderRadius: 6, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(245,241,236,.7)', font: `600 15px/1 ${F.body}`, cursor: 'pointer' }}>−</button>
       <span style={{ minWidth: 52, textAlign: 'center', font: `700 15px/1 ${F.body}`, color: value > 0 ? C.text : 'rgba(245,241,236,.45)' }}>{value} g</span>
-      <button type="button" onClick={() => onChange(value + step)}
-        style={{ width: 30, height: 30, borderRadius: 6, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(245,241,236,.7)', font: `600 15px/1 ${F.body}`, cursor: 'pointer' }}>+</button>
+      <button type="button" onClick={() => onChange(Math.min(max, value + step))}
+        style={{ width: 30, height: 30, borderRadius: 6, border: 'none', background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: value >= max ? 'rgba(245,241,236,.25)' : 'rgba(245,241,236,.7)', font: `600 15px/1 ${F.body}`, cursor: value >= max ? 'default' : 'pointer' }}>+</button>
     </div>
   )
 }
