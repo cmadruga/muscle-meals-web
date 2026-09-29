@@ -97,31 +97,6 @@ function sizeVegQty(size: Size): number {
   if (!size.veg_qty) return 0
   return Number(size.veg_qty)
 }
-/** Calcula rango min–max de precio de un tamaño con ingredientes múltiples, usando FIT como referencia */
-function computeSizePriceRange(size: Size, fitSize: Size | null, lowPrice = 14500) {
-  if (!size.protein_qty || !size.carb_qty || !fitSize?.protein_qty || !fitSize?.carb_qty) return null
-  const fitPro = fitSize.protein_qty as Record<string, number>
-  const fitCarb = fitSize.carb_qty as Record<string, number>
-  const proNorm = Object.entries(size.protein_qty as Record<string, number>)
-    .map(([id, qty]) => {
-      const ref = fitPro[id] ?? Number(Object.values(fitPro)[0] ?? 0)
-      return ref > 0 ? Number(qty) * PROTEIN_BASE.FIT / ref : Number(qty)
-    }).filter(v => v > 0)
-  const carbNorm = Object.entries(size.carb_qty as Record<string, number>)
-    .map(([id, qty]) => {
-      const ref = fitCarb[id] ?? Number(Object.values(fitCarb)[0] ?? 0)
-      return ref > 0 ? Number(qty) * CARB_BASE.FIT / ref : Number(qty)
-    }).filter(v => v > 0)
-  if (proNorm.length === 0 || carbNorm.length === 0) return null
-  const proMin = Math.min(...proNorm), proMax = Math.max(...proNorm)
-  const carbMin = Math.min(...carbNorm), carbMax = Math.max(...carbNorm)
-  const rMin = calculateCustomSizePrice(proMin, carbMin, size.veg_qty ?? 0, lowPrice)
-  const rMax = calculateCustomSizePrice(proMax, carbMax, size.veg_qty ?? 0, lowPrice)
-  return {
-    rMin, rMax,
-    isRange: rMin.price !== rMax.price || rMin.packagePrice !== rMax.packagePrice,
-  }
-}
 
 /** Precio exacto de un meal para un tamaño personalizado, según los ingredientes que usa ese meal */
 function getMealCustomPrice(
