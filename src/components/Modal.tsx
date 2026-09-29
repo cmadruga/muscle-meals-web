@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect } from 'react'
-import { colors } from '@/lib/theme'
 
 interface ModalProps {
   isOpen: boolean
@@ -9,21 +8,13 @@ interface ModalProps {
   children: React.ReactNode
 }
 
-/**
- * Modal reutilizable con overlay oscuro
- */
 export default function Modal({ isOpen, onClose, children }: ModalProps) {
-  // Cerrar con ESC
   useEffect(() => {
-    const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    
+    const handleEsc = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose() }
     if (isOpen) {
       document.addEventListener('keydown', handleEsc)
-      document.body.style.overflow = 'hidden' // Prevenir scroll del body
+      document.body.style.overflow = 'hidden'
     }
-    
     return () => {
       document.removeEventListener('keydown', handleEsc)
       document.body.style.overflow = 'unset'
@@ -33,60 +24,33 @@ export default function Modal({ isOpen, onClose, children }: ModalProps) {
   if (!isOpen) return null
 
   return (
-    <div
-      onClick={onClose}
-      style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        background: 'rgba(0, 0, 0, 0.85)',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 9999,
-        padding: 24
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: colors.grayDark,
-          borderRadius: 16,
-          border: `3px solid ${colors.orange}`,
-          maxWidth: 600,
-          width: '100%',
-          maxHeight: '90vh',
-          overflow: 'auto',
-          position: 'relative'
-        }}
-      >
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            width: 40,
-            height: 40,
-            background: colors.grayLight,
-            border: 'none',
-            borderRadius: 8,
-            color: colors.white,
-            fontSize: 20,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
-          ✕
-        </button>
+    <>
+      <style>{`
+        .mm-modal-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,.88);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 9999;
+          padding: 24px;
+        }
+        .mm-modal-inner {
+          max-width: 800px;
+          width: 100%;
+        }
+        @media (max-width: 900px) {
+          .mm-modal-overlay { padding: 16px; }
+          .mm-modal-inner   { max-height: 96dvh; overflow-y: auto; border-radius: 14px; }
+        }
+      `}</style>
 
-        {children}
+      <div className="mm-modal-overlay" onClick={onClose}>
+        <div className="mm-modal-inner" onClick={e => e.stopPropagation()}>
+          {children}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

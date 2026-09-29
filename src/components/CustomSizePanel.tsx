@@ -14,6 +14,7 @@ interface CustomSizePanelProps {
   isAuthenticated?: boolean
   onSizeCreated: (size: Size) => void
   mealsIncluded?: number
+  lowPrice?: number
 }
 
 type IngGroup = { displayName: string; ids: string[] }
@@ -85,7 +86,7 @@ function IngRow({ name: ingName, value, onChange, accent, fitQty, tooltip }: {
   )
 }
 
-export default function CustomSizePanel({ proIngredients, carbIngredients, fitSize, initialSize, isAuthenticated, onSizeCreated, mealsIncluded }: CustomSizePanelProps) {
+export default function CustomSizePanel({ proIngredients, carbIngredients, fitSize, initialSize, isAuthenticated, onSizeCreated, mealsIncluded, lowPrice = 14500 }: CustomSizePanelProps) {
   const [proQtys, setProQtys] = useState<Record<string, string>>(() =>
     initialSize ? Object.fromEntries(Object.entries(initialSize.protein_qty).map(([k, v]) => [k, String(v)])) : {}
   )
@@ -126,8 +127,8 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
   const carbMin = carbNormValues.length > 0 ? Math.min(...carbNormValues) : 0
   const carbMax = carbNormValues.length > 0 ? Math.max(...carbNormValues) : 0
 
-  const { price: priceMin, packagePrice: pkgMin } = calculateCustomSizePrice(proMin, carbMin, vegForPrice)
-  const { price: priceMax, packagePrice: pkgMax } = calculateCustomSizePrice(proMax, carbMax, vegForPrice)
+  const { price: priceMin, packagePrice: pkgMin } = calculateCustomSizePrice(proMin, carbMin, vegForPrice, lowPrice)
+  const { price: priceMax, packagePrice: pkgMax } = calculateCustomSizePrice(proMax, carbMax, vegForPrice, lowPrice)
 
   const handleSubmit = async () => {
     if (!name.trim()) { setError('El nombre es requerido'); return }
@@ -275,7 +276,7 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
         style={{
           width: '100%', padding: '12px 16px', cursor: isCreating ? 'not-allowed' : 'pointer',
           opacity: isCreating ? 0.6 : 1, background: colors.orange, color: colors.white,
-          border: 'none', borderRadius: 8, fontFamily: 'Franchise, sans-serif',
+          border: 'none', borderRadius: 8, fontFamily: 'var(--font-display)',
           fontSize: 20, textTransform: 'uppercase', lineHeight: 1,
         }}
       >

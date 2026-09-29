@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { colors } from '@/lib/theme'
 
-const DEFAULT_MESSAGE = 'Estaremos de vuelta el Lunes para recibir tu pedido!💪🏼\n(Proxima entrega Domingo 3 Mayo)'
+const DEFAULT_MESSAGE = 'Estaremos de vuelta el Lunes para recibir tu pedido!💪🏼\n(Próxima entrega Domingo 3 Mayo)'
 
 export default function SalesPausedModal() {
   const [open, setOpen] = useState(true)
@@ -34,7 +34,7 @@ export default function SalesPausedModal() {
         }}
       >
         <h2 style={{
-          color: '#ef4444', fontFamily: 'Franchise, sans-serif',
+          color: '#ef4444', fontFamily: 'var(--font-display)',
           fontSize: 28, letterSpacing: 1, margin: '0 0 12px',
           textTransform: 'uppercase',
         }}>
@@ -52,7 +52,7 @@ export default function SalesPausedModal() {
           style={{
             padding: '12px 28px', borderRadius: 8, cursor: 'pointer',
             border: 'none', background: colors.orange, color: colors.white,
-            fontFamily: 'Franchise, sans-serif', fontSize: 20,
+            fontFamily: 'var(--font-display)', fontSize: 20,
             letterSpacing: 0, lineHeight: 1, textTransform: 'uppercase',
           }}
         >

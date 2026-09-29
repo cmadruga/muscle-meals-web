@@ -65,6 +65,7 @@ export default function PerfilForm({ customer }: { customer: Customer | null }) 
   const canSave = fullName.trim() !== '' && addressValid && (!addressFilled || cpValido)
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (state?.success) setEditing(false)
   }, [state?.success])
 

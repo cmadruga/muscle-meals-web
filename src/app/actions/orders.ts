@@ -1,6 +1,7 @@
 'use server'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import type { OrderStatus } from '@/lib/types'
 
@@ -314,6 +315,20 @@ export async function deleteOrder(orderId: string): Promise<{ error?: string }> 
   if (error) return { error: error.message }
   revalidatePath('/admin/orders')
   return {}
+}
+
+export async function getMyOrderCount(): Promise<number> {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return 0
+  const admin = createAdminClient()
+  const { data: cust } = await admin.from('customers').select('id').eq('user_id', user.id).maybeSingle()
+  if (!cust) return 0
+  const { count } = await admin.from('orders')
+    .select('id', { count: 'exact', head: true })
+    .eq('customer_id', cust.id)
+    .in('status', ['paid', 'pending', 'cancelled'])
+  return count ?? 0
 }
 
 export async function changeOrderStatus(orderId: string, status: OrderStatus): Promise<void> {

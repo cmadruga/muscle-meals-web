@@ -1,0 +1,1331 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics=""><meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&amp;family=Barlow:wght@400;500;600;700&amp;family=Barlow+Condensed:wght@500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#0a0908;font-family:Barlow,system-ui,sans-serif}
+a{color:#F79138;text-decoration:none}a:hover{color:#ffab5e}
+@font-face{font-family:'Franchise';src:local('Franchise Bold'),local('Franchise');font-weight:700;font-display:swap}
+.dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(255,255,255,.07)}
+.dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 24px}
+.dv-tid{font:700 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#F79138;color:#17140f;border-radius:4px;text-decoration:none}
+.dv-tname{font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC}
+.dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+.dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+.dv-oid{font:700 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(255,255,255,.1);color:#F5F1EC;border-radius:5px;text-decoration:none}
+.dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.3 Barlow,sans-serif;color:rgba(245,241,236,.5)}
+.dv-card{background:#0f0d0c url(assets/fondo.jpg) center/1100px repeat;border:1px solid rgba(255,255,255,.08);border-radius:10px;overflow:hidden}
+.dv-opt:target .dv-oid{background:#F79138;color:#17140f}
+.dv-note{margin:11px 2px 0;font:400 12px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.4);max-width:62ch}
+</style></helmet>
+
+<section class="dv-turn" id="t2">
+<div class="dv-thd"><a class="dv-tid" href="#t2">2</a><span class="dv-tname">Casos faltantes · pickup, nueva direccion, y movil reordenado</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="2a">
+<div class="dv-olabel"><a class="dv-oid" href="#2a">2a</a>Web · Pickup seleccionado (sin sección de dirección)</div>
+<div class="dv-card" style="width:1280px">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 26px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:18px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Volver al menú</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px">
+      <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 11px/1 Barlow,sans-serif">C</span>
+      <span style="font:500 13px/1 Barlow,sans-serif;color:#F5F1EC">Carlos</span>
+    </div>
+  </div>
+
+  <div style="padding:30px 28px 40px">
+    <h1 style="margin:0 0 6px;font:700 54px/.88 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+    <p style="margin:0 0 26px;font:400 15px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);max-width:56ch;text-wrap:pretty">Revisa tu semana, elige cómo la quieres recibir y confirma. La confirmación de pago te llega por WhatsApp.</p>
+
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:30px;border:1px solid rgba(247,145,56,.45);border-radius:12px;background:rgba(247,145,56,.05);overflow:hidden">
+      <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:420px;object-fit:cover;display:block">
+      <div style="flex:1;display:flex;align-items:center;gap:22px;padding:20px 22px">
+        <div style="flex:1;min-width:0">
+          <div style="font:700 30px/.95 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pides cada semana?</div>
+          <p style="margin:9px 0 0;font:400 13.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Convierte este pedido en membresía: mismo menú cada semana, hasta 15% de descuento y envío siempre gratis.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(247,145,56,.14);font:600 11.5px/1 Barlow,sans-serif;color:#F79138">Desde −10%</span>
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(122,199,122,.14);font:600 11.5px/1 Barlow,sans-serif;color:#7ac77a">Envío siempre gratis</span>
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.06);font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.65)">Cancelas cuando quieras</span>
+          </div>
+        </div>
+        <span style="flex:none;display:flex;align-items:center;width:58px;height:32px;padding:3px;border-radius:16px;background:rgba(255,255,255,.14)">
+          <span style="width:26px;height:26px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>
+        </span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 392px;gap:26px;align-items:start">
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</span>
+          <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">entregamos cada domingo</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:16px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+          <span style="flex:none;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;background:rgba(122,199,122,.14);font:700 15px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+          <div>
+            <div style="font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Recoge: domingo, 13 de septiembre</div>
+            <div style="margin-top:4px;font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Pedidos cortados el viernes a mediodía</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Estandar</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Domingo 9AM – 4PM, horario según tu zona</div>
+          </div>
+          <div style="padding:15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1);cursor:pointer">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pickup</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#7ac77a">Gratis</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Recoges en el local, en su horario</div>
+          </div>
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Prioritario</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">$100–200</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Horario y zona a acordar · pago aparte</div>
+          </div>
+        </div>
+
+        <div style="padding:15px 16px;margin-bottom:28px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:11px">
+            <span style="font:700 12px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Elige tu pickup spot</span>
+            <span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">requerido</span>
+          </div>
+          <div style="display:grid;gap:8px">
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08);cursor:pointer">
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                  <span style="font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">La Frutería</span>
+                  <span style="flex:none;font:500 12px/1 Barlow,sans-serif;color:#F79138">Lun – Vie · 9AM – 6PM</span>
+                </div>
+                <div style="margin-top:5px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55)">Av. Fundadores 4001, local 107, Del Paseo Residencial, 64920 Monterrey, N.L.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+              <span style="flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:baseline;justify-content:space-between;gap:12px">
+                  <span style="font:600 14px/1 Barlow,sans-serif;color:#F5F1EC">Local Muscle Meals</span>
+                  <span style="flex:none;font:500 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Lun – Vie · 9AM – 6PM</span>
+                </div>
+                <div style="margin-top:5px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55)">P.º del Acueducto 101, local 17, Acueducto Satélite, 64960 Monterrey, N.L.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto</span>
+          <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">recoges tú, no pedimos dirección</span>
+        </div>
+
+        <div style="display:grid;gap:12px">
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">Nombre completo *</div>
+            <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+          </div>
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+            <div style="display:grid;grid-template-columns:118px 1fr;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 15px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+              <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+            </div>
+            <div style="margin-top:6px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">Te avisamos por WhatsApp cuando tu pedido esté listo para recoger</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#0c0a09;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 18px 14px">
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</span>
+          <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">7 platillos</span>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08)">
+          <div style="padding:9px 18px;background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pollo Ajo Parmesano</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:9px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$480.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Pomodoro</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$160.00</span></div>
+          </div>
+        </div>
+        <div style="padding:16px 18px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Subtotal</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$1,090.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:#7ac77a">Pickup · La Frutería</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:#7ac77a">Descuento por paquete</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#7ac77a">−$35.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)">
+            <span style="font:500 14px/1 Barlow,sans-serif;color:#F5F1EC">Total</span>
+            <span style="font:700 34px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,090.00</span>
+          </div>
+        </div>
+        <div style="padding:0 18px 18px">
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.22)" style-hover="background:#ffa252">Proceder al pago</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="dv-note">Con Pickup: la sección 2 pasa de «Contacto y direccion» a solo «Contacto» — desaparecen los radios y el formulario de dirección completos. El banner de fecha dice «Recoge» en vez de «Entrega», el detalle bajo las cards es la lista de spots (requerida), y en totales el envío se vuelve «Pickup · La Frutería — Gratis». Si no hay spot elegido, el CTA queda deshabilitado y el bloque de spots toma borde rojo.</p>
+</div>
+
+<div class="dv-opt" id="2b">
+<div class="dv-olabel"><a class="dv-oid" href="#2b">2b</a>Web · nueva dirección — FRAGMENTO: solo la sección 2 (arriba va igual que en 1a)</div>
+<div class="dv-card" style="width:1280px">
+  <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 26px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:18px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Volver al menú</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px">
+      <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 11px/1 Barlow,sans-serif">C</span>
+      <span style="font:500 13px/1 Barlow,sans-serif;color:#F5F1EC">Carlos</span>
+    </div>
+  </div>
+
+  <div style="padding:30px 28px 40px">
+    <div style="display:grid;grid-template-columns:1fr 392px;gap:26px;align-items:start">
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto y direccion</span>
+        </div>
+
+        <div style="display:grid;gap:12px">
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">Nombre completo *</div>
+            <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+          </div>
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+            <div style="display:grid;grid-template-columns:118px 1fr;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 15px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+              <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+            </div>
+          </div>
+
+          <div style="margin-top:6px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)">
+            <div style="margin-bottom:10px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Direccion de entrega</div>
+            <div style="display:grid;gap:8px;margin-bottom:16px">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+                <span style="flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+                <div>
+                  <div style="font:600 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">Usar dirección guardada</div>
+                  <div style="margin-top:5px;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.45)">Perla 1002, Col. Canterias, C.P. 64989, Monterrey, N.L.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08);cursor:pointer">
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Ingresar otra dirección</div>
+              </div>
+            </div>
+
+            <div style="display:grid;gap:12px;padding:18px;border:1px solid rgba(247,145,56,.28);border-radius:11px;background:rgba(247,145,56,.03)">
+              <div>
+                <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Calle *</div>
+                <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Río Nazas</div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+                <div>
+                  <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Núm. exterior *</div>
+                  <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">318</div>
+                </div>
+                <div>
+                  <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Núm. interior</div>
+                  <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Opcional</div>
+                </div>
+              </div>
+              <div>
+                <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Colonia *</div>
+                <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Del Valle</div>
+              </div>
+              <div style="display:grid;grid-template-columns:150px 1fr;gap:10px">
+                <div>
+                  <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">CP *</div>
+                  <div style="padding:14px;border:1px solid #ff8080;border-radius:9px;background:rgba(255,128,128,.06);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">21000</div>
+                </div>
+                <div>
+                  <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Ciudad</div>
+                  <div style="padding:14px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.02);font:400 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Se llena con el CP</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:9px;padding:11px 13px;border:1px solid rgba(255,128,128,.35);border-radius:9px;background:rgba(255,128,128,.07)">
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:rgba(255,128,128,.18);font:700 11px/1 Barlow,sans-serif;color:#ff9b9b">!</span>
+                <span style="font:500 12.5px/1.4 Barlow,sans-serif;color:#ff9b9b">Entregamos solo en el área metropolitana de Monterrey. Revisa el CP o elige Pickup.</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#0c0a09;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 18px 14px">
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</span>
+          <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">7 platillos</span>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08)">
+          <div style="padding:9px 18px;background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:9px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$480.00</span></div>
+          </div>
+        </div>
+        <div style="padding:16px 18px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Subtotal</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$1,090.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Envío estándar</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)">
+            <span style="font:500 14px/1 Barlow,sans-serif;color:#F5F1EC">Total</span>
+            <span style="font:700 34px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+          </div>
+        </div>
+        <div style="padding:0 18px 18px">
+          <button style="width:100%;padding:18px 0;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.3);font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:not-allowed">Completa la direccion</button>
+          <p style="margin:11px 0 0;font:400 11.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.4);text-align:center;text-wrap:pretty">Falta un CP dentro del área de entrega.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<p class="dv-note">Solo la mitad inferior de la página (la parte de arriba no cambia). El formulario aparece dentro de un recuadro naranja tenue ligado al radio activo, así se lee como consecuencia de esa elección y no como una sección nueva. El error de CP es una línea roja bajo el campo, no un bloque aparte, y el CTA del sidebar se deshabilita con el motivo debajo — nunca un botón gris flotando sin explicación.</p>
+</div>
+
+<div class="dv-opt" id="2c">
+<div class="dv-olabel"><a class="dv-oid" href="#2c">2c</a>Móvil · el orden real de la página, de arriba a abajo</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.35)">1 · Arriba</span>
+    <div class="dv-card" style="width:390px;border-radius:22px;height:850px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+        <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+        <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+      </div>
+      <div style="padding:18px 18px 132px">
+        <h1 style="margin:0 0 5px;font:700 38px/.9 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+        <p style="margin:0 0 16px;font:400 13.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6)">Revisa, elige entrega y confirma.</p>
+
+        <div style="margin-bottom:16px;border:1px solid rgba(247,145,56,.45);border-radius:12px;background:rgba(247,145,56,.05);overflow:hidden">
+          <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:100%;display:block">
+          <div style="display:flex;align-items:center;gap:14px;padding:14px 15px">
+            <div style="flex:1;min-width:0">
+              <div style="font:700 22px/.98 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pides cada semana?</div>
+              <p style="margin:6px 0 0;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6)">Hasta 15% off y envío siempre gratis.</p>
+            </div>
+            <span style="flex:none;display:flex;align-items:center;width:52px;height:30px;padding:3px;border-radius:15px;background:rgba(255,255,255,.14)"><span style="width:24px;height:24px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span></span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px;margin-bottom:18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03)">
+          <div>
+            <div style="font:700 19px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</div>
+            <div style="margin-top:4px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">7 platillos · Fit y Testo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149</span>
+            <span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</div>
+        <div style="display:flex;align-items:center;gap:11px;padding:12px 13px;margin-bottom:12px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+          <span style="flex:none;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(122,199,122,.14);font:700 14px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+          <div>
+            <div style="font:700 13.5px/1 Barlow,sans-serif;color:#7ac77a">Domingo, 13 de septiembre</div>
+            <div style="margin-top:4px;font:400 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Cortamos el viernes a mediodía</div>
+          </div>
+        </div>
+        <div style="display:grid;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1)">
+            <div>
+              <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Estandar</div>
+              <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Domingo 9AM – 4PM</div>
+            </div>
+            <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+            <div>
+              <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pickup</div>
+              <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Recoges en el local</div>
+            </div>
+            <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+        </div>
+        <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.35)">2 · Abajo · dirección guardada</span>
+    <div class="dv-card" style="width:390px;border-radius:22px;height:820px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+        <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+        <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+      </div>
+      <div style="padding:18px 18px 132px">
+        <div style="padding:15px;margin-bottom:18px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div style="font:700 11.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Horario según tu zona</div>
+          <p style="margin:8px 0 0;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Te escribimos el <strong style="color:#F5F1EC;font-weight:600">sábado</strong> por WhatsApp con la hora estimada del domingo.</p>
+        </div>
+
+        <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto y direccion</div>
+        <div style="display:grid;gap:10px">
+          <div>
+            <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Nombre completo *</div>
+            <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+          </div>
+          <div>
+            <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+            <div style="display:grid;grid-template-columns:104px 1fr;gap:8px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 16px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+              <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="margin-bottom:10px;font:700 12px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Direccion de entrega</div>
+          <div style="display:grid;gap:8px">
+            <div style="display:flex;align-items:flex-start;gap:11px;padding:13px 14px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08)">
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+              <div>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Usar dirección guardada</div>
+                <div style="margin-top:5px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55)">Perla 1002, Col. Canterias, C.P. 64989, Monterrey, N.L.</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;padding:15px 14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03)">
+              <span style="flex:none;width:16px;height:16px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+              <div style="font:600 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">Ingresar otra dirección</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+        </div>
+        <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.35)">Resumen abierto (sobre la misma página)</span>
+    <div class="dv-card" style="width:390px;border-radius:22px;height:820px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+        <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+        <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+      </div>
+      <div style="padding:18px 18px 132px">
+        <div style="border:1px solid #F79138;border-radius:12px;background:rgba(255,255,255,.03);overflow:hidden">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px">
+            <div>
+              <div style="font:700 19px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</div>
+              <div style="margin-top:4px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">7 platillos · Fit y Testo</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149</span>
+              <span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▴</span>
+            </div>
+          </div>
+          <div style="border-top:1px solid rgba(255,255,255,.08)">
+            <div style="padding:8px 15px;background:rgba(255,255,255,.02);font:600 10px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+            <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+            </div>
+            <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+            </div>
+            <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pollo Ajo Parmesano</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+            </div>
+            <div style="padding:8px 15px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+            <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$480.00</span></div>
+            </div>
+            <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Pomodoro</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$160.00</span></div>
+            </div>
+            <div style="padding:13px 15px;border-top:1px solid rgba(255,255,255,.08)">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Subtotal</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#F5F1EC">$1,090.00</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Envío estándar</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span></div>
+              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">Descuento por paquete</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#7ac77a">−$35.00</span></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;padding:0 15px 14px">
+              <div style="flex:1;padding:11px 12px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Código de descuento</div>
+              <button style="flex:none;padding:11px 14px;border:1px solid rgba(247,145,56,.5);border-radius:9px;background:rgba(247,145,56,.1);color:#F79138;font:600 12.5px/1 Barlow,sans-serif;cursor:pointer">Aplicar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+        </div>
+        <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<p class="dv-note">Una sola página, tres vistas del mismo scroll: <strong style="color:rgba(245,241,236,.6);font-weight:600">arriba</strong> (membresía → resumen colapsado → 1 · Tu entrega) y <strong style="color:rgba(245,241,236,.6);font-weight:600">abajo</strong> (detalle de horario → 2 · Contacto y direccion, con los radios de dirección que antes faltaban). El tercer marco es el resumen abierto, que empuja el resto hacia abajo sin cambiar el orden — no es otra pantalla. La barra fija de abajo es la misma en todos.</p>
+</div>
+
+<div class="dv-opt" id="2d">
+<div class="dv-olabel"><a class="dv-oid" href="#2d">2d</a>Móvil · Pickup y nueva dirección</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.35)">Pickup · sin dirección</span>
+    <div class="dv-card" style="width:390px;border-radius:22px;height:820px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+        <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+        <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+      </div>
+      <div style="padding:18px 18px 132px">
+        <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</div>
+        <div style="display:grid;gap:8px;margin-bottom:12px">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+            <div>
+              <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Estandar</div>
+              <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Domingo 9AM – 4PM</div>
+            </div>
+            <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1)">
+            <div>
+              <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Pickup</div>
+              <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Recoges en el local</div>
+            </div>
+            <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+            <div>
+              <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Prioritario</div>
+              <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Horario a acordar</div>
+            </div>
+            <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">$100–200</span>
+          </div>
+        </div>
+
+        <div style="padding:14px;margin-bottom:18px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:10px">
+            <span style="font:700 11.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Elige tu pickup spot</span>
+            <span style="font:400 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">requerido</span>
+          </div>
+          <div style="display:grid;gap:8px">
+            <div style="display:flex;align-items:flex-start;gap:11px;padding:13px 13px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08)">
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+              <div>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">La Frutería</div>
+                <div style="margin-top:4px;font:400 12px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55)">Av. Fundadores 4001, local 107, Del Paseo Residencial</div>
+                <div style="margin-top:4px;font:500 11.5px/1 Barlow,sans-serif;color:#F79138">Lun – Vie · 9AM – 6PM</div>
+              </div>
+            </div>
+            <div style="display:flex;align-items:flex-start;gap:11px;padding:13px 13px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03)">
+              <span style="flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+              <div>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Local Muscle Meals</div>
+                <div style="margin-top:4px;font:400 12px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.55)">P.º del Acueducto 101, local 17, Acueducto Satélite</div>
+                <div style="margin-top:4px;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Lun – Vie · 9AM – 6PM</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto</div>
+        <div>
+          <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Nombre completo *</div>
+          <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <span style="font:500 12.5px/1 Barlow,sans-serif;color:#7ac77a">Pickup · sin costo de envío</span>
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,090.00</span>
+        </div>
+        <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.35)">Nueva dirección · CTA bloqueado</span>
+    <div class="dv-card" style="width:390px;border-radius:22px;height:820px;position:relative;overflow:hidden">
+      <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+        <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+        <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+        <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+      </div>
+      <div style="padding:18px 18px 132px">
+        <div style="margin-bottom:10px;font:700 12px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Direccion de entrega</div>
+        <div style="display:grid;gap:8px;margin-bottom:14px">
+          <div style="display:flex;align-items:flex-start;gap:11px;padding:13px 14px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03)">
+            <span style="flex:none;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+            <div>
+              <div style="font:600 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">Usar dirección guardada</div>
+              <div style="margin-top:5px;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.45)">Perla 1002, Col. Canterias, 64989</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:11px;padding:15px 14px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08)">
+            <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+            <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Ingresar otra dirección</div>
+          </div>
+        </div>
+
+        <div style="display:grid;gap:11px;padding:15px;border:1px solid rgba(247,145,56,.28);border-radius:11px;background:rgba(247,145,56,.03)">
+          <div>
+            <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Calle *</div>
+            <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">Río Nazas</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <div>
+              <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Núm. ext. *</div>
+              <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">318</div>
+            </div>
+            <div>
+              <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Núm. int.</div>
+              <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Opcional</div>
+            </div>
+          </div>
+          <div>
+            <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Colonia *</div>
+            <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">Del Valle</div>
+          </div>
+          <div style="display:grid;grid-template-columns:118px 1fr;gap:8px">
+            <div>
+              <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">CP *</div>
+              <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">—</div>
+            </div>
+            <div>
+              <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Ciudad</div>
+              <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.08);border-radius:9px;background:rgba(255,255,255,.02);font:400 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.3)">Se llena con el CP</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+          <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+        </div>
+        <button style="width:100%;padding:16px 0;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:rgba(255,255,255,.05);color:rgba(245,241,236,.3);font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:not-allowed">Falta el CP</button>
+      </div>
+    </div>
+  </div>
+
+</div>
+<p class="dv-note">Pickup en móvil: la lista de spots va debajo de las tres cards y la sección 2 queda solo como «Contacto». En la barra fija el lado izquierdo cambia a «Pickup · sin costo de envío». Con la dirección incompleta el CTA se deshabilita y su texto dice qué falta («Falta el CP») en vez de un gris mudo.</p>
+</div>
+
+<div class="dv-opt" id="2e">
+<div class="dv-olabel"><a class="dv-oid" href="#2e">2e</a>Móvil · membresía activada</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+  <div class="dv-card" style="width:390px;border-radius:22px;height:1030px;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+      <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+      <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+    </div>
+    <div style="padding:18px 18px 132px">
+      <h1 style="margin:0 0 5px;font:700 38px/.9 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+      <p style="margin:0 0 16px;font:400 13.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6)">Revisa, elige entrega y confirma.</p>
+
+      <div style="margin-bottom:16px;border:1px solid #F79138;border-radius:12px;background:rgba(247,145,56,.07);overflow:hidden">
+        <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:100%;display:block">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 15px">
+          <div style="flex:1;min-width:0">
+            <div style="font:700 22px/.98 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Membresia activada</div>
+            <p style="margin:6px 0 0;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6)">Este menú se repite cada domingo.</p>
+          </div>
+          <span style="flex:none;display:flex;align-items:center;justify-content:flex-end;width:52px;height:30px;padding:3px;border-radius:15px;background:#F79138"><span style="width:24px;height:24px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span></span>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:0 15px 14px">
+          <div style="padding:11px 8px;border:1px solid #F79138;border-radius:9px;background:rgba(247,145,56,.14);text-align:center">
+            <div style="font:700 16px/1 Barlow,sans-serif;color:#F79138">4 sem.</div>
+            <div style="margin-top:4px;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">−10%</div>
+          </div>
+          <div style="padding:11px 8px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.03);text-align:center">
+            <div style="font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">8 sem.</div>
+            <div style="margin-top:4px;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">−13%</div>
+          </div>
+          <div style="padding:11px 8px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.03);text-align:center">
+            <div style="font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">12 sem.</div>
+            <div style="margin-top:4px;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">−15%</div>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(247,145,56,.3)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 15px;border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Por platillo</span>
+            <span style="display:flex;align-items:baseline;gap:7px"><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$155.71</span><span style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">$140.14</span></span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 15px;border-bottom:1px solid rgba(255,255,255,.06)">
+            <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Por semana</span>
+            <span style="display:flex;align-items:baseline;gap:7px"><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$1,090.00</span><span style="font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">$981.00</span></span>
+          </div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:10px 15px">
+            <span style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(245,241,236,.45)">Total · 4 sem.</span>
+            <span style="display:flex;align-items:baseline;gap:7px"><span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$4,360.00</span><span style="font:700 15px/1 Barlow,sans-serif;color:#F79138">$3,924.00</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px;margin-bottom:18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03)">
+        <div>
+          <div style="font:700 19px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu membresia</div>
+          <div style="margin-top:4px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">7 platillos · 4 semanas</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:9px">
+          <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$3,924</span>
+          <span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</div>
+      <div style="display:flex;align-items:center;gap:11px;padding:12px 13px;margin-bottom:12px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+        <span style="flex:none;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(122,199,122,.14);font:700 14px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+        <div>
+          <div style="font:700 13.5px/1 Barlow,sans-serif;color:#7ac77a">Primera entrega: 13 de septiembre</div>
+          <div style="margin-top:4px;font:400 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Luego cada domingo hasta el 4 de octubre</div>
+        </div>
+      </div>
+      <div style="display:grid;gap:8px">
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1)">
+          <span style="position:absolute;top:-7px;right:11px;padding:2px 6px;border-radius:4px;background:#7ac77a;font:700 8.5px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#14110f">Incluido</span>
+          <div>
+            <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Estandar</div>
+            <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Domingo 9AM – 4PM</div>
+          </div>
+          <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div>
+            <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pickup</div>
+            <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Recoges en el local</div>
+          </div>
+          <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span>
+        </div>
+      </div>
+    </div>
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+        <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total hoy · 4 semanas</span>
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$3,924.00</span>
+      </div>
+      <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Activar membresia</button>
+    </div>
+  </div>
+</div>
+<p class="dv-note">Membresía activa en móvil: los plazos y las tres cifras (por platillo · por semana · total) caben dentro del mismo banner, en filas en vez de columnas. El resumen pasa a «Tu membresia · 4 semanas», el envío estándar toma el badge «Incluido» y la barra fija dice «Total hoy · 4 semanas» con el CTA «Activar membresia».</p>
+</div>
+
+</div>
+</section>
+
+<section class="dv-turn" id="t1">
+<div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">/checkout · dos columnas, membresia arriba, resumen sticky agrupado por tamano</span></div>
+<div class="dv-opts">
+
+<div class="dv-opt" id="1a">
+<div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Desktop · pedido normal (membresía apagada)</div>
+<div class="dv-card" style="width:1280px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 26px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:18px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Volver al menú</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px">
+      <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 11px/1 Barlow,sans-serif">C</span>
+      <span style="font:500 13px/1 Barlow,sans-serif;color:#F5F1EC">Carlos</span>
+    </div>
+  </div>
+
+  <div style="padding:30px 28px 40px">
+    <h1 style="margin:0 0 6px;font:700 54px/.88 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+    <p style="margin:0 0 26px;font:400 15px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);max-width:56ch;text-wrap:pretty">Revisa tu semana, elige cómo la quieres recibir y confirma. La confirmación de pago te llega por WhatsApp.</p>
+
+    <div style="display:flex;align-items:stretch;gap:0;margin-bottom:30px;border:1px solid rgba(247,145,56,.45);border-radius:12px;background:rgba(247,145,56,.05);overflow:hidden">
+      <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:420px;object-fit:cover;display:block">
+      <div style="flex:1;display:flex;align-items:center;gap:22px;padding:20px 22px">
+        <div style="flex:1;min-width:0">
+          <div style="font:700 30px/.95 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pides cada semana?</div>
+          <p style="margin:9px 0 0;font:400 13.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Convierte este pedido en membresía: mismo menú cada semana, hasta 15% de descuento y envío siempre gratis.</p>
+          <div style="display:flex;flex-wrap:wrap;gap:7px;margin-top:12px">
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(247,145,56,.14);font:600 11.5px/1 Barlow,sans-serif;color:#F79138">Desde −10%</span>
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(122,199,122,.14);font:600 11.5px/1 Barlow,sans-serif;color:#7ac77a">Envío siempre gratis</span>
+            <span style="padding:5px 10px;border-radius:6px;background:rgba(255,255,255,.06);font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.65)">Cancelas cuando quieras</span>
+          </div>
+        </div>
+        <span style="flex:none;display:flex;align-items:center;width:58px;height:32px;padding:3px;border-radius:16px;background:rgba(255,255,255,.14)">
+          <span style="width:26px;height:26px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>
+        </span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 392px;gap:26px;align-items:start">
+
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</span>
+          <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">entregamos cada domingo</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:16px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+          <span style="flex:none;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;background:rgba(122,199,122,.14);font:700 15px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+          <div>
+            <div style="font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Entrega: domingo, 13 de septiembre</div>
+            <div style="margin-top:4px;font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Pedidos cortados el viernes a mediodía</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+          <div style="padding:15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1);cursor:pointer">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Estandar</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Domingo 9AM – 4PM, horario según tu zona</div>
+          </div>
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pickup</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#7ac77a">Gratis</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Recoges en el local, en su horario</div>
+          </div>
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Prioritario</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">$100–200</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Horario y zona a acordar · pago aparte</div>
+          </div>
+        </div>
+
+        <div style="padding:15px 16px;margin-bottom:28px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div style="font:700 12px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Horario según tu zona</div>
+          <p style="margin:9px 0 0;font:400 13px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Te escribimos el <strong style="color:#F5F1EC;font-weight:600">sábado</strong> por WhatsApp con la hora estimada de entrega del domingo.</p>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto y direccion</span>
+        </div>
+
+        <div style="display:grid;gap:12px">
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">Nombre completo *</div>
+            <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+          </div>
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+            <div style="display:grid;grid-template-columns:118px 1fr;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 15px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+              <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+            </div>
+            <div style="margin-top:6px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">Recibirás la confirmación de pago por WhatsApp</div>
+          </div>
+
+          <div style="margin-top:6px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)">
+            <div style="margin-bottom:10px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Direccion de entrega</div>
+            <div style="display:grid;gap:8px;margin-bottom:12px">
+              <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08);cursor:pointer">
+                <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+                <div>
+                  <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Usar dirección guardada</div>
+                  <div style="margin-top:5px;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.55)">Perla 1002, Col. Canterias, C.P. 64989, Monterrey, N.L.</div>
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 15px;border:1px solid rgba(255,255,255,.12);border-radius:10px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+                <span style="flex:none;width:16px;height:16px;border-radius:50%;border:1px solid rgba(245,241,236,.35)"></span>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">Ingresar otra dirección</div>
+              </div>
+            </div>
+            <div style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">Entregamos solo en el área metropolitana de Monterrey</div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#0c0a09;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 18px 14px">
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</span>
+          <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">7 platillos</span>
+        </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,.08)">
+          <div style="padding:9px 18px;background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pollo Ajo Parmesano</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:9px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$480.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Pomodoro</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$160.00</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:9px;padding:14px 18px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="flex:1;padding:12px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Código de descuento</div>
+          <button style="flex:none;padding:12px 16px;border:1px solid rgba(247,145,56,.5);border-radius:9px;background:rgba(247,145,56,.1);color:#F79138;font:600 13px/1 Barlow,sans-serif;cursor:pointer" style-hover="background:rgba(247,145,56,.18)">Aplicar</button>
+        </div>
+
+        <div style="padding:16px 18px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Subtotal</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$1,090.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Envío estándar</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:#7ac77a">Descuento por paquete</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#7ac77a">−$35.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)">
+            <span style="font:500 14px/1 Barlow,sans-serif;color:#F5F1EC">Total</span>
+            <span style="font:700 34px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+          </div>
+        </div>
+
+        <div style="padding:0 18px 18px">
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.22)" style-hover="background:#ffa252">Proceder al pago</button>
+          <p style="margin:11px 0 0;font:400 11.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.4);text-align:center;text-wrap:pretty">Al continuar aceptas los términos. El pedido se confirma por WhatsApp.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div style="position:relative;height:0">
+    <div style="position:absolute;right:22px;bottom:16px;display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid rgba(247,145,56,.4);border-radius:10px;background:rgba(20,17,15,.96);box-shadow:0 10px 30px rgba(0,0,0,.5)">
+      <span style="font:600 12.5px/1 Barlow,sans-serif;color:#F79138">Refiere y gana 10%</span>
+      <span style="font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">CARLOSMADRUGA7</span>
+      <span style="padding:5px 9px;border-radius:6px;background:rgba(247,145,56,.12);font:600 11.5px/1 Barlow,sans-serif;color:#F79138;cursor:pointer">Copiar</span>
+      <span style="font:400 14px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);cursor:pointer">×</span>
+    </div>
+  </div>
+
+</div>
+<p class="dv-note">Membresía como banda protagonista arriba de las dos columnas: es la decisión de mayor valor y así no compite con el formulario. El resumen sticky agrupa por tamaño (Fit · 3, Testo · 4) con el precio unitario en verde cuando el descuento de paquete ya está activo. Solo lectura: para cambiar platillos se vuelve al menú. La barra de referidos pasó de banner full-width que tapaba el CTA a un chip cerrable abajo a la derecha.</p>
+</div>
+
+<div class="dv-opt" id="1b">
+<div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>Desktop · membresía activada (4 / 8 / 12 sem.)</div>
+<div class="dv-card" style="width:1280px">
+
+  <div style="display:flex;align-items:center;justify-content:space-between;height:64px;padding:0 26px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+    <div style="display:flex;align-items:center;gap:18px">
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:22px;display:block">
+      <span style="width:1px;height:22px;background:rgba(255,255,255,.1)"></span>
+      <span style="font:500 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Volver al menú</span>
+    </div>
+    <div style="display:flex;align-items:center;gap:11px;padding:9px 14px;border:1px solid rgba(255,255,255,.14);border-radius:9px">
+      <span style="display:flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:50%;background:#F79138;color:#17140f;font:700 11px/1 Barlow,sans-serif">C</span>
+      <span style="font:500 13px/1 Barlow,sans-serif;color:#F5F1EC">Carlos</span>
+    </div>
+  </div>
+
+  <div style="padding:30px 28px 40px">
+    <h1 style="margin:0 0 6px;font:700 54px/.88 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+    <p style="margin:0 0 26px;font:400 15px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);max-width:56ch;text-wrap:pretty">Revisa tu semana, elige cómo la quieres recibir y confirma. La confirmación de pago te llega por WhatsApp.</p>
+
+    <div style="margin-bottom:30px;border:1px solid #F79138;border-radius:12px;background:rgba(247,145,56,.07);overflow:hidden">
+      <div style="display:flex;align-items:stretch">
+        <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:420px;object-fit:cover;display:block">
+        <div style="flex:1;display:flex;align-items:center;gap:22px;padding:20px 22px">
+          <div style="flex:1;min-width:0">
+            <div style="font:700 30px/.95 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Membresia activada</div>
+            <p style="margin:9px 0 0;font:400 13.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Este menú se repite cada semana durante el plazo que elijas. Puedes cambiarlo entre semanas.</p>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px">
+              <div style="padding:11px 12px;border:1px solid #F79138;border-radius:9px;background:rgba(247,145,56,.14);text-align:center;cursor:pointer">
+                <div style="font:700 17px/1 Barlow,sans-serif;color:#F79138">4 sem.</div>
+                <div style="margin-top:4px;font:500 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">−10%</div>
+              </div>
+              <div style="padding:11px 12px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+                <div style="font:700 17px/1 Barlow,sans-serif;color:#F5F1EC">8 sem.</div>
+                <div style="margin-top:4px;font:500 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">−13%</div>
+              </div>
+              <div style="padding:11px 12px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.03);text-align:center;cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+                <div style="font:700 17px/1 Barlow,sans-serif;color:#F5F1EC">12 sem.</div>
+                <div style="margin-top:4px;font:500 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">−15%</div>
+              </div>
+            </div>
+          </div>
+          <span style="flex:none;display:flex;align-items:center;justify-content:flex-end;width:58px;height:32px;padding:3px;border-radius:16px;background:#F79138">
+            <span style="width:26px;height:26px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>
+          </span>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;border-top:1px solid rgba(247,145,56,.3);background:rgba(247,145,56,.16)">
+        <div style="padding:13px 18px;background:rgba(20,17,15,.5)">
+          <div style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.45)">Por platillo</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:7px"><span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$155.71</span><span style="font:700 17px/1 Barlow,sans-serif;color:#F5F1EC">$140.14</span></div>
+        </div>
+        <div style="padding:13px 18px;background:rgba(20,17,15,.5)">
+          <div style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.45)">Por semana</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:7px"><span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$1,090.00</span><span style="font:700 17px/1 Barlow,sans-serif;color:#F5F1EC">$981.00</span></div>
+        </div>
+        <div style="padding:13px 18px;background:rgba(20,17,15,.5)">
+          <div style="font:600 11px/1 Barlow,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(245,241,236,.45)">Total membresía · 4 sem.</div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:7px"><span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4);text-decoration:line-through">$4,360.00</span><span style="font:700 17px/1 Barlow,sans-serif;color:#F79138">$3,924.00</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 392px;gap:26px;align-items:start">
+
+      <div>
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:12px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</span>
+          <span style="font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">cada domingo, durante 4 semanas</span>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:16px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+          <span style="flex:none;display:flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:9px;background:rgba(122,199,122,.14);font:700 15px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+          <div>
+            <div style="font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Primera entrega: domingo, 13 de septiembre</div>
+            <div style="margin-top:4px;font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Luego cada domingo hasta el 4 de octubre</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px">
+          <div style="position:relative;padding:15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1);cursor:pointer">
+            <span style="position:absolute;top:-8px;right:11px;padding:3px 7px;border-radius:4px;background:#7ac77a;font:700 9.5px/1 Barlow,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#14110f">Incluido</span>
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Estandar</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#7ac77a">Gratis</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Domingo 9AM – 4PM, horario según tu zona</div>
+          </div>
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pickup</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:#7ac77a">Gratis</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Recoges en el local, en su horario</div>
+          </div>
+          <div style="padding:15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03);cursor:pointer" style-hover="background:rgba(255,255,255,.06)">
+            <div style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Prioritario</div>
+            <div style="margin-top:7px;font:700 16px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">$100–200</div>
+            <div style="margin-top:5px;font:400 12px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Horario y zona a acordar · pago aparte</div>
+          </div>
+        </div>
+
+        <div style="padding:15px 16px;margin-bottom:28px;border:1px solid rgba(255,255,255,.09);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div style="font:700 12px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Horario según tu zona</div>
+          <p style="margin:9px 0 0;font:400 13px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Te escribimos el <strong style="color:#F5F1EC;font-weight:600">sábado</strong> por WhatsApp con la hora estimada de entrega del domingo.</p>
+        </div>
+
+        <div style="display:flex;align-items:baseline;gap:12px;margin-bottom:14px">
+          <span style="font:700 15px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto y direccion</span>
+        </div>
+
+        <div style="display:grid;gap:12px">
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">Nombre completo *</div>
+            <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+          </div>
+          <div>
+            <div style="margin-bottom:6px;font:600 12px/1 Barlow,sans-serif;letter-spacing:.04em;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+            <div style="display:grid;grid-template-columns:118px 1fr;gap:10px">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 15px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+              <div style="padding:14px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 15px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+            </div>
+          </div>
+          <div style="margin-top:6px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08)">
+            <div style="margin-bottom:10px;font:700 13px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F79138">Direccion de entrega</div>
+            <div style="display:flex;align-items:flex-start;gap:12px;padding:13px 15px;border:1px solid #F79138;border-radius:10px;background:rgba(247,145,56,.08)">
+              <span style="flex:none;display:flex;align-items:center;justify-content:center;width:16px;height:16px;margin-top:2px;border-radius:50%;border:1px solid #F79138"><span style="width:8px;height:8px;border-radius:50%;background:#F79138"></span></span>
+              <div>
+                <div style="font:600 13.5px/1 Barlow,sans-serif;color:#F5F1EC">Usar dirección guardada</div>
+                <div style="margin-top:5px;font:400 12.5px/1.4 Barlow,sans-serif;color:rgba(245,241,236,.55)">Perla 1002, Col. Canterias, C.P. 64989, Monterrey, N.L.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="border:1px solid #F79138;border-radius:12px;background:#0c0a09;overflow:hidden">
+        <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:18px 18px 14px">
+          <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu membresia</span>
+          <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">4 semanas</span>
+        </div>
+
+        <div style="padding:0 18px 14px">
+          <div style="padding:12px 14px;border:1px solid rgba(247,145,56,.3);border-radius:10px;background:rgba(247,145,56,.07);font:400 12.5px/1.5 Barlow,sans-serif;color:rgba(245,241,236,.65);text-wrap:pretty">Se cobra hoy el total de las 4 semanas. Este menú se repite cada domingo.</div>
+        </div>
+
+        <div style="border-top:1px solid rgba(255,255,255,.08)">
+          <div style="padding:9px 18px;background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$135.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$135.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$135.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$135.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pollo Ajo Parmesano</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$135.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$135.00</span></div>
+          </div>
+          <div style="padding:9px 18px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10.5px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$144.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$432.00</span></div>
+          </div>
+          <div style="padding:11px 18px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 14px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Pomodoro</span><span style="flex:none;font:500 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:5px"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">$144.00 c/u</span><span style="flex:none;font:700 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$144.00</span></div>
+          </div>
+        </div>
+
+        <div style="padding:16px 18px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Semana</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$981.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">× 4 semanas</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#F5F1EC">$3,924.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:#7ac77a">Envío incluido</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:5px 0"><span style="font:400 13.5px/1 Barlow,sans-serif;color:#7ac77a">Ahorro total</span><span style="font:500 13.5px/1 Barlow,sans-serif;color:#7ac77a">−$672.00</span></div>
+          <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:10px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)">
+            <span style="font:500 14px/1 Barlow,sans-serif;color:#F5F1EC">Total hoy</span>
+            <span style="font:700 34px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$3,924.00</span>
+          </div>
+        </div>
+
+        <div style="padding:0 18px 18px">
+          <button style="width:100%;padding:18px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 22px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;box-shadow:0 8px 26px rgba(247,145,56,.22)" style-hover="background:#ffa252">Activar membresia</button>
+          <p style="margin:11px 0 0;font:400 11.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.4);text-align:center;text-wrap:pretty">Al continuar aceptas los términos. El pedido se confirma por WhatsApp.</p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<p class="dv-note">Con la membresía encendida el banner crece con los plazos y una banda de tres cifras (por platillo · por semana · total), el envío estándar queda «Incluido · Gratis», y el resumen cambia de «Tu pedido» a «Tu membresía» con precios ya con descuento y el ahorro total como línea propia. El CTA pasa a «Activar membresia».</p>
+</div>
+
+<div class="dv-opt" id="1c">
+<div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>Móvil · una columna, resumen arriba colapsable, CTA fijo abajo</div>
+<div style="display:flex;gap:20px;align-items:flex-start">
+
+  <div class="dv-card" style="width:390px;border-radius:22px;height:940px;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+      <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+      <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+    </div>
+
+    <div style="padding:18px 18px 132px">
+      <h1 style="margin:0 0 5px;font:700 38px/.9 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Checkout</h1>
+      <p style="margin:0 0 16px;font:400 13.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Revisa, elige entrega y confirma.</p>
+
+      <div style="margin-bottom:16px;border:1px solid rgba(247,145,56,.45);border-radius:12px;background:rgba(247,145,56,.05);overflow:hidden">
+        <img src="assets/membership-lockup.png" alt="Muscle Meal Membership" style="width:100%;display:block">
+        <div style="display:flex;align-items:center;gap:14px;padding:14px 15px">
+          <div style="flex:1;min-width:0">
+            <div style="font:700 22px/.98 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pides cada semana?</div>
+            <p style="margin:6px 0 0;font:400 12.5px/1.45 Barlow,sans-serif;color:rgba(245,241,236,.6);text-wrap:pretty">Hasta 15% off y envío siempre gratis.</p>
+          </div>
+          <span style="flex:none;display:flex;align-items:center;width:52px;height:30px;padding:3px;border-radius:15px;background:rgba(255,255,255,.14)">
+            <span style="width:24px;height:24px;border-radius:50%;background:#F5F1EC;box-shadow:0 1px 4px rgba(0,0,0,.5)"></span>
+          </span>
+        </div>
+      </div>
+
+      <div style="margin-bottom:18px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px">
+          <div>
+            <div style="font:700 19px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</div>
+            <div style="margin-top:4px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">7 platillos · Fit y Testo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149</span>
+            <span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">1 · Tu entrega</div>
+
+      <div style="display:flex;align-items:center;gap:11px;padding:12px 13px;margin-bottom:12px;border:1px solid rgba(122,199,122,.35);border-radius:11px;background:rgba(122,199,122,.07)">
+        <span style="flex:none;display:flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;background:rgba(122,199,122,.14);font:700 14px/1 'Franchise','Big Shoulders Display',sans-serif;color:#7ac77a">13</span>
+        <div>
+          <div style="font:700 13.5px/1 Barlow,sans-serif;color:#7ac77a">Domingo, 13 de septiembre</div>
+          <div style="margin-top:4px;font:400 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Cortamos el viernes a mediodía</div>
+        </div>
+      </div>
+
+      <div style="display:grid;gap:8px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid #F79138;border-radius:11px;background:rgba(247,145,56,.1)">
+          <div>
+            <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F79138">Estandar</div>
+            <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.55)">Domingo 9AM – 4PM</div>
+          </div>
+          <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div>
+            <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Pickup</div>
+            <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Recoges en el local</div>
+          </div>
+          <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:#7ac77a">Gratis</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 15px;border:1px solid rgba(255,255,255,.12);border-radius:11px;background:rgba(255,255,255,.03)">
+          <div>
+            <div style="font:700 18px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Prioritario</div>
+            <div style="margin-top:5px;font:400 11.5px/1.35 Barlow,sans-serif;color:rgba(245,241,236,.5)">Horario a acordar · pago aparte</div>
+          </div>
+          <span style="flex:none;font:700 15px/1 Barlow,sans-serif;color:rgba(245,241,236,.75)">$100–200</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+        <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+      </div>
+      <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+    </div>
+  </div>
+
+  <div class="dv-card" style="width:390px;border-radius:22px;height:940px;position:relative;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;height:54px;padding:0 16px;border-bottom:1px solid rgba(255,255,255,.08);background:#0c0a09">
+      <span style="font:500 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.55)">← Menú</span>
+      <img src="assets/logo-horizontal.png" alt="Muscle Meals" style="height:18px;display:block">
+      <span style="display:flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;background:#F79138;color:#17140f;font:700 12px/1 Barlow,sans-serif">C</span>
+    </div>
+
+    <div style="padding:18px 18px 132px">
+      <div style="margin-bottom:16px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:rgba(255,255,255,.03);overflow:hidden">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 15px">
+          <div>
+            <div style="font:700 19px/1 'Franchise','Big Shoulders Display',sans-serif;text-transform:uppercase;color:#F5F1EC">Tu pedido</div>
+            <div style="margin-top:4px;font:400 12px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">7 platillos · Fit y Testo</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px">
+            <span style="font:700 20px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149</span>
+            <span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▴</span>
+          </div>
+        </div>
+        <div style="border-top:1px solid rgba(255,255,255,.08)">
+          <div style="padding:8px 15px;background:rgba(255,255,255,.02);font:600 10px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Fit · 3 platillos</div>
+          <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta a la Vinagreta</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Bolognesa</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pollo Ajo Parmesano</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$150.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$150.00</span></div>
+          </div>
+          <div style="padding:8px 15px;border-top:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);font:600 10px/1 Barlow,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(245,241,236,.4)">Testo · 4 platillos</div>
+          <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Picadillo</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×3</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$480.00</span></div>
+          </div>
+          <div style="padding:10px 15px;border-top:1px solid rgba(255,255,255,.05)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px"><span style="font:600 13px/1.2 Barlow,sans-serif;color:#F5F1EC">Pasta Pomodoro</span><span style="flex:none;font:500 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.4)">×1</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-top:4px"><span style="font:400 12px/1 Barlow,sans-serif;color:#7ac77a">$160.00 c/u</span><span style="flex:none;font:700 13px/1 Barlow,sans-serif;color:#F5F1EC">$160.00</span></div>
+          </div>
+          <div style="padding:13px 15px;border-top:1px solid rgba(255,255,255,.08)">
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Subtotal</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#F5F1EC">$1,090.00</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Envío estándar</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#F5F1EC">$59.00</span></div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;padding:4px 0"><span style="font:400 12.5px/1 Barlow,sans-serif;color:#7ac77a">Descuento por paquete</span><span style="font:500 12.5px/1 Barlow,sans-serif;color:#7ac77a">−$35.00</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;padding:0 15px 14px">
+            <div style="flex:1;padding:11px 12px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 13px/1 Barlow,sans-serif;color:rgba(245,241,236,.35)">Código de descuento</div>
+            <button style="flex:none;padding:11px 14px;border:1px solid rgba(247,145,56,.5);border-radius:9px;background:rgba(247,145,56,.1);color:#F79138;font:600 12.5px/1 Barlow,sans-serif;cursor:pointer">Aplicar</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:12px;font:700 12.5px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#F5F1EC">2 · Contacto y direccion</div>
+      <div style="display:grid;gap:10px">
+        <div>
+          <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">Nombre completo *</div>
+          <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">Carlos Madruga</div>
+        </div>
+        <div>
+          <div style="margin-bottom:5px;font:600 11.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.6)">WhatsApp (10 dígitos) *</div>
+          <div style="display:grid;grid-template-columns:104px 1fr;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:500 16px/1 Barlow,sans-serif;color:#F5F1EC">+52<span style="font:400 11px/1 Barlow,sans-serif;color:rgba(245,241,236,.45)">▾</span></div>
+            <div style="padding:14px 13px;border:1px solid rgba(255,255,255,.12);border-radius:9px;background:rgba(255,255,255,.04);font:400 16px/1 Barlow,sans-serif;color:#F5F1EC">8112749613</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 16px;border-top:1px solid rgba(255,255,255,.1);background:rgba(12,10,9,.97)">
+      <div style="display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:9px">
+        <span style="font:500 12.5px/1 Barlow,sans-serif;color:rgba(245,241,236,.5)">Total con envío</span>
+        <span style="font:700 26px/1 'Franchise','Big Shoulders Display',sans-serif;color:#F79138">$1,149.00</span>
+      </div>
+      <button style="width:100%;padding:16px 0;border:0;border-radius:10px;background:#F79138;color:#17140f;font:700 20px/1 'Franchise','Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;cursor:pointer">Proceder al pago</button>
+    </div>
+  </div>
+
+</div>
+<p class="dv-note">Móvil: el resumen sube al principio como card colapsada (una línea con total) — ábrela y trae el desglose agrupado, totales y código de descuento. La barra fija de abajo repite el total y el CTA, así que nunca hay que volver arriba para saber cuánto es. Sin chip de referidos en móvil: estorba en el pulgar; ahí va en la confirmación.</p>
+</div>
+
+</div>
+</section>
+</x-dc>
+</body>
+</html>

@@ -87,7 +87,7 @@ export default function AddToCartModal({
               border: 'none',
               borderRadius: 8,
               cursor: 'pointer',
-              fontFamily: 'Franchise, sans-serif',
+              fontFamily: 'var(--font-display)',
               fontSize: 22,
               letterSpacing: 0,
               lineHeight: 1,
@@ -107,7 +107,7 @@ export default function AddToCartModal({
               border: `2px solid ${colors.orange}`,
               borderRadius: 8,
               cursor: 'pointer',
-              fontFamily: 'Franchise, sans-serif',
+              fontFamily: 'var(--font-display)',
               fontSize: 20,
               letterSpacing: 0,
               lineHeight: 1,
@@ -191,7 +191,7 @@ export default function AddToCartModal({
                     </div>
                   )}
                   <div style={{
-                    fontFamily: 'Franchise, sans-serif',
+                    fontFamily: 'var(--font-display)',
                     fontSize: 14,
                     letterSpacing: 0,
                     color: colors.white,

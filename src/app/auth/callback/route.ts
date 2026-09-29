@@ -4,7 +4,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { buildReferralCode } from '@/lib/utils/referrals'
 
 export async function GET(request: NextRequest) {
-  const { searchParams, origin } = new URL(request.url)
+  const { searchParams } = new URL(request.url)
+  // Behind a proxy (ngrok, Vercel, etc.) request.url may resolve to the internal
+  // host. Use x-forwarded-* headers to reconstruct the real public origin.
+  const forwardedHost = request.headers.get('x-forwarded-host')
+  const forwardedProto = request.headers.get('x-forwarded-proto') ?? 'https'
+  const origin = forwardedHost
+    ? `${forwardedProto}://${forwardedHost}`
+    : new URL(request.url).origin
   const code = searchParams.get('code')
 
   if (code) {
@@ -68,7 +75,13 @@ export async function GET(request: NextRequest) {
         })
       }
 
-      const next = searchParams.get('next') ?? '/cuenta'
+      // Prefer ?next= in the URL; fall back to the mm_auth_next cookie
+      // (set by LoginForm before OAuth so we avoid query params in redirectTo)
+      const nextFromQuery  = searchParams.get('next')
+      const nextFromCookie = request.cookies.get('mm_auth_next')?.value
+        ? decodeURIComponent(request.cookies.get('mm_auth_next')!.value)
+        : null
+      const next = nextFromQuery ?? nextFromCookie ?? '/cuenta'
       const safePath = next.startsWith('/') ? next : '/cuenta'
       return NextResponse.redirect(`${origin}${safePath}`)
     }

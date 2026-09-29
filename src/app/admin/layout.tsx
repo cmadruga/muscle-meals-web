@@ -87,7 +87,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
 
   useEffect(() => {
+    // Close sidebar on route change — setState in effect is intentional here
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setPendingHref(null)
   }, [pathname])
 

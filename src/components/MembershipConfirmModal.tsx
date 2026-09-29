@@ -187,7 +187,7 @@ export function MembershipConfirmModal({ prefill, pickupSpots, items, subtotal, 
               <div style={{ width: 16, height: 16, borderRadius: '50%', border: `2px solid ${shippingType === 'standard' ? colors.orange : colors.grayLight}`, background: shippingType === 'standard' ? colors.orange : 'transparent', flexShrink: 0, marginTop: 2 }} />
               <div style={{ flex: 1 }}>
                 <div style={{ fontSize: 15, color: colors.white, fontWeight: 600 }}>Envío estándar</div>
-                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario regular (Domingo 9AM - 4PM)</div>
+                <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>Entrega en horario regular (Domingo 9AM - 2PM)</div>
                 {prefill.address && (
                   <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 1, lineHeight: 1.3 }}>{prefill.address}</div>
                 )}
@@ -257,7 +257,7 @@ export function MembershipConfirmModal({ prefill, pickupSpots, items, subtotal, 
             color: colors.white,
             border: 'none',
             borderRadius: 8,
-            fontFamily: 'Franchise, sans-serif',
+            fontFamily: 'var(--font-display)',
             fontSize: 23,
             letterSpacing: 0,
             lineHeight: 1,

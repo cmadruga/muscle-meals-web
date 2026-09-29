@@ -140,10 +140,12 @@ export async function getCustomerReferralInfo(customerId: string): Promise<{
   ])
 
   // Nombres de los referees
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const refereeIds = [...new Set((asReferrer ?? []).map((r: any) => r.referee_customer_id).filter(Boolean))]
   const { data: refereeCustomers } = refereeIds.length
     ? await supabase.from('customers').select('id, full_name').in('id', refereeIds)
     : { data: [] }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const refereeNames = new Map((refereeCustomers ?? []).map((c: any) => [c.id, c.full_name]))
 
   // Nombre del referidor (si este cliente usó un código)
@@ -153,11 +155,14 @@ export async function getCustomerReferralInfo(customerId: string): Promise<{
     referrerName = ref?.full_name ?? null
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const referrerRows: ReferralUseRow[] = (asReferrer ?? []).map((r: any) => ({
     id: r.id,
     referee_name: refereeNames.get(r.referee_customer_id) ?? 'Cliente',
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     order_number: (r.orders as any)?.order_number ?? '—',
     reward_redeemed: r.reward_redeemed,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     reward_order_number: (r.reward_order as any)?.order_number ?? null,
     created_at: r.created_at,
   }))
@@ -168,6 +173,7 @@ export async function getCustomerReferralInfo(customerId: string): Promise<{
     asReferee: asRefereeRaw
       ? {
           referrer_name: referrerName,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           order_number: (asRefereeRaw.orders as any)?.order_number ?? '—',
           created_at: asRefereeRaw.created_at,
         }

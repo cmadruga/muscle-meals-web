@@ -34,6 +34,7 @@ export default function WeekNav({ weekStr }: { weekStr: string }) {
   function goTo(date: Date) {
     const monday = getMondayOfWeek(date)
     const newStr = toLocalDateStr(monday)
+    // eslint-disable-next-line react-hooks/immutability
     document.cookie = `admin_week=${newStr}; path=/; max-age=604800`
     router.refresh()
   }

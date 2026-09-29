@@ -3,10 +3,11 @@ import Script from 'next/script'
 import './globals.css'
 import SiteShell from '@/components/SiteShell'
 import { FB_PIXEL_ID } from '@/lib/pixel'
+import { bigShoulders, barlow, barlowCondensed } from '@/lib/fonts'
 
 export const metadata: Metadata = {
-  title: 'Muscle Meals',
-  description: 'Paquetes de comida preparada para tu semana fitness',
+  title: 'Muscle Meals | Comida preparada saludable en Monterrey',
+  description: 'Tus comidas de la semana, con las porciones que tus objetivos necesitan.. Elige tus porciones, arma tu menú semanal o mensual y recíbelo cada semana listo para comer.',
 }
 
 export default function RootLayout({
@@ -15,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="es">
+    <html lang="es" className={`${bigShoulders.variable} ${barlow.variable} ${barlowCondensed.variable}`}>
       <body>
         <SiteShell>{children}</SiteShell>
         {FB_PIXEL_ID && (

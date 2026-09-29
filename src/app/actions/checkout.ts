@@ -38,7 +38,9 @@ export async function validateCart(
     supabase.from('meals').select('id, active').in('id', mealIds),
   ])
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const validSizeIds = new Set((sizes ?? []).map((s: any) => s.id))
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const customSizeIds = new Set((sizes ?? []).filter((s: any) => s.customer_id !== null).map((s: any) => s.id))
   const activeMealIds = new Set(
     (meals ?? []).filter((m: { id: string; active: boolean }) => m.active).map(m => m.id)
@@ -338,7 +340,7 @@ export async function purchaseMembership(
     customerEmail: '',
     customerPhone: data.customerPhone,
     items: [{
-      name: `Membresia Muscle Meals - ${data.membershipWeeks} sem - ${totalQty} platillos sem - ${discountPct}% dto`,
+      name: `Membresía Muscle Meals - ${data.membershipWeeks} sem - ${totalQty} platillos sem - ${discountPct}% dto`,
       unit_price: totalAmount,
       quantity: 1,
     }],
