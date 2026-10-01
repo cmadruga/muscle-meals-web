@@ -40,20 +40,23 @@ export const useCartStore = create<CartStore>()(
 
           // Solo combinar items individuales (sin packageInstanceId)
           const existingIndex = state.items.findIndex(
-            item => 
-              item.mealId === newItem.mealId && 
+            item =>
+              item.mealId === newItem.mealId &&
               item.sizeId === newItem.sizeId &&
-              !item.packageInstanceId // Solo items individuales
+              !item.packageInstanceId
           )
 
           if (existingIndex >= 0) {
-            // Actualizar cantidad
-            const updated = [...state.items]
-            updated[existingIndex].qty += newItem.qty
-            return { items: updated }
+            // Actualizar qty Y precio (por si el precio cambió desde la última sesión)
+            return {
+              items: state.items.map((item, i) =>
+                i === existingIndex
+                  ? { ...item, qty: item.qty + newItem.qty, unitPrice: newItem.unitPrice, packagePrice: newItem.packagePrice }
+                  : item
+              ),
+            }
           }
 
-          // Agregar nuevo
           return { items: [...state.items, newItem] }
         })
       },
@@ -123,7 +126,28 @@ export const useCartStore = create<CartStore>()(
       }
     }),
     {
-      name: 'muscle-meals-cart', // nombre en localStorage
+      name: 'muscle-meals-cart',
+      onRehydrateStorage: () => (state) => {
+        if (!state) return
+        // Deduplicar items individuales con mismo mealId+sizeId (puede pasar con localStorage stale)
+        const seen = new Map<string, number>()
+        const deduped: CartItem[] = []
+        for (const item of state.items) {
+          if (item.packageInstanceId) {
+            deduped.push(item)
+            continue
+          }
+          const key = `${item.mealId}::${item.sizeId}`
+          const existingIdx = seen.get(key)
+          if (existingIdx !== undefined) {
+            deduped[existingIdx] = { ...deduped[existingIdx], qty: deduped[existingIdx].qty + item.qty }
+          } else {
+            seen.set(key, deduped.length)
+            deduped.push(item)
+          }
+        }
+        state.items = deduped
+      },
     }
   )
 )
