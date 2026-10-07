@@ -263,8 +263,8 @@ export default function CustomSizePanel({ proIngredients, carbIngredients, fitSi
         </strong></span>
         <span style={{ color: colors.textMuted }}>
           {mealsIncluded
-            ? `Paquete total: $${(pkgMin * mealsIncluded / 100).toFixed(2)}${pkgMin !== pkgMax ? ` - $${(pkgMax * mealsIncluded / 100).toFixed(2)}` : ''} MXN`
-            : `Paquete: $${(pkgMin / 100).toFixed(2)}${pkgMin !== pkgMax ? ` - $${(pkgMax / 100).toFixed(2)}` : ''} MXN`}
+            ? `Precio total: $${(pkgMin * mealsIncluded / 100).toFixed(2)}${pkgMin !== pkgMax ? ` - $${(pkgMax * mealsIncluded / 100).toFixed(2)}` : ''} MXN`
+            : `Precio: $${(pkgMin / 100).toFixed(2)}${pkgMin !== pkgMax ? ` - $${(pkgMax / 100).toFixed(2)}` : ''} MXN`}
         </span>
       </div>
 

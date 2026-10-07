@@ -201,7 +201,7 @@ export default function MenuClient({
   const [mounted, setMounted] = useState(false)
   // Standard SSR hydration guard
   useEffect(() => {
-    
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true)
   }, [])
 
@@ -224,7 +224,7 @@ export default function MenuClient({
 
     if (!raw) {
       // No cookie → user is not logged in → show reorder login modal
-       
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShowReorderLogin(true)
       return
     }
@@ -353,7 +353,7 @@ export default function MenuClient({
   useEffect(() => {
     const fitPro = fitSize ? sizeProteinQty(fitSize) : 180
     const fitCarb = fitSize ? sizeCarbQty(fitSize) : 55
-     
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCustomPro(groupIngredientsByName(proIngredients, fitPro, fitPro))
     setCustomCarb(groupIngredientsByName(carbIngredients, fitCarb, fitCarb))
   }, [proIngredients, carbIngredients, fitSize])
@@ -414,7 +414,7 @@ export default function MenuClient({
       parts.push(`${customRemoved} ${customRemoved !== 1 ? 'platillos tenían tamaño personalizado' : 'platillo tenía tamaño personalizado'} (no disponible en período de stock limitado)`)
     }
     if (parts.length > 0) {
-       
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setToastMsg(`Se eliminaron del carrito: ${parts.join('\n ')}.`)
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1374,7 +1374,7 @@ export default function MenuClient({
                   <span style={{ display: 'block', width: `${progressPct}%`, height: '100%', borderRadius: 3, background: C.orange, transition: 'width .3s' }} />
                 </div>
                 <span style={{ font: `500 12px/1 ${F.body}`, color: 'rgba(245,241,236,.6)', whiteSpace: 'nowrap' }}>
-                  {toDiscount} más y baja a paquete
+                  {toDiscount} más para descuento.
                 </span>
               </div>
             )}
