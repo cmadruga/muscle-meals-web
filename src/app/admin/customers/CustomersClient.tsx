@@ -606,7 +606,7 @@ function WhatsAppModal({ sorted, onClose }: { sorted: CustomerRow[]; onClose: ()
   const handleSend = async () => {
     const recipients = sorted
       .filter(c => selected.has(c.id) && c.phone)
-      .map(c => ({ phone: c.phone!, firstName: c.full_name.split(' ')[0] }))
+      .map(c => ({ phone: c.phone!, firstName: c.full_name.split(' ')[0], fullName: c.full_name }))
     if (recipients.length === 0) return
     if (currentTemplate.hasImage && !selectedImageUrl) return
 
@@ -834,9 +834,6 @@ export default function CustomersClient({ customers, guestCustomers, sizes, high
     <div>
       <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 20, flexWrap: 'wrap' }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, color: colors.white, margin: 0 }}>Clientes</h1>
-        <button onClick={() => setWaModalOpen(true)} style={{ marginLeft: 'auto', padding: '9px 20px', background: colors.orange, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'inherit' }}>
-          Enviar WhatsApp
-        </button>
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>

@@ -10,7 +10,7 @@ const WHATSAPP_API_URL = `https://graph.facebook.com/v23.0/${WHATSAPP_PHONE_ID}/
 /**
  * Envía un mensaje de texto simple por WhatsApp
  */
-async function sendWhatsAppText(phoneNumber: string, message: string): Promise<boolean> {
+export async function sendWhatsAppText(phoneNumber: string, message: string): Promise<boolean> {
   try {
     const response = await fetch(WHATSAPP_API_URL, {
       method: 'POST',

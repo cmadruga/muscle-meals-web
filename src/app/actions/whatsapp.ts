@@ -2,20 +2,39 @@
 
 import { sendReorderTemplate } from '@/lib/whatsapp'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { insertWaOutgoingMessage } from '@/lib/db/whatsapp'
 
 const BUCKET = 'whatsapp-templates'
 
 export async function sendReorderBroadcast(
-  recipients: { phone: string; firstName: string }[],
+  recipients: { phone: string; firstName: string; fullName: string }[],
   imageUrl: string,
 ): Promise<{ sent: number; failed: number }> {
   let sent = 0
   let failed = 0
+  const supabase = createAdminClient()
+  const now = new Date().toISOString()
 
   for (const r of recipients) {
     const ok = await sendReorderTemplate(r.phone, r.firstName, imageUrl)
-    if (ok) sent++
-    else failed++
+    if (ok) {
+      sent++
+      // Upsert conversation and log the outgoing message
+      const waPhone = r.phone.replace(/^\+/, '')
+      const { data } = await supabase
+        .from('wa_conversations')
+        .upsert(
+          { contact_phone: waPhone, contact_name: r.fullName, last_message_at: now, status: 'open' },
+          { onConflict: 'contact_phone' }
+        )
+        .select('id')
+        .single()
+      if (data?.id) {
+        await insertWaOutgoingMessage(data.id, '📢 Plantilla: Reordenar')
+      }
+    } else {
+      failed++
+    }
   }
 
   return { sent, failed }
