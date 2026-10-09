@@ -67,10 +67,16 @@ const ICONS: Record<string, React.ReactNode> = {
       <path d="M3 7.5v4c0 1.1 2.24 2 5 2s5-.9 5-2v-4" />
     </Icon>
   ),
+  whatsapp: (
+    <Icon>
+      <path d="M8 2C4.7 2 2 4.4 2 7.3c0 1.4.5 2.7 1.4 3.7L2.5 14l3-.9C6.4 13.7 7.2 14 8 14c3.3 0 6-2.4 6-5.5S11.3 2 8 2z" />
+    </Icon>
+  ),
 }
 
 const NAV_LINKS = [
   { href: '/admin/orders',    label: 'Pedidos',       iconKey: 'orders' },
+  { href: '/admin/inbox',     label: 'WhatsApp',      iconKey: 'whatsapp' },
   { href: '/admin/customers', label: 'Clientes',      iconKey: 'customers' },
   { href: '/admin/lista',     label: 'Lista',         iconKey: 'lista' },
   { href: '/admin/empaques',  label: 'Empaques',      iconKey: 'empaques' },

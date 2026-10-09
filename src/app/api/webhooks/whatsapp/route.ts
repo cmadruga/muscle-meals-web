@@ -39,20 +39,38 @@ export async function POST(request: NextRequest) {
           if (message.type !== 'text') continue
 
           const contactPhone = message.from
-          const contactName = value.contacts?.[0]?.profile?.name ?? null
           const msgBody = message.text?.body ?? ''
           const waMsgId = message.id
           const sentAt = new Date(parseInt(message.timestamp) * 1000).toISOString()
 
-          // Upsert conversación (función SQL atómica)
-          const { data: convId, error: rpcErr } = await supabase.rpc('wa_upsert_conversation', {
-            p_phone: contactPhone,
-            p_name: contactName,
-            p_time: sentAt,
-          })
+          // Check if conversation already exists
+          const { data: existing } = await supabase
+            .from('wa_conversations')
+            .select('id, unread_count')
+            .eq('contact_phone', contactPhone)
+            .single()
 
-          if (rpcErr || !convId) {
-            console.error('❌ wa_upsert_conversation error:', rpcErr)
+          let convId: string | null = null
+
+          if (existing) {
+            // Update timestamp + unread count — never touch contact_name (our DB name takes priority)
+            await supabase
+              .from('wa_conversations')
+              .update({ last_message_at: sentAt, status: 'open', unread_count: (existing.unread_count ?? 0) + 1 })
+              .eq('id', existing.id)
+            convId = existing.id
+          } else {
+            // New conversation — never persist WA profile name, we always resolve from our DB
+            const { data: inserted } = await supabase
+              .from('wa_conversations')
+              .insert({ contact_phone: contactPhone, contact_name: null, last_message_at: sentAt, unread_count: 1, status: 'open' })
+              .select('id')
+              .single()
+            convId = inserted?.id ?? null
+          }
+
+          if (!convId) {
+            console.error('❌ No se pudo obtener convId para:', contactPhone)
             continue
           }
 
