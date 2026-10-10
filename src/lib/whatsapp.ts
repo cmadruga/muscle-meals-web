@@ -273,6 +273,70 @@ export async function sendReorderTemplate(
 }
 
 /**
+ * Recordatorio a cliente recurrente que aún no ha pedido esta semana
+ * Body {{1}}: primer nombre
+ * CTA: musclemeals.com.mx/reorder
+ */
+export async function sendReorderLastReminder(
+  phoneNumber: string,
+  firstName: string,
+): Promise<boolean> {
+  const to = phoneNumber.startsWith('+') ? phoneNumber : `+521${phoneNumber.replace(/\D/g, '')}`
+  try {
+    const response = await fetch(WHATSAPP_API_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        type: 'template',
+        to,
+        template: {
+          name: 'reorder_lastreminder',
+          language: { code: 'es_MX' },
+          components: [{ type: 'body', parameters: [{ type: 'text', text: firstName }] }],
+        },
+      }),
+    })
+    if (!response.ok) { console.error('❌ reorder_lastreminder:', JSON.stringify(await response.json(), null, 2)); return false }
+    console.log('✅ reorder_lastreminder →', phoneNumber)
+    return true
+  } catch (e) { console.error('❌ reorder_lastreminder:', e); return false }
+}
+
+/**
+ * Seguimiento a cliente nuevo después de su primera semana
+ * Body {{1}}: primer nombre
+ * CTA: musclemeals.com.mx/reorder
+ */
+export async function sendNewClienteLastReminder(
+  phoneNumber: string,
+  firstName: string,
+): Promise<boolean> {
+  const to = phoneNumber.startsWith('+') ? phoneNumber : `+521${phoneNumber.replace(/\D/g, '')}`
+  try {
+    const response = await fetch(WHATSAPP_API_URL, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        type: 'template',
+        to,
+        template: {
+          name: 'newcliente_lastreminder',
+          language: { code: 'es_MX' },
+          components: [{ type: 'body', parameters: [{ type: 'text', text: firstName }] }],
+        },
+      }),
+    })
+    if (!response.ok) { console.error('❌ newcliente_lastreminder:', JSON.stringify(await response.json(), null, 2)); return false }
+    console.log('✅ newcliente_lastreminder →', phoneNumber)
+    return true
+  } catch (e) { console.error('❌ newcliente_lastreminder:', e); return false }
+}
+
+/**
  * Orden expirada sin pago
  */
 export async function sendOrderExpired(

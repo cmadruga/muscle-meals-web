@@ -13,14 +13,16 @@ import {
   getCustomersForWa,
   type CustomerForWa,
 } from '@/app/actions/whatsapp-inbox'
-import { listTemplateImages, sendReorderBroadcast, uploadTemplateImage } from '@/app/actions/whatsapp'
+import { listTemplateImages, sendReorderBroadcast, sendTextTemplateBroadcast, uploadTemplateImage } from '@/app/actions/whatsapp'
 
 type TemplateImage = { name: string; url: string }
 
 const TWO_WEEKS_MS = 14 * 24 * 60 * 60 * 1000
 
 const TEMPLATES = [
-  { id: 'reordenar', label: 'Reordenar', description: 'Invita al cliente a repetir su pedido', hasImage: true },
+  { id: 'reordenar',               label: 'Reordenar',              description: 'Invita al cliente a repetir su pedido',              hasImage: true  },
+  { id: 'reorder_lastreminder',    label: 'Recordatorio reorden',   description: 'Reminder a cliente recurrente que no ha pedido',     hasImage: false },
+  { id: 'newcliente_lastreminder', label: 'Nuevo cliente',          description: 'Seguimiento tras la primera semana del cliente',     hasImage: false },
 ]
 
 function formatTime(iso: string | null): string {
@@ -286,7 +288,12 @@ function BroadcastModal({ customers, onClose }: { customers: CustomerForWa[]; on
     if (currentTemplate?.hasImage && !selectedImageUrl) return
     setSending(true); setResult(null)
     try {
-      const { sent, failed } = await sendReorderBroadcast(recipients, selectedImageUrl!)
+      let sent: number, failed: number
+      if (selectedTemplate === 'reordenar') {
+        ;({ sent, failed } = await sendReorderBroadcast(recipients, selectedImageUrl!))
+      } else {
+        ;({ sent, failed } = await sendTextTemplateBroadcast(selectedTemplate as 'reorder_lastreminder' | 'newcliente_lastreminder', recipients))
+      }
       const msg = failed === 0 ? `✅ ${sent} mensajes enviados correctamente` : `✅ ${sent} enviados · ❌ ${failed} fallaron`
       setResult(msg)
       setSending(false)

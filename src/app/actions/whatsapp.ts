@@ -1,6 +1,6 @@
 'use server'
 
-import { sendReorderTemplate } from '@/lib/whatsapp'
+import { sendReorderTemplate, sendReorderLastReminder, sendNewClienteLastReminder } from '@/lib/whatsapp'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { insertWaOutgoingMessage } from '@/lib/db/whatsapp'
 
@@ -37,6 +37,31 @@ export async function sendReorderBroadcast(
     }
   }
 
+  return { sent, failed }
+}
+
+export async function sendTextTemplateBroadcast(
+  templateId: 'reorder_lastreminder' | 'newcliente_lastreminder',
+  recipients: { phone: string; firstName: string; fullName: string }[],
+): Promise<{ sent: number; failed: number }> {
+  let sent = 0; let failed = 0
+  const supabase = createAdminClient()
+  const now = new Date().toISOString()
+  const sender = templateId === 'reorder_lastreminder' ? sendReorderLastReminder : sendNewClienteLastReminder
+  const label = templateId === 'reorder_lastreminder' ? '📢 Plantilla: Recordatorio reorden' : '📢 Plantilla: Nuevo cliente'
+
+  for (const r of recipients) {
+    const ok = await sender(r.phone, r.firstName)
+    if (ok) {
+      sent++
+      const waPhone = r.phone.replace(/^\+/, '')
+      const { data } = await supabase
+        .from('wa_conversations')
+        .upsert({ contact_phone: waPhone, last_message_at: now, status: 'open' }, { onConflict: 'contact_phone' })
+        .select('id').single()
+      if (data?.id) await insertWaOutgoingMessage(data.id, label)
+    } else { failed++ }
+  }
   return { sent, failed }
 }
 
