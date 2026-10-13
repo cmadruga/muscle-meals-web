@@ -621,8 +621,7 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
               {/* Terms — signup */}
               {isSignup && (
                 <p style={{ margin: '2px 0 0', font: `400 12px/1.5 ${F.body}`, color: C.subtle }}>
-                  Al continuar aceptas los{' '}
-                  <a href="/terminos" style={{ color: C.orange }}>Términos</a> y el{' '}
+                  Al crear tu cuenta aceptas recibir notificaciones por WhatsApp y nuestro{' '}
                   <a href="/privacidad" style={{ color: C.orange }}>Aviso de privacidad</a>.
                 </p>
               )}
@@ -664,6 +663,10 @@ export default function LoginForm({ next, onSuccess, onClose, context }: LoginFo
                   <GoogleIcon />
                   Google
                 </button>
+                <p style={{ margin: '8px 0 0', font: `400 11.5px/1.5 ${F.body}`, color: 'rgba(245,241,236,.4)', textAlign: 'center' }}>
+                  Al continuar aceptas recibir notificaciones por WhatsApp.{' '}
+                  <a href="/privacidad" style={{ color: 'rgba(245,241,236,.4)', textDecoration: 'underline' }}>Aviso de privacidad</a>
+                </p>
               </>
             )}
 

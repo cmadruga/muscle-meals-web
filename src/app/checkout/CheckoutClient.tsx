@@ -1185,6 +1185,10 @@ function ContactFields({ name, phone, countryCode, onNameChange, onPhoneChange, 
             : 'Recibirás la confirmación de pago por WhatsApp'}
         </div>
       </div>
+      <p style={{ margin: 0, fontFamily: F.body, fontSize: 11.5, color: C.textDim, lineHeight: 1.5 }}>
+        Al hacer tu pedido aceptas recibir notificaciones por WhatsApp.{' '}
+        <a href="/privacidad" target="_blank" rel="noopener" style={{ color: C.textDim, textDecoration: 'underline' }}>Aviso de privacidad</a>
+      </p>
     </div>
   )
 }
