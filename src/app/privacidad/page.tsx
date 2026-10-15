@@ -87,14 +87,21 @@ export default function PrivacidadPage() {
           <li>Gestionar pagos y facturación</li>
           <li>Atender dudas, quejas o aclaraciones</li>
         </ul>
-        <p>Y para las siguientes finalidades <strong>secundarias</strong>, de las cuales puede oponerse:</p>
+        <p>Y para las siguientes finalidades <strong>secundarias</strong>, de las cuales puede oponerse escribiendo a carlosmadruga7@gmail.com:</p>
         <ul>
-          <li>Envío de información sobre nuevos productos o promociones</li>
+          <li>Envío de información sobre nuevos productos o promociones (por WhatsApp o correo)</li>
+          <li>Recordatorios personalizados para repetir su pedido (por WhatsApp)</li>
           <li>Encuestas de satisfacción</li>
         </ul>
 
         <h2>Comunicaciones por WhatsApp</h2>
-        <p>Con su consentimiento, utilizamos la plataforma WhatsApp Business API (Meta Platforms) para enviarle notificaciones de pedido, confirmaciones de pago y mensajes relacionados con su cuenta. Al proporcionar su número de teléfono y aceptar recibir comunicaciones, usted otorga su consentimiento para este canal.</p>
+        <p>Al proporcionar su número de teléfono y completar un pedido o crear una cuenta, usted otorga su consentimiento para recibir comunicaciones a través de WhatsApp Business API (Meta Platforms). Estas comunicaciones incluyen:</p>
+        <ul>
+          <li>Confirmaciones de pago y estado del pedido</li>
+          <li>Avisos de entrega o recolección</li>
+          <li>Recordatorios para repetir su pedido semanal</li>
+          <li>Mensajes de seguimiento para clientes nuevos</li>
+        </ul>
         <p>Puede solicitar en cualquier momento que dejemos de contactarle por WhatsApp escribiéndonos a carlosmadruga7@gmail.com.</p>
 
         <h2>Transferencia de datos a terceros</h2>

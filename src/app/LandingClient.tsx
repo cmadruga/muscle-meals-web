@@ -998,7 +998,10 @@ export default function LandingClient({ meals = [] }: { meals?: MealBasic[] }) {
       <div className="lp-footer" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#050505', borderTop: '1px solid rgba(255,255,255,.07)' }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src="/media/logo-horizontal.png" alt="Muscle Meals" style={{ height: 20, display: 'block', opacity: .85 }} />
-        <span className="lp-footer-copy" style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.38)' }}>© 2026 Muscle Meals. Todos los derechos reservados.</span>
+        <span className="lp-footer-copy" style={{ font: `400 12.5px/1 ${F.body}`, color: 'rgba(245,241,236,.38)' }}>
+          © 2026 Muscle Meals. Todos los derechos reservados.{' '}
+          <a href="/privacidad" style={{ color: 'rgba(245,241,236,.38)', textDecoration: 'underline' }}>Aviso de privacidad</a>
+        </span>
       </div>
     </div>
   )

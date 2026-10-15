@@ -904,6 +904,25 @@ function MembershipBand({
           ))}
         </div>
       )}
+
+      {/* Aviso de términos de membresía — visible solo cuando está activa */}
+      {mode && (
+        <div style={{
+          padding: '14px 18px',
+          borderTop: '1px solid rgba(247,145,56,.18)',
+          background: 'rgba(247,145,56,.04)',
+          display: 'flex', gap: 12, alignItems: 'flex-start',
+        }} onClick={e => e.stopPropagation()}>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(247,145,56,.7)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0, marginTop: 1 }}>
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <div style={{ fontFamily: F.body, fontSize: 12, lineHeight: 1.6, color: 'rgba(245,241,236,.55)' }}>
+            <strong style={{ color: 'rgba(245,241,236,.75)', fontWeight: 600 }}>Tu pedido se repite exactamente igual por {weeks} semanas.</strong>{' '}
+            Recibirás un recordatorio cada semana por WhatsApp. Para cambiar tus meals entra a tu cuenta antes del corte.
+            Para pausar una semana avísanos — de lo contrario se asume tu pedido y se procesa normalmente.
+          </div>
+        </div>
+      )}
     </div>
   )
 }
@@ -1053,6 +1072,7 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
   selectedSpot: string; onSelectSpot: (id: string) => void
 }) {
   const noSpot = type === 'pickup' && !selectedSpot
+  const [showDeliveryInfo, setShowDeliveryInfo] = useState(false)
 
   return (
     <div style={{
@@ -1062,13 +1082,34 @@ function ShippingDetail({ type, pickupSpots, selectedSpot, onSelectSpot }: {
     }}>
       {type === 'standard' && (
         <>
-          <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
-            letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange, marginBottom: 8 }}>
-            Horario según tu zona
+          <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 8 }}>
+            <div style={{ fontFamily: F.display, fontSize: 11.5, fontWeight: 700,
+              letterSpacing: '.16em', textTransform: 'uppercase', color: C.orange }}>
+              Horario según tu zona
+            </div>
+            <button
+              onClick={() => setShowDeliveryInfo(v => !v)}
+              title="Detalles de entrega"
+              style={{
+                width: 18, height: 18, borderRadius: '50%', border: `1px solid rgba(255,255,255,.2)`,
+                background: showDeliveryInfo ? 'rgba(247,145,56,.2)' : 'rgba(255,255,255,.05)',
+                color: showDeliveryInfo ? C.orange : C.textDim,
+                fontFamily: F.body, fontSize: 11, fontWeight: 700, lineHeight: 1,
+                cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
+              }}
+            >i</button>
           </div>
           <div style={{ fontFamily: F.body, fontSize: 12.5, color: C.textSub, lineHeight: 1.45 }}>
             Te escribimos el <strong style={{ color: C.text, fontWeight: 600 }}>sábado</strong> por WhatsApp con la hora estimada del domingo.
           </div>
+          {showDeliveryInfo && (
+            <p style={{ margin: '10px 0 0', fontFamily: F.body, fontSize: 11.5, lineHeight: 1.65, color: 'rgba(245,241,236,.45)' }}>
+              Si no contestas, se confirma automáticamente. Si al momento de entregar no hay respuesta,
+              el repartidor dejará el pedido en un lugar accesible del domicilio (cochera, lobby o similar)
+              sin responsabilidad de nuestra parte. Si el horario no te funciona, responde el mensaje —
+              si no se puede cuadrar, cambiamos el envío a Prioritario cobrando la diferencia.
+            </p>
+          )}
         </>
       )}
 
@@ -1185,6 +1226,10 @@ function ContactFields({ name, phone, countryCode, onNameChange, onPhoneChange, 
             : 'Recibirás la confirmación de pago por WhatsApp'}
         </div>
       </div>
+      <p style={{ margin: 0, fontFamily: F.body, fontSize: 11.5, color: C.textDim, lineHeight: 1.5 }}>
+        Al hacer tu pedido aceptas recibir notificaciones por WhatsApp.{' '}
+        <a href="/privacidad" target="_blank" rel="noopener" style={{ color: C.textDim, textDecoration: 'underline' }}>Aviso de privacidad</a>
+      </p>
     </div>
   )
 }

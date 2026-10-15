@@ -294,12 +294,17 @@ export async function sendReorderLastReminder(
         template: {
           name: 'reorder_lastreminder',
           language: { code: 'es_MX' },
-          components: [{ type: 'body', parameters: [{ type: 'text', text: firstName }] }],
+          components: [{ type: 'header', parameters: [{ type: 'text', text: firstName }] }],
         },
       }),
     })
-    if (!response.ok) { console.error('❌ reorder_lastreminder:', JSON.stringify(await response.json(), null, 2)); return false }
-    console.log('✅ reorder_lastreminder →', phoneNumber)
+    if (!response.ok) {
+      const err = await response.json()
+      console.error('❌ reorder_lastreminder:', JSON.stringify(err, null, 2))
+      return false
+    }
+    const result = await response.json()
+    console.log('✅ reorder_lastreminder →', phoneNumber, '| wamid:', result.messages?.[0]?.id)
     return true
   } catch (e) { console.error('❌ reorder_lastreminder:', e); return false }
 }
@@ -326,7 +331,7 @@ export async function sendNewClienteLastReminder(
         template: {
           name: 'newcliente_lastreminder',
           language: { code: 'es_MX' },
-          components: [{ type: 'body', parameters: [{ type: 'text', text: firstName }] }],
+          components: [{ type: 'header', parameters: [{ type: 'text', text: firstName }] }],
         },
       }),
     })

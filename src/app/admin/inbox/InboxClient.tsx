@@ -146,7 +146,7 @@ function SingleTemplateModal({ convId, phone, name, onClose, onSent }: {
     if (!canSend || sending) return
     setSending(true)
     setError(null)
-    const res = await sendWaTemplateSingle(convId, phone, name.split(' ')[0], imageUrl ?? '')
+    const res = await sendWaTemplateSingle(convId, phone, name.split(' ')[0], imageUrl ?? '', selectedTemplate as 'reordenar' | 'reorder_lastreminder' | 'newcliente_lastreminder')
     if (res.ok) {
       setSent(true)
       setTimeout(() => { onClose(); onSent() }, 1200)
@@ -762,7 +762,7 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
               </div>
 
               {windowOpen ? (
-                <div style={{ margin: '10px 16px 0', border: '1px solid #333', borderRadius: 10, overflow: 'hidden' }}>
+                <div style={{ margin: '10px 16px 8px', border: '1px solid #333', borderRadius: 10, overflow: 'hidden' }}>
                   <textarea
                     className="wa-reply-area"
                     rows={3}
@@ -805,7 +805,7 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
                   </div>
                 </div>
               ) : (
-                <div style={{ margin: '10px 16px 0', border: '1px solid #333', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
+                <div style={{ margin: '10px 16px 8px', border: '1px solid #333', borderRadius: 10, display: 'flex', alignItems: 'center', gap: 12, padding: '12px 14px' }}>
                   <span style={{ flex: 1, fontSize: 14, color: C.textMuted }}>Ventana de 24h cerrada — envía una plantilla para reabrirla</span>
                   <button
                     onClick={() => openTemplate(selectedConv)}
