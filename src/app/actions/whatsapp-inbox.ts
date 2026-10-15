@@ -1,6 +1,6 @@
 'use server'
 
-import { sendWhatsAppText, sendReorderTemplate } from '@/lib/whatsapp'
+import { sendWhatsAppText, sendReorderTemplate, sendReorderLastReminder, sendNewClienteLastReminder } from '@/lib/whatsapp'
 import {
   getWaConversations,
   getWaMessages,
@@ -35,10 +35,23 @@ export async function sendWaTemplateSingle(
   phone: string,
   firstName: string,
   imageUrl: string,
+  templateId: 'reordenar' | 'reorder_lastreminder' | 'newcliente_lastreminder' = 'reordenar',
 ): Promise<{ ok: boolean; error?: string }> {
-  const ok = await sendReorderTemplate(toE164(phone), firstName, imageUrl)
+  const e164 = toE164(phone)
+  let ok: boolean
+  let label: string
+  if (templateId === 'reorder_lastreminder') {
+    ok = await sendReorderLastReminder(e164, firstName)
+    label = '📢 Plantilla: Recordatorio reorden'
+  } else if (templateId === 'newcliente_lastreminder') {
+    ok = await sendNewClienteLastReminder(e164, firstName)
+    label = '📢 Plantilla: Nuevo cliente'
+  } else {
+    ok = await sendReorderTemplate(e164, firstName, imageUrl)
+    label = '📢 Plantilla: Reordenar'
+  }
   if (!ok) return { ok: false, error: 'Error enviando plantilla' }
-  await insertWaOutgoingMessage(convId, '📢 Plantilla: Reordenar')
+  await insertWaOutgoingMessage(convId, label)
   return { ok: true }
 }
 

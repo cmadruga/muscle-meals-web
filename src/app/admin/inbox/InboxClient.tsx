@@ -146,7 +146,7 @@ function SingleTemplateModal({ convId, phone, name, onClose, onSent }: {
     if (!canSend || sending) return
     setSending(true)
     setError(null)
-    const res = await sendWaTemplateSingle(convId, phone, name.split(' ')[0], imageUrl ?? '')
+    const res = await sendWaTemplateSingle(convId, phone, name.split(' ')[0], imageUrl ?? '', selectedTemplate as 'reordenar' | 'reorder_lastreminder' | 'newcliente_lastreminder')
     if (res.ok) {
       setSent(true)
       setTimeout(() => { onClose(); onSent() }, 1200)
