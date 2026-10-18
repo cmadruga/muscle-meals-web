@@ -1,11 +1,12 @@
 export const dynamic = 'force-dynamic'
 
 import CheckoutClient from './CheckoutClient'
+import { Suspense } from 'react'
 import { getActivePickupSpots } from '@/lib/db/pickup-spots'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { normalizePhone } from '@/lib/address-validation'
-import { getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
+import { getUpcomingSunday, getNextSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { getShippingStandard, getMembershipDiscounts } from '@/lib/db/settings'
 
 export default async function CheckoutPage() {
@@ -57,15 +58,19 @@ export default async function CheckoutPage() {
   }
 
   const deliveryDate = getUpcomingSunday()
+  const nextDeliveryDate = getNextSunday()
 
   return (
-    <CheckoutClient
-      pickupSpots={pickupSpots}
-      prefill={prefill}
-      deliveryDateStr={formatDeliveryDate(deliveryDate)}
-      membership={membership}
-      shippingStandard={shippingStandard}
-      membershipDiscounts={membershipDiscounts}
-    />
+    <Suspense fallback={null}>
+      <CheckoutClient
+        pickupSpots={pickupSpots}
+        prefill={prefill}
+        deliveryDateStr={formatDeliveryDate(deliveryDate)}
+        nextDeliveryDateStr={formatDeliveryDate(nextDeliveryDate)}
+        membership={membership}
+        shippingStandard={shippingStandard}
+        membershipDiscounts={membershipDiscounts}
+      />
+    </Suspense>
   )
 }

@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendPaymentConfirmation, sendInternalOrderAlert } from '@/lib/whatsapp'
 import { getExtraStockForWeek } from '@/lib/db/extra-stock'
 import { getCriticalPeriodConfig, getMembershipDiscounts } from '@/lib/db/settings'
-import { isInCutoffWindow, getCurrentWeekMonday } from '@/lib/utils/delivery'
+import { isInCutoffWindow, getCurrentWeekMonday, getNextWeekMonday } from '@/lib/utils/delivery'
 import { createPaymentPreference } from '@/app/actions/payment'
 import { checkMembershipMatch } from '@/lib/utils/membership'
 
@@ -25,7 +25,8 @@ export type CartValidationError = {
 }
 
 export async function validateCart(
-  items: CheckoutItem[]
+  items: CheckoutItem[],
+  isNextWeek?: boolean
 ): Promise<{ valid: boolean; errors: CartValidationError[] }> {
   const supabase = createAdminClient()
   const errors: CartValidationError[] = []
@@ -63,9 +64,9 @@ export async function validateCart(
     }
   }
 
-  // Critical period checks (computed server-side)
+  // Critical period checks (computed server-side) — skipped when ordering for next week
   const criticalConfig = await getCriticalPeriodConfig()
-  if (isInCutoffWindow(criticalConfig)) {
+  if (!isNextWeek && isInCutoffWindow(criticalConfig)) {
     // Block custom sizes — only main sizes (LOW/FIT/PLUS) allowed
     for (const item of items) {
       if (customSizeIds.has(item.sizeId)) {
@@ -119,6 +120,7 @@ export type ProcessCheckoutInput = {
   // Referidos
   referrerCustomerId?: string | null   // referee usó código de referido
   isReferrerReward?: boolean           // referidor usa su recompensa ganada
+  isNextWeek?: boolean                 // pedido para semana siguiente (ignora período crítico)
 }
 
 export async function processCheckout(
@@ -127,8 +129,9 @@ export async function processCheckout(
   const supabase = createAdminClient()
 
   // Safety-net: re-validate critical period rules server-side
+  // isNextWeek bypasses stock/size restrictions — order goes to next week
   const criticalConfig = await getCriticalPeriodConfig()
-  if (isInCutoffWindow(criticalConfig)) {
+  if (!data.isNextWeek && isInCutoffWindow(criticalConfig)) {
     // Block custom sizes
     const orderSizeIds = [...new Set(data.items.map(i => i.sizeId))]
     const { data: customSizes } = await supabase
@@ -192,6 +195,10 @@ export async function processCheckout(
   }
 
   // Crear orden
+  const deliveryWeek = data.isNextWeek
+    ? getNextWeekMonday().toISOString().split('T')[0]
+    : null
+
   const { data: order, error: orderError } = await supabase
     .from('orders')
     .insert({
@@ -202,6 +209,7 @@ export async function processCheckout(
       pickup_spot_id: data.pickupSpotId || null,
       shipping_cost: data.shippingCost,
       referrer_customer_id: data.referrerCustomerId ?? null,
+      ...(deliveryWeek ? { delivery_week: deliveryWeek } : {}),
     })
     .select('id, order_number')
     .single()

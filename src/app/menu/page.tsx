@@ -5,7 +5,7 @@ import { getMainSizes, getCustomerSizes } from '@/lib/db/sizes'
 import { getCustomerByUserId } from '@/lib/db/customers'
 import { getSalesEnabled, getCriticalPeriodConfig } from '@/lib/db/settings'
 import { getExtraStockForWeek } from '@/lib/db/extra-stock'
-import { isInCutoffWindow, getCurrentWeekMonday, getUpcomingSunday, formatDeliveryDate } from '@/lib/utils/delivery'
+import { isInCutoffWindow, getCurrentWeekMonday, getUpcomingSunday, getNextSunday, formatDeliveryDate } from '@/lib/utils/delivery'
 import { calculateMealMacros } from '@/lib/utils/macros'
 import { createClient } from '@/lib/supabase/server'
 import type { Size, Ingredient, Macros } from '@/lib/types'
@@ -207,6 +207,7 @@ export default async function MenuPage() {
 
   const fitSize = sizes.find(s => s.name.toLowerCase().includes('fit')) ?? sizes[0] ?? null
   const deliveryDate = formatDeliveryDate(getUpcomingSunday())
+  const nextDeliveryDate = formatDeliveryDate(getNextSunday())
 
   return (
     <Suspense fallback={null}>
@@ -218,6 +219,7 @@ export default async function MenuPage() {
         salesEnabled={salesEnabled}
         isAuthenticated={!!user}
         deliveryDate={deliveryDate}
+        nextDeliveryDate={nextDeliveryDate}
         fitSize={fitSize}
         proIngredients={proIngredients}
         carbIngredients={carbIngredients}

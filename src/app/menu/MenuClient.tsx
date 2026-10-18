@@ -68,20 +68,21 @@ type CategoryFilter = 'all' | 'pollo' | 'res' | 'pescado'
 
 // ─── Props ───────────────────────────────────────────────────────
 interface Props {
-  meals:           MealMenuData[]
-  sizes:           Size[]
-  soldOut:         string[]
-  stockLimits:     Record<string, number>   // mealId → qty (vacío fuera de período crítico)
-  salesEnabled:    boolean
-  isAuthenticated: boolean
-  deliveryDate:    string
-  fitSize:         Size | null
-  proIngredients:  Ingredient[]
-  carbIngredients: Ingredient[]
-  vegIngredients:  Ingredient[]
-  customerSizes:   Size[]                   // tamaños personalizados guardados
-  proIdsByName:    Record<string, string[]> // todos los ids de pro por nombre (incluyendo inactivos)
-  carbIdsByName:   Record<string, string[]> // todos los ids de carb por nombre (incluyendo inactivos)
+  meals:              MealMenuData[]
+  sizes:              Size[]
+  soldOut:            string[]
+  stockLimits:        Record<string, number>   // mealId → qty (vacío fuera de período crítico)
+  salesEnabled:       boolean
+  isAuthenticated:    boolean
+  deliveryDate:       string
+  nextDeliveryDate:   string
+  fitSize:            Size | null
+  proIngredients:     Ingredient[]
+  carbIngredients:    Ingredient[]
+  vegIngredients:     Ingredient[]
+  customerSizes:      Size[]                   // tamaños personalizados guardados
+  proIdsByName:       Record<string, string[]> // todos los ids de pro por nombre (incluyendo inactivos)
+  carbIdsByName:      Record<string, string[]> // todos los ids de carb por nombre (incluyendo inactivos)
 }
 
 // ─── Helpers ────────────────────────────────────────────────────
@@ -141,6 +142,7 @@ function getSizeIngQty(size: Size, dict: 'protein_qty' | 'carb_qty', ingredientI
 // ─── Component ──────────────────────────────────────────────────
 export default function MenuClient({
   meals, sizes, soldOut, stockLimits, salesEnabled,
+  nextDeliveryDate,
   fitSize,
   proIngredients, carbIngredients, vegIngredients, customerSizes,
   proIdsByName, carbIdsByName,
@@ -249,6 +251,36 @@ export default function MenuClient({
   // All sizes: globales + guardadas del cliente + nueva creada en esta sesión
   // Período crítico: stockLimits tiene datos solo cuando se está en cutoff
   const inCriticalPeriod = Object.keys(stockLimits).length > 0
+  const allSoldOut = inCriticalPeriod && meals.length > 0 && meals.every(m => soldOut.includes(m.id))
+
+  // Modo de pedido durante período crítico: 'thisWeek' (default) o 'nextWeek'
+  const [orderMode, setOrderMode] = useState<'thisWeek' | 'nextWeek'>(
+    allSoldOut ? 'nextWeek' : 'thisWeek'
+  )
+  const isNextWeekMode = inCriticalPeriod && orderMode === 'nextWeek'
+
+  // Modal de selección — solo se muestra una vez al abrir la página en período crítico
+  const [showModeModal, setShowModeModal] = useState(inCriticalPeriod)
+  function chooseModeAndClose(mode: 'thisWeek' | 'nextWeek') {
+    setOrderMode(mode)
+    if (mode === 'thisWeek') {
+      // Limpiar agotados y tamaños personalizados (no permitidos en período crítico)
+      const { items: cartItems, updateQty } = useCartStore.getState()
+      const mainSizeIds = new Set(sizes.map(s => s.id))
+      for (const item of cartItems) {
+        if (item.packageInstanceId) continue
+        if (soldOut.includes(item.mealId) || !mainSizeIds.has(item.sizeId)) {
+          updateQty(item.mealId, item.sizeId, 0)
+        }
+      }
+    }
+    setShowModeModal(false)
+  }
+
+  // Props efectivos según el modo elegido
+  const effectiveSoldOut    = isNextWeekMode ? [] : soldOut
+  const effectiveStockLimits = isNextWeekMode ? {} : stockLimits
+  const effectiveSalesEnabled = isNextWeekMode ? true : salesEnabled
 
   const allSizes = [
     ...sizes,
@@ -368,8 +400,8 @@ export default function MenuClient({
 
     for (const item of items) {
       if (item.packageInstanceId) continue
-      const isSoldOutItem = soldOut.includes(item.mealId)
-      const isCustomSize = inCriticalPeriod && !mainSizeIds.has(item.sizeId)
+      const isSoldOutItem = effectiveSoldOut.includes(item.mealId)
+      const isCustomSize = inCriticalPeriod && !isNextWeekMode && !mainSizeIds.has(item.sizeId)
 
       if (isSoldOutItem || isCustomSize) {
         updateQty(item.mealId, item.sizeId, 0)
@@ -382,7 +414,7 @@ export default function MenuClient({
     }
 
     // Clamp stock si superan el límite (no genera toast)
-    if (Object.keys(stockLimits).length > 0) {
+    if (Object.keys(effectiveStockLimits).length > 0) {
       const { items: updatedItems, updateQty: updateQty2 } = useCartStore.getState()
       const totalByMeal = new Map<string, { sizeId: string; qty: number }[]>()
       for (const item of updatedItems) {
@@ -392,7 +424,7 @@ export default function MenuClient({
         totalByMeal.set(item.mealId, arr)
       }
       for (const [mealId, sizeItems] of totalByMeal) {
-        const limit = stockLimits[mealId]
+        const limit = effectiveStockLimits[mealId]
         if (limit === undefined) continue
         const total = sizeItems.reduce((s, i) => s + i.qty, 0)
         if (total <= limit) continue
@@ -434,7 +466,7 @@ export default function MenuClient({
 
   function addMeal(meal: MealMenuData) {
     if (!activeSize) return
-    const limit = stockLimits[meal.id]
+    const limit = effectiveStockLimits[meal.id]
     if (limit !== undefined && getMealTotalQty(meal.id) >= limit) return
     const mealUnit = isCustomActive
       ? getMealCustomPrice(meal, activeSize, fitSize, lowPrice, false)
@@ -456,7 +488,7 @@ export default function MenuClient({
   function setMealQty(meal: MealMenuData, sizeId: string, qty: number) {
     const size = allSizes.find(s => s.id === sizeId)
     // Calcular qty máxima permitida para este size
-    const limit = stockLimits[meal.id]
+    const limit = effectiveStockLimits[meal.id]
     let cappedQty = qty
     if (limit !== undefined && qty > 0) {
       const currentForThisSize = getQty(meal.id, sizeId)
@@ -762,7 +794,7 @@ export default function MenuClient({
           </div>
           <div>
             <button
-              onClick={() => { if (totalQty > 0) router.push('/checkout') }}
+              onClick={() => { if (totalQty > 0) router.push(isNextWeekMode ? '/checkout?mode=nextWeek' : '/checkout') }}
               disabled={totalQty === 0}
               style={{ width: '100%', padding: '15px 0', border: 0, borderRadius: 10, background: totalQty === 0 ? 'rgba(255,255,255,.07)' : C.orange, color: totalQty === 0 ? 'rgba(245,241,236,.3)' : '#17140f', font: `700 20px/1 ${F.display}`, letterSpacing: '.1em', textTransform: 'uppercase', cursor: totalQty === 0 ? 'not-allowed' : 'pointer', boxShadow: totalQty > 0 ? '0 8px 26px rgba(247,145,56,.24)' : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}
             >
@@ -987,7 +1019,7 @@ export default function MenuClient({
               {/* Tamaños personalizados (guardados + recién creado) */}
               {[...customerSizes, ...(customSizeData && !customerSizes.some(cs => cs.id === customSizeData.id) ? [customSizeData] : [])].map(cs => {
                 const isActive = cs.id === activeSizeForUI
-                const disabled = inCriticalPeriod
+                const disabled = inCriticalPeriod && !isNextWeekMode
                 return (
                   <div key={cs.id} className="size-card"
                     onClick={() => disabled ? onCritDisabledClick() : (setActiveSizeId(cs.id), setShowCustom(false), setEditingSizeId(null))}
@@ -1001,7 +1033,7 @@ export default function MenuClient({
               {/* + Personalizado / Nuevo */}
               <div className="size-card size-card-new"
                 onClick={() => {
-                  if (inCriticalPeriod) { onCritDisabledClick(); return }
+                  if (inCriticalPeriod && !isNextWeekMode) { onCritDisabledClick(); return }
                   const opening = !showCustom
                   setShowCustom(v => !v)
                   setEditingSizeId(null)
@@ -1015,8 +1047,8 @@ export default function MenuClient({
                     setCustomVeg(fitSize ? sizeVegQty(fitSize) : 70)
                   }
                 }}
-                style={{ display: 'flex', alignItems: 'center', border: `1px dashed ${inCriticalPeriod ? 'rgba(255,255,255,.1)' : showCustom && !editingSizeId ? C.orange : 'rgba(255,255,255,.22)'}`, background: showCustom && !editingSizeId ? 'rgba(247,145,56,.04)' : 'transparent', cursor: inCriticalPeriod ? 'default' : 'pointer', opacity: inCriticalPeriod ? 0.35 : 1 }}>
-                <div style={{ font: `700 clamp(14px, 1.7vw, 22px)/1 ${F.display}`, textTransform: 'uppercase', color: inCriticalPeriod ? 'rgba(245,241,236,.4)' : showCustom && !editingSizeId ? C.orange : 'rgba(245,241,236,.8)', whiteSpace: 'nowrap' }}>
+                style={{ display: 'flex', alignItems: 'center', border: `1px dashed ${inCriticalPeriod && !isNextWeekMode ? 'rgba(255,255,255,.1)' : showCustom && !editingSizeId ? C.orange : 'rgba(255,255,255,.22)'}`, background: showCustom && !editingSizeId ? 'rgba(247,145,56,.04)' : 'transparent', cursor: inCriticalPeriod && !isNextWeekMode ? 'default' : 'pointer', opacity: inCriticalPeriod && !isNextWeekMode ? 0.35 : 1 }}>
+                <div style={{ font: `700 clamp(14px, 1.7vw, 22px)/1 ${F.display}`, textTransform: 'uppercase', color: inCriticalPeriod && !isNextWeekMode ? 'rgba(245,241,236,.4)' : showCustom && !editingSizeId ? C.orange : 'rgba(245,241,236,.8)', whiteSpace: 'nowrap' }}>
                   <span className="new-label-desktop">+ Personalizado</span>
                   <span className="new-label-mobile" style={{ fontSize: 18 }}>+ Nuevo</span>
                 </div>
@@ -1247,7 +1279,7 @@ export default function MenuClient({
             )} */}
 
             {/* Sales paused */}
-            {!salesEnabled && (
+            {!effectiveSalesEnabled && (
               <div style={{ padding: '24px 20px', borderRadius: 12, background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.3)', textAlign: 'center', marginBottom: 16 }}>
                 <div style={{ font: `700 22px/1 ${F.display}`, textTransform: 'uppercase', color: '#ef4444', marginBottom: 8 }}>Ventas pausadas</div>
                 <div style={{ font: `400 14px/1.5 ${F.body}`, color: C.muted }}>Volvemos pronto. Gracias por tu paciencia.</div>
@@ -1259,9 +1291,9 @@ export default function MenuClient({
                 // Si está creando un tamaño nuevo (panel abierto, sin editar), las cards
                 // muestran qty=0 visualmente — no hay tamaño activo asignado aún
                 const qty = (showCustom && !editingSizeId) ? 0 : getQty(meal.id, activeSizeId)
-                const isSoldOut = soldOut.includes(meal.id)
+                const isSoldOut = effectiveSoldOut.includes(meal.id)
                 const macros = activeSize ? meal.macros[activeSize.id] ?? null : null
-                const stockLimit = stockLimits[meal.id]   // undefined = sin límite
+                const stockLimit = effectiveStockLimits[meal.id]   // undefined = sin límite
                 const mealTotalQty = getMealTotalQty(meal.id)
                 const atStockLimit = stockLimit !== undefined && mealTotalQty >= stockLimit
                 return (
@@ -1278,7 +1310,7 @@ export default function MenuClient({
                     isPackage={isPackage}
                     onAdd={() => addMeal(meal)}
                     onQtyChange={q => setMealQty(meal, activeSizeId, q)}
-                    salesEnabled={salesEnabled}
+                    salesEnabled={effectiveSalesEnabled}
                     addLocked={showCustom && !editingSizeId}
                   />
                 )
@@ -1318,13 +1350,13 @@ export default function MenuClient({
                   ))}
                   {[...customerSizes, ...(customSizeData && !customerSizes.some(cs => cs.id === customSizeData.id) ? [customSizeData] : [])].map(cs => (
                     <button key={cs.id}
-                      onClick={() => !inCriticalPeriod && (setActiveSizeId(cs.id), setShowCustom(false))}
-                      disabled={inCriticalPeriod}
-                      style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: cs.id === activeSizeForUI ? C.orange : 'rgba(255,255,255,.05)', color: cs.id === activeSizeForUI ? '#17140f' : 'rgba(245,241,236,.6)', font: `700 14px/1 ${F.cond}`, letterSpacing: '.1em', textTransform: 'uppercase', cursor: inCriticalPeriod ? 'default' : 'pointer', flexShrink: 0, opacity: inCriticalPeriod ? 0.38 : 1 }}>
+                      onClick={() => !(inCriticalPeriod && !isNextWeekMode) && (setActiveSizeId(cs.id), setShowCustom(false))}
+                      disabled={inCriticalPeriod && !isNextWeekMode}
+                      style={{ padding: '7px 12px', borderRadius: 8, border: 'none', background: cs.id === activeSizeForUI ? C.orange : 'rgba(255,255,255,.05)', color: cs.id === activeSizeForUI ? '#17140f' : 'rgba(245,241,236,.6)', font: `700 14px/1 ${F.cond}`, letterSpacing: '.1em', textTransform: 'uppercase', cursor: inCriticalPeriod && !isNextWeekMode ? 'default' : 'pointer', flexShrink: 0, opacity: inCriticalPeriod && !isNextWeekMode ? 0.38 : 1 }}>
                       {cs.name}
                     </button>
                   ))}
-                  {!inCriticalPeriod && (
+                  {(!inCriticalPeriod || isNextWeekMode) && (
                     <button onClick={() => setShowCustom(v => !v)}
                       style={{ padding: '7px 12px', borderRadius: 8, border: `1px dashed rgba(255,255,255,.2)`, background: showCustom ? 'rgba(247,145,56,.1)' : 'transparent', color: showCustom ? C.orange : 'rgba(245,241,236,.6)', font: `700 14px/1 ${F.cond}`, letterSpacing: '.1em', textTransform: 'uppercase', cursor: 'pointer', flexShrink: 0 }}>
                       + Pers
@@ -1468,6 +1500,38 @@ export default function MenuClient({
               <button onClick={() => setShowInfoModal(false)}
                 style={{ padding: '15px 34px', border: 0, borderRadius: 10, background: C.orange, color: '#17140f', font: `700 20px/1 ${F.display}`, letterSpacing: '.09em', textTransform: 'uppercase', cursor: 'pointer' }}>
                 {PORCIONES_MODAL.cta}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* ── Modal de selección de semana (período crítico) ── */}
+      {mounted && showModeModal && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(10,9,8,.82)', padding: '20px 16px' }}>
+          <div style={{ width: '100%', maxWidth: 560, borderRadius: 16, background: '#191614', border: '1px solid rgba(255,255,255,.1)', padding: '32px 28px' }}>
+            <p style={{ margin: '0 0 8px', font: `700 20px/1.2 ${F.display}`, textTransform: 'uppercase', letterSpacing: '.06em', color: C.text }}>
+              Los pedidos cerraron
+            </p>
+            <p style={{ margin: '0 0 24px', font: `400 14px/1.5 ${F.body}`, color: C.muted }}>
+              {allSoldOut
+                ? 'No queda stock esta semana. Puedes planear tu siguiente entrega.'
+                : '¿Quieres pedir del stock disponible o planear la semana siguiente?'}
+            </p>
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button
+                onClick={() => chooseModeAndClose('thisWeek')}
+                disabled={allSoldOut}
+                style={{ flex: 1, padding: '16px 14px', borderRadius: 10, border: `2px solid rgba(255,255,255,${allSoldOut ? '.07' : '.14'})`, background: 'transparent', color: allSoldOut ? 'rgba(245,241,236,.25)' : 'rgba(245,241,236,.7)', font: `700 14px/1 ${F.body}`, cursor: allSoldOut ? 'default' : 'pointer', textAlign: 'left' }}>
+                <div style={{ font: `700 15px/1 ${F.display}`, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Pedir ya</div>
+                <div style={{ font: `400 12px/1.4 ${F.body}` }}>{allSoldOut ? 'Sin stock esta semana' : 'Stock disponible · entrega este domingo'}</div>
+              </button>
+              <button
+                onClick={() => chooseModeAndClose('nextWeek')}
+                style={{ flex: 1, padding: '16px 14px', borderRadius: 10, border: `2px solid ${C.orange}`, background: 'rgba(247,145,56,.08)', color: C.orange, font: `700 14px/1 ${F.body}`, cursor: 'pointer', textAlign: 'left' }}>
+                <div style={{ font: `700 15px/1 ${F.display}`, textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: 6 }}>Semana siguiente</div>
+                <div style={{ font: `400 12px/1.4 ${F.body}` }}>Menú completo · {nextDeliveryDate}</div>
               </button>
             </div>
           </div>
