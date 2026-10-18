@@ -78,6 +78,20 @@ export function getCurrentWeekMonday(): Date {
   return today
 }
 
+/** Returns the Monday of NEXT week in Monterrey time. */
+export function getNextWeekMonday(): Date {
+  const monday = getCurrentWeekMonday()
+  monday.setDate(monday.getDate() + 7)
+  return monday
+}
+
+/** Returns the Sunday of NEXT week (7 days after upcoming Sunday). */
+export function getNextSunday(): Date {
+  const sunday = getUpcomingSunday()
+  sunday.setDate(sunday.getDate() + 7)
+  return sunday
+}
+
 export function formatDeliveryDate(date: Date): string {
   return date.toLocaleDateString('es-MX', {
     weekday: 'long',

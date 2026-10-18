@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import { useCartStore } from '@/lib/store/cart'
 import { processCheckout, processMembershipOrder, validateCart, purchaseMembership } from '@/app/actions/checkout'
 import { validateDiscount } from '@/app/actions/discounts'
@@ -63,6 +64,7 @@ export default function CheckoutClient({
   pickupSpots,
   prefill,
   deliveryDateStr,
+  nextDeliveryDateStr,
   membership,
   shippingStandard = 4900,
   membershipDiscounts,
@@ -70,6 +72,7 @@ export default function CheckoutClient({
   pickupSpots: PickupSpot[]
   prefill?: { customerId?: string; name: string; email?: string; phone: string; address: string | null } | null
   deliveryDateStr?: string
+  nextDeliveryDateStr?: string
   membership?: MembershipInfo | null
   shippingStandard?: number
   membershipDiscounts?: MembershipDiscounts | null
@@ -78,6 +81,11 @@ export default function CheckoutClient({
   const isEmpty = items.length === 0
   const [isProcessing, setIsProcessing] = useState(false)
   const [error, setError] = useState<string | null>(null)
+
+  // Orden para semana siguiente si el usuario eligió ese modo en el menú
+  const searchParams = useSearchParams()
+  const isNextWeek = searchParams.get('mode') === 'nextWeek'
+  const effectiveDeliveryDateStr = isNextWeek ? nextDeliveryDateStr : deliveryDateStr
 
   // Descuentos
   const [discountCode, setDiscountCode] = useState('')
@@ -347,7 +355,7 @@ export default function CheckoutClient({
       const validation = await validateCart(items.map(item => ({
         mealId: item.mealId, mealName: item.mealName, sizeId: item.sizeId, sizeName: item.sizeName,
         qty: item.qty, unitPrice: item.unitPrice, packageInstanceId: item.packageInstanceId,
-      })))
+      })), isNextWeek)
       if (!validation.valid) { setError(validation.errors[0].message); setIsProcessing(false); return }
 
       const whatsappPhone = formatPhoneForWhatsApp(customerPhone, countryCode)
@@ -370,6 +378,7 @@ export default function CheckoutClient({
         discountAmount,
         referrerCustomerId: referrerCustomerId ?? null,
         isReferrerReward,
+        isNextWeek,
       })
       if (checkoutResult.error) throw new Error(checkoutResult.error)
 
@@ -592,7 +601,7 @@ export default function CheckoutClient({
           />
 
           <DateBanner
-            deliveryDateStr={deliveryDateStr}
+            deliveryDateStr={effectiveDeliveryDateStr}
             shippingType={shippingType}
             membershipMode={membershipMode && canPurchaseMembership}
           />

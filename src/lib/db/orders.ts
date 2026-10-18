@@ -239,6 +239,7 @@ export async function getOrdersForWeek(
 ): Promise<OrderWithCustomer[]> {
   const weekEnd = new Date(weekStart)
   weekEnd.setDate(weekEnd.getDate() + 7)
+  const weekStr = weekStart.toISOString().split('T')[0]
 
   const { data, error } = await client
     .from('orders')
@@ -252,8 +253,7 @@ export async function getOrdersForWeek(
         sizes:size_id (name)
       )
     `)
-    .gte('created_at', weekStart.toISOString())
-    .lt('created_at', weekEnd.toISOString())
+    .or(`delivery_week.eq.${weekStr},and(delivery_week.is.null,created_at.gte.${weekStart.toISOString()},created_at.lt.${weekEnd.toISOString()})`)
     .order('created_at', { ascending: false })
 
   if (error) {

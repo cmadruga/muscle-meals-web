@@ -55,6 +55,7 @@ export interface Order {
   pickup_spot_id: string | null
   shipping_cost: number
   note: string | null
+  delivery_week: string | null
   payment_method: string | null
   is_membership_purchase: boolean | null
   membership_weeks: number | null
