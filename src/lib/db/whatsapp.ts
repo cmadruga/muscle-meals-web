@@ -18,6 +18,8 @@ export type WaMessage = {
   body: string | null
   wa_msg_id: string | null
   sent_at: string
+  media_url: string | null
+  media_type: string | null
 }
 
 export async function getWaConversations(): Promise<WaConversation[]> {
