@@ -119,6 +119,7 @@ export default async function PanelOrdersPage({
 
       <WeekNav weekStr={weekStr} />
       <OrdersTable
+        key={weekStr}
         orders={orders}
         weekStr={weekStr}
         matrixData={matrixData}

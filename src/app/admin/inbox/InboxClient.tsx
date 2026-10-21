@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import { colors } from '@/lib/theme'
 import type { WaConversation, WaMessage } from '@/lib/db/whatsapp'
 import {
@@ -203,7 +203,7 @@ function SingleTemplateModal({ convId, phone, name, onClose, onSent }: {
 }
 
 // ─── BroadcastModal — exact port of WhatsAppModal from CustomersClient ────────
-function BroadcastModal({ customers, onClose }: { customers: CustomerForWa[]; onClose: () => void }) {
+function BroadcastModal({ customers, onClose, onSent }: { customers: CustomerForWa[]; onClose: () => void; onSent?: () => void }) {
   const [step, setStep] = useState<1 | 2>(1)
   const [selectedTemplate, setSelectedTemplate] = useState('')
   const [images, setImages] = useState<TemplateImage[]>([])
@@ -258,6 +258,19 @@ function BroadcastModal({ customers, onClose }: { customers: CustomerForWa[]; on
     setUploading(false)
   }
 
+  const lastWeekCustomers = useMemo(() => {
+    const now = new Date()
+    const dow = now.getDay()
+    const daysToMon = dow === 0 ? 6 : dow - 1
+    const thisMonday = new Date(now); thisMonday.setDate(now.getDate() - daysToMon); thisMonday.setHours(0, 0, 0, 0)
+    const lastMonday = new Date(thisMonday); lastMonday.setDate(thisMonday.getDate() - 7)
+    return customers.filter(c => {
+      if (!c.phone || !c.last_order_at) return false
+      const t = new Date(c.last_order_at).getTime()
+      return t >= lastMonday.getTime() && t < thisMonday.getTime()
+    })
+  }, [customers])
+
   const q = search.toLowerCase()
   const visible = q
     ? customers.filter(c => c.full_name.toLowerCase().includes(q) || (c.phone ?? '').includes(q))
@@ -297,7 +310,7 @@ function BroadcastModal({ customers, onClose }: { customers: CustomerForWa[]; on
       const msg = failed === 0 ? `✅ ${sent} mensajes enviados correctamente` : `✅ ${sent} enviados · ❌ ${failed} fallaron`
       setResult(msg)
       setSending(false)
-      setTimeout(onClose, 1500)
+      setTimeout(() => { onClose(); onSent?.() }, 1500)
     } catch {
       setResult('❌ Error al enviar — revisa los logs del servidor')
       setSending(false)
@@ -382,7 +395,13 @@ function BroadcastModal({ customers, onClose }: { customers: CustomerForWa[]; on
           <>
             <div style={{ padding: '12px 24px 12px', borderBottom: `1px solid ${colors.grayLight}33`, flexShrink: 0 }}>
               <input placeholder="Buscar por nombre o teléfono…" value={search} onChange={e => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '7px 12px', marginBottom: 12, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 7, color: colors.white, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }} />
+                style={{ width: '100%', padding: '7px 12px', marginBottom: 8, background: colors.black, border: `1px solid ${colors.grayLight}`, borderRadius: 7, color: colors.white, fontSize: 13, boxSizing: 'border-box', fontFamily: 'inherit' }} />
+              <div style={{ display: 'flex', gap: 6, marginBottom: 10, flexWrap: 'wrap' }}>
+                <button onClick={() => setSelected(new Set(lastWeekCustomers.map(c => c.id)))}
+                  style={{ padding: '3px 10px', background: 'transparent', border: `1px solid ${colors.orange}88`, borderRadius: 20, color: colors.orange, fontSize: 12, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  Sem. pasada · sin esta sem. ({lastWeekCustomers.length})
+                </button>
+              </div>
               <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer' }}>
                 <input ref={selectAllRef} type="checkbox" onChange={handleSelectAll} style={{ width: 15, height: 15, accentColor: colors.orange, cursor: 'pointer' }} />
                 <span style={{ fontSize: 13, color: colors.textSecondary }}>Seleccionar todos · {visibleSelectable.length} con teléfono</span>
@@ -440,6 +459,7 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
   const [step, setStep] = useState<1 | 2>(1)
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<CustomerForWa | null>(null)
+  const [selectedTemplate, setSelectedTemplate] = useState('')
   const [imageUrl, setImageUrl] = useState<string | null>(null)
   const [sending, setSending] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -447,11 +467,19 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
   const available = customers.filter(c => !!c.phone)
   const q = search.toLowerCase()
   const visible = q ? available.filter(c => c.full_name.toLowerCase().includes(q) || (c.phone ?? '').includes(q)) : available
+  const currentTemplate = TEMPLATES.find(t => t.id === selectedTemplate)
+  const canSend = !!selectedTemplate && (!currentTemplate?.hasImage || !!imageUrl)
 
   const handleSend = async () => {
-    if (!selected?.phone || !imageUrl || sending) return
+    if (!selected?.phone || !canSend || sending) return
     setSending(true); setError(null)
-    const res = await createWaConvAndSendTemplate(selected.phone, selected.full_name, selected.full_name.split(' ')[0], imageUrl)
+    const res = await createWaConvAndSendTemplate(
+      selected.phone,
+      selected.full_name,
+      selected.full_name.split(' ')[0],
+      imageUrl ?? '',
+      selectedTemplate as 'reordenar' | 'reorder_lastreminder' | 'newcliente_lastreminder',
+    )
     if (res.ok && res.convId) { onCreated(res.convId); onClose() }
     else { setError(res.error ?? 'Error'); setSending(false) }
   }
@@ -464,7 +492,7 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
           <div>
             <div style={{ fontSize: 15, fontWeight: 700, color: colors.white }}>Nueva conversación</div>
             <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>
-              {step === 1 ? `${available.length} clientes con teléfono` : `${selected?.full_name} · elige imagen`}
+              {step === 1 ? `${available.length} clientes con teléfono` : `${selected?.full_name} · elige plantilla`}
             </div>
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', color: colors.textMuted, fontSize: 22, cursor: 'pointer', lineHeight: 1, padding: 4 }}>×</button>
@@ -498,8 +526,24 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
 
         {step === 2 && (
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px' }}>
-            <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Template: Reordenar · Imagen</div>
-            <TemplateImagePicker selected={imageUrl} onSelect={setImageUrl} />
+            <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Template</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: currentTemplate?.hasImage ? 20 : 0 }}>
+              {TEMPLATES.map(t => (
+                <label key={t.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: `1px solid ${selectedTemplate === t.id ? colors.orange : colors.grayLight}`, background: selectedTemplate === t.id ? colors.orange + '11' : 'transparent', cursor: 'pointer' }}>
+                  <input type="radio" name="new-conv-template" value={t.id} checked={selectedTemplate === t.id} onChange={() => { setSelectedTemplate(t.id); setImageUrl(null) }} style={{ accentColor: colors.orange, width: 15, height: 15 }} />
+                  <div>
+                    <div style={{ fontSize: 14, fontWeight: 600, color: colors.white }}>{t.label}</div>
+                    <div style={{ fontSize: 12, color: colors.textMuted, marginTop: 2 }}>{t.description}</div>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {currentTemplate?.hasImage && (
+              <>
+                <div style={{ fontSize: 11, fontWeight: 600, color: colors.textMuted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 10 }}>Imagen del template</div>
+                <TemplateImagePicker selected={imageUrl} onSelect={setImageUrl} />
+              </>
+            )}
           </div>
         )}
 
@@ -511,8 +555,8 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
                 style={{ padding: '10px 16px', background: 'transparent', color: colors.textMuted, border: `1px solid ${colors.grayLight}`, borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>← Atrás</button>
             )}
             {step === 2 && (
-              <button onClick={handleSend} disabled={!imageUrl || sending}
-                style={{ flex: 1, padding: '10px 20px', background: imageUrl ? colors.orange : colors.grayLight, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: !imageUrl || sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.7 : 1, fontFamily: 'inherit' }}>
+              <button onClick={handleSend} disabled={!canSend || sending}
+                style={{ flex: 1, padding: '10px 20px', background: canSend ? colors.orange : colors.grayLight, color: colors.white, border: 'none', borderRadius: 8, fontSize: 14, fontWeight: 700, cursor: !canSend || sending ? 'not-allowed' : 'pointer', opacity: sending ? 0.7 : 1, fontFamily: 'inherit' }}>
                 {sending ? 'Enviando…' : 'Enviar plantilla →'}
               </button>
             )}
@@ -521,6 +565,61 @@ function NewConvModal({ customers, customersLoading, onClose, onCreated }: {
       </div>
     </div>
   )
+}
+
+// ─── usePushNotifications ─────────────────────────────────────────────────────
+function usePushNotifications() {
+  const [status, setStatus] = useState<'unsupported' | 'denied' | 'off' | 'on' | 'loading'>('loading')
+
+  const check = useCallback(async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      setStatus('unsupported'); return
+    }
+    if (Notification.permission === 'denied') { setStatus('denied'); return }
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      setStatus(sub ? 'on' : 'off')
+    } catch { setStatus('off') }
+  }, [])
+
+  useEffect(() => {
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error)
+    }
+    check()
+  }, [check])
+
+  const enable = useCallback(async () => {
+    setStatus('loading')
+    try {
+      const perm = await Notification.requestPermission()
+      if (perm !== 'granted') { setStatus('denied'); return }
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
+      })
+      await fetch('/api/push/subscribe', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sub) })
+      setStatus('on')
+    } catch (e) { console.error(e); setStatus('off') }
+  }, [])
+
+  const disable = useCallback(async () => {
+    setStatus('loading')
+    try {
+      const reg = await navigator.serviceWorker.ready
+      const sub = await reg.pushManager.getSubscription()
+      if (sub) {
+        await fetch('/api/push/subscribe', { method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ endpoint: sub.endpoint }) })
+        await sub.unsubscribe()
+      }
+      setStatus('off')
+    } catch (e) { console.error(e); setStatus('off') }
+  }, [])
+
+  return { status, enable, disable }
 }
 
 // ─── Main ─────────────────────────────────────────────────────────────────────
@@ -538,6 +637,7 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
   const [customers, setCustomers] = useState<CustomerForWa[]>([])
   const [customersLoading, setCustomersLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const push = usePushNotifications()
 
   const selectedConv = conversations.find(c => c.id === selectedId) ?? null
   const windowOpen = is24hOpen(messages)
@@ -652,6 +752,33 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
                 <path d="M1.5 4h13M1.5 8h9M1.5 12h6" /><path d="M12.5 10.5l3 1.5-3 1.5" />
               </svg>
             </button>
+            {push.status !== 'unsupported' && (
+              <button
+                onClick={push.status === 'on' ? push.disable : push.enable}
+                disabled={push.status === 'loading' || push.status === 'denied'}
+                className="wa-icon-btn"
+                title={
+                  push.status === 'on' ? 'Notificaciones activas (click para desactivar)' :
+                  push.status === 'denied' ? 'Notificaciones bloqueadas en el navegador' :
+                  push.status === 'loading' ? 'Cargando…' : 'Activar notificaciones'
+                }
+                style={{ color: push.status === 'on' ? '#25d366' : push.status === 'denied' ? C.textMuted : C.textMuted }}
+              >
+                {push.status === 'on' ? (
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 1.5a4.5 4.5 0 014.5 4.5v3l1.5 2H2l1.5-2V6A4.5 4.5 0 018 1.5z"/><path d="M6.5 13a1.5 1.5 0 003 0"/>
+                  </svg>
+                ) : push.status === 'denied' ? (
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 1.5a4.5 4.5 0 014.5 4.5v3l1.5 2H2l1.5-2V6A4.5 4.5 0 018 1.5z"/><line x1="3" y1="3" x2="13" y2="13"/>
+                  </svg>
+                ) : (
+                  <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M8 1.5a4.5 4.5 0 014.5 4.5v3l1.5 2H2l1.5-2V6A4.5 4.5 0 018 1.5z"/><path d="M6.5 13a1.5 1.5 0 003 0"/>
+                  </svg>
+                )}
+              </button>
+            )}
           </div>
           <input placeholder="Buscar nombre o número…" value={searchQuery} onChange={e => setSearchQuery(e.target.value)}
             style={{ width: '100%', padding: '7px 10px', background: '#1e1e1e', border: '1px solid #333', borderRadius: 7, color: C.white, fontSize: 12, boxSizing: 'border-box', fontFamily: 'inherit', outline: 'none' }} />
@@ -734,7 +861,29 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
                 <div style={{ color: C.textMuted, fontSize: 13, textAlign: 'center', marginTop: 40 }}>Sin mensajes</div>
               ) : messages.map(msg => (
                 <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', alignItems: msg.direction === 'out' ? 'flex-end' : 'flex-start' }}>
-                  <div className={`wa-msg-bubble wa-msg-${msg.direction}`}>{msg.body}</div>
+                  <div className={`wa-msg-bubble wa-msg-${msg.direction}`} style={{ padding: msg.media_type && ['image','sticker','video'].includes(msg.media_type) ? 4 : undefined }}>
+                    {msg.media_type === 'image' || msg.media_type === 'sticker' ? (
+                      <div>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={msg.media_url!} alt="" style={{ display: 'block', maxWidth: 240, maxHeight: 320, borderRadius: 8, objectFit: 'contain' }} />
+                        {msg.body && msg.body !== '📷 Imagen' && msg.body !== '🎭 Sticker' && (
+                          <div style={{ padding: '6px 8px 2px', fontSize: 13 }}>{msg.body}</div>
+                        )}
+                      </div>
+                    ) : msg.media_type === 'audio' ? (
+                      <audio controls src={msg.media_url!} style={{ maxWidth: 260, display: 'block' }} />
+                    ) : msg.media_type === 'video' ? (
+                      <video controls src={msg.media_url!} style={{ maxWidth: 260, borderRadius: 8, display: 'block' }} />
+                    ) : msg.media_type === 'document' ? (
+                      <a href={msg.media_url!} target="_blank" rel="noopener noreferrer"
+                        style={{ color: 'inherit', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
+                        <span style={{ fontSize: 20 }}>📎</span>
+                        <span style={{ textDecoration: 'underline', wordBreak: 'break-all' }}>{msg.body}</span>
+                      </a>
+                    ) : (
+                      msg.body
+                    )}
+                  </div>
                   <span style={{ color: C.textMuted, fontSize: 10, marginTop: 2, paddingInline: 4 }}>
                     {new Date(msg.sent_at).toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' })}
                   </span>
@@ -837,7 +986,7 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
           onSent={refreshMsgs}
         />
       )}
-      {showBroadcast && <BroadcastModal customers={customers} onClose={() => setShowBroadcast(false)} />}
+      {showBroadcast && <BroadcastModal customers={customers} onClose={() => setShowBroadcast(false)} onSent={refreshConvs} />}
       {showNewConv && (
         <NewConvModal
           customers={customers}
