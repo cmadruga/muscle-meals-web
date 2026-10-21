@@ -93,6 +93,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const pathname = usePathname()
 
   useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(console.error)
+    }
+  }, [])
+
+  useEffect(() => {
     // Close sidebar on route change — setState in effect is intentional here
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOpen(false)
