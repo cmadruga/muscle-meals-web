@@ -188,7 +188,7 @@ export async function POST(request: NextRequest) {
             // Notificación push al admin
             const displayPhone = contactPhone.slice(-10)
             const pushBody = msgType === 'text' ? msgBody.slice(0, 80) : `(${msgType}) ${msgBody}`
-            sendPushToAll({
+            await sendPushToAll({
               title: `WhatsApp · ${displayPhone}`,
               body: pushBody,
               tag: `wa-${contactPhone}`,
