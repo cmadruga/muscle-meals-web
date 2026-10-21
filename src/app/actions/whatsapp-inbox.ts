@@ -60,23 +60,35 @@ export async function createWaConvAndSendTemplate(
   name: string,
   firstName: string,
   imageUrl: string,
+  templateId: 'reordenar' | 'reorder_lastreminder' | 'newcliente_lastreminder' = 'reordenar',
 ): Promise<{ ok: boolean; convId?: string; error?: string }> {
   const supabase = createAdminClient()
   const now = new Date().toISOString()
-  // Normalize phone to WA format (digits, no +)
   const waPhone = toE164(phone).replace('+', '')
   const { data, error } = await supabase
     .from('wa_conversations')
     .upsert(
-      { contact_phone: waPhone, contact_name: name, last_message_at: now, status: 'open' },
+      { contact_phone: waPhone, last_message_at: now, status: 'open' },
       { onConflict: 'contact_phone' }
     )
     .select('id')
     .single()
   if (error || !data) return { ok: false, error: error?.message ?? 'Error creando conversación' }
-  const ok = await sendReorderTemplate(toE164(phone), firstName, imageUrl)
+
+  let ok: boolean
+  let label: string
+  if (templateId === 'reorder_lastreminder') {
+    ok = await sendReorderLastReminder(toE164(phone), firstName)
+    label = '📢 Plantilla: Recordatorio reorden'
+  } else if (templateId === 'newcliente_lastreminder') {
+    ok = await sendNewClienteLastReminder(toE164(phone), firstName)
+    label = '📢 Plantilla: Nuevo cliente'
+  } else {
+    ok = await sendReorderTemplate(toE164(phone), firstName, imageUrl)
+    label = '📢 Plantilla: Reordenar'
+  }
   if (!ok) return { ok: false, error: 'Error enviando plantilla' }
-  await insertWaOutgoingMessage(data.id, '📢 Plantilla: Reordenar')
+  await insertWaOutgoingMessage(data.id, label)
   return { ok: true, convId: data.id }
 }
 

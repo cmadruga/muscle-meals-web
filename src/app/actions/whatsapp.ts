@@ -24,7 +24,7 @@ export async function sendReorderBroadcast(
       const { data } = await supabase
         .from('wa_conversations')
         .upsert(
-          { contact_phone: waPhone, contact_name: r.fullName, last_message_at: now, status: 'open' },
+          { contact_phone: waPhone, last_message_at: now, status: 'open' },
           { onConflict: 'contact_phone' }
         )
         .select('id')
@@ -57,7 +57,10 @@ export async function sendTextTemplateBroadcast(
       const waPhone = r.phone.replace(/^\+/, '')
       const { data } = await supabase
         .from('wa_conversations')
-        .upsert({ contact_phone: waPhone, last_message_at: now, status: 'open' }, { onConflict: 'contact_phone' })
+        .upsert(
+          { contact_phone: waPhone, last_message_at: now, status: 'open' },
+          { onConflict: 'contact_phone' }
+        )
         .select('id').single()
       if (data?.id) await insertWaOutgoingMessage(data.id, label)
     } else { failed++ }
