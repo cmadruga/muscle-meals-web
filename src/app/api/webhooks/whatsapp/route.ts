@@ -97,7 +97,12 @@ function extractBody(message: Record<string, unknown>): string {
       const doc = message.document as Record<string, string>
       return doc?.filename ?? doc?.caption ?? '📎 Documento'
     }
-    case 'location': return '📍 Ubicación'
+    case 'location': {
+      const loc = message.location as Record<string, string | number> | undefined
+      if (loc?.name) return `📍 ${loc.name}`
+      if (loc?.address) return `📍 ${loc.address}`
+      return '📍 Ubicación'
+    }
     default:         return `[${message.type}]`
   }
 }
@@ -133,6 +138,11 @@ export async function POST(request: NextRequest) {
             const mimeType = mediaObj?.mime_type ?? null
             if (mediaId) {
               mediaUrl = await storeMedia(supabase, mediaId, mimeType, msgType)
+            }
+          } else if (msgType === 'location') {
+            const loc = (message.location as Record<string, number> | undefined)
+            if (loc?.latitude !== undefined && loc?.longitude !== undefined) {
+              mediaUrl = `https://maps.google.com/?q=${loc.latitude},${loc.longitude}`
             }
           }
 
