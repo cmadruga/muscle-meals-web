@@ -880,6 +880,12 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
                         <span style={{ fontSize: 20 }}>📎</span>
                         <span style={{ textDecoration: 'underline', wordBreak: 'break-all' }}>{msg.body}</span>
                       </a>
+                    ) : msg.media_type === 'location' ? (
+                      <a href={msg.media_url!} target="_blank" rel="noopener noreferrer"
+                        style={{ color: 'inherit', display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+                        <span style={{ fontSize: 22 }}>📍</span>
+                        <span style={{ textDecoration: 'underline' }}>{msg.body}</span>
+                      </a>
                     ) : (
                       msg.body
                     )}
