@@ -207,7 +207,11 @@ export async function validateDiscount(
 
     // Condition type
     if (d.condition_type === 'first_order') {
-      if (!customerId || paidOrderCount > 0) {
+      if (!customerId) {
+        if (code) return { discount: null, error: 'Inicia sesión para usar este código — aplica solo en el primer pedido' }
+        continue
+      }
+      if (paidOrderCount > 0) {
         if (code) return { discount: null, error: 'Solo válido en tu primer pedido' }
         continue
       }
