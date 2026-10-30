@@ -3,12 +3,13 @@ import { createAdminClient } from '@/lib/supabase/admin'
 export type WaConversation = {
   id: string
   contact_phone: string
+  contact_name: string | null   // nombre enviado por WhatsApp (profile.name)
   last_message_at: string | null
   unread_count: number
   status: string
   created_at: string
   customer_id: string | null
-  customer_name: string | null  // resolved from customers DB, never from WA profile
+  customer_name: string | null  // resolved from customers DB
 }
 
 export type WaMessage = {
@@ -38,6 +39,7 @@ export async function getWaConversations(): Promise<WaConversation[]> {
     return {
       id: conv.id,
       contact_phone: conv.contact_phone,
+      contact_name: conv.contact_name ?? null,
       last_message_at: conv.last_message_at,
       unread_count: conv.unread_count,
       status: conv.status,

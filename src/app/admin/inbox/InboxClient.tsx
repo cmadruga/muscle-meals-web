@@ -644,7 +644,7 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
   const remaining = timeLeft(messages)
 
   const convDisplayName = (conv: WaConversation) =>
-    conv.customer_name ?? conv.contact_phone
+    conv.customer_name ?? conv.contact_name ?? conv.contact_phone
 
   const filteredConvs = searchQuery
     ? conversations.filter(c =>
