@@ -12,6 +12,7 @@ export type Discount = {
   min_items: number | null
   min_amount: number | null  // centavos
   valid_days: number[] | null
+  max_uses: number | null
   active: boolean
   starts_at: string | null
   expires_at: string | null

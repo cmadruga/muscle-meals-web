@@ -123,17 +123,23 @@ export async function POST(request: NextRequest) {
         if (change.field !== 'messages') continue
         const value = change.value
 
-        // Nombre del contacto según Meta (contacts[].profile.name)
-        const contactsMap = new Map<string, string>()
-        for (const c of value.contacts ?? []) {
-          const name = (c as Record<string, Record<string, string>>).profile?.name
-          if (name) contactsMap.set(c.wa_id as string, name)
+        // Lookup de customers por teléfono para notificaciones (igual que el inbox)
+        const phones = (value.messages ?? []).map((m: Record<string, string>) => m.from).filter(Boolean)
+        let customerNameMap = new Map<string, string>()
+        if (phones.length > 0) {
+          const { data: customerRows } = await supabase
+            .from('customers')
+            .select('full_name, phone')
+            .not('phone', 'is', null)
+          ;(customerRows ?? []).forEach((c: { full_name: string; phone: string }) => {
+            const last10 = c.phone.replace(/\D/g, '').slice(-10)
+            if (last10.length === 10) customerNameMap.set(last10, c.full_name)
+          })
         }
 
         for (const message of value.messages ?? []) {
           const msgType = message.type as string
           const contactPhone = message.from as string
-          const contactName = contactsMap.get(contactPhone) ?? null
           const msgBody = extractBody(message as Record<string, unknown>)
           const waMsgId = message.id as string
           const sentAt = new Date(parseInt(message.timestamp) * 1000).toISOString()
@@ -157,22 +163,22 @@ export async function POST(request: NextRequest) {
           // Buscar conversación existente
           const { data: existing } = await supabase
             .from('wa_conversations')
-            .select('id, unread_count, contact_name')
+            .select('id, unread_count')
             .eq('contact_phone', contactPhone)
             .single()
 
           let convId: string | null = null
-          const resolvedName = contactName ?? (existing?.contact_name as string | null) ?? null
 
           if (existing) {
-            const upd: Record<string, unknown> = { last_message_at: sentAt, status: 'open', unread_count: (existing.unread_count ?? 0) + 1 }
-            if (contactName && contactName !== existing.contact_name) upd.contact_name = contactName
-            await supabase.from('wa_conversations').update(upd).eq('id', existing.id)
+            await supabase
+              .from('wa_conversations')
+              .update({ last_message_at: sentAt, status: 'open', unread_count: (existing.unread_count ?? 0) + 1 })
+              .eq('id', existing.id)
             convId = existing.id
           } else {
             const { data: inserted, error: insertErr } = await supabase
               .from('wa_conversations')
-              .insert({ contact_phone: contactPhone, contact_name: contactName, last_message_at: sentAt, unread_count: 1, status: 'open' })
+              .insert({ contact_phone: contactPhone, last_message_at: sentAt, unread_count: 1, status: 'open' })
               .select('id')
               .single()
             if (insertErr) console.error('❌ Error creando conversación WA:', insertErr)
@@ -203,8 +209,9 @@ export async function POST(request: NextRequest) {
             console.error('❌ Error insertando mensaje WA:', msgErr)
           } else {
             console.log(`📥 WA [${contactPhone}] (${msgType})${mediaUrl ? ' +media' : ''} ${msgBody.slice(0, 60)}`)
-            // Notificación push al admin
-            const displayName = resolvedName ?? contactPhone.slice(-10)
+            // Notificación push — mismo nombre que muestra el inbox
+            const last10 = contactPhone.replace(/\D/g, '').slice(-10)
+            const displayName = customerNameMap.get(last10) ?? contactPhone.slice(-10)
             const pushBody = msgType === 'text' ? msgBody.slice(0, 80) : `(${msgType}) ${msgBody}`
             await sendPushToAll({
               title: `WhatsApp · ${displayName}`,

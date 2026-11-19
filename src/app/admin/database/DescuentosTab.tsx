@@ -55,6 +55,7 @@ type Step1 = {
   condition_value: string
   min_items: string
   min_amount: string   // pesos
+  single_use: boolean
 }
 
 type ActiveMode = 'active' | 'scheduled' | 'inactive'
@@ -69,7 +70,7 @@ type Step2 = {
 const emptyStep1 = (): Step1 => ({
   name: '', code: '', type: 'percent', value: '10',
   condition_type: 'always', condition_value: '',
-  min_items: '', min_amount: '',
+  min_items: '', min_amount: '', single_use: false,
 })
 
 const emptyStep2 = (): Step2 => ({ activeMode: 'active', starts_at: '', hasExpiry: false, expires_at: '' })
@@ -84,6 +85,7 @@ function discountToStep1(d: Discount): Step1 {
     condition_value: d.condition_value != null ? String(d.condition_value) : '',
     min_items: d.min_items != null ? String(d.min_items) : '',
     min_amount: d.min_amount != null ? String(d.min_amount / 100) : '',
+    single_use: d.max_uses === 1,
   }
 }
 
@@ -115,6 +117,7 @@ function buildFormData(s1: Step1, s2: Step2): DiscountFormData {
     min_items: s1.min_items ? (parseInt(s1.min_items) || null) : null,
     min_amount: s1.min_amount ? Math.round((parseFloat(s1.min_amount) || 0) * 100) : null,
     valid_days: null,
+    max_uses: s1.single_use ? 1 : null,
     active: s2.activeMode !== 'inactive',
     starts_at: s2.activeMode === 'scheduled' && s2.starts_at
       ? new Date(s2.starts_at + 'T00:00:00').toISOString() : null,
@@ -296,8 +299,21 @@ function DiscountModal({ discount, onClose }: { discount: Discount | null; onClo
                   <input style={inp} type="number" min={0} value={s1.min_amount} onChange={e => set1('min_amount', e.target.value)} placeholder="Sin mínimo" />
                 </div>
               </div>
-
             </div>
+
+            {/* Un solo uso */}
+            <button
+              onClick={() => set1('single_use', !s1.single_use)}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '12px 16px', borderRadius: 10, border: `1px solid ${s1.single_use ? colors.orange : colors.grayLight}`, background: s1.single_use ? `${colors.orange}15` : 'transparent', cursor: 'pointer', textAlign: 'left', width: '100%' }}
+            >
+              <div style={{ width: 36, height: 20, borderRadius: 99, background: s1.single_use ? colors.orange : '#333', position: 'relative', flexShrink: 0, transition: 'background 0.15s' }}>
+                <div style={{ position: 'absolute', top: 2, left: s1.single_use ? 18 : 2, width: 16, height: 16, borderRadius: '50%', background: '#fff', transition: 'left 0.15s' }} />
+              </div>
+              <div>
+                <div style={{ color: s1.single_use ? colors.orange : colors.white, fontWeight: 600, fontSize: 14 }}>Un solo uso</div>
+                <div style={{ color: colors.textMuted, fontSize: 12, marginTop: 1 }}>El código se desactiva después del primer pedido en que se use</div>
+              </div>
+            </button>
 
           </div>
         )}
@@ -540,6 +556,7 @@ export default function DescuentosTab({ discounts }: { discounts: Discount[] }) 
                       {conditionLabel(d)}
                       {d.min_items && <div style={{ fontSize: 11, color: colors.textMuted }}>≥{d.min_items} platos</div>}
                       {d.min_amount && <div style={{ fontSize: 11, color: colors.textMuted }}>≥${(d.min_amount / 100).toFixed(2)} MXN</div>}
+                      {d.max_uses === 1 && <div style={{ fontSize: 11, color: '#a78bfa', marginTop: 2 }}>1 uso</div>}
                     </td>
                     <td style={{ padding: '12px' }}>
                       <button
