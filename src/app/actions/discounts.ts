@@ -14,6 +14,7 @@ export type DiscountFormData = {
   min_items: number | null
   min_amount: number | null // centavos
   valid_days: number[] | null
+  max_uses: number | null
   active: boolean
   starts_at: string | null
   expires_at: string | null
@@ -233,6 +234,18 @@ export async function validateDiscount(
       }
       if (consecutive < n) {
         if (code) return { discount: null, error: `Requiere ${n} semanas seguidas de pedidos` }
+        continue
+      }
+    }
+
+    // Max uses
+    if (d.max_uses !== null) {
+      const { count: totalUses } = await supabase
+        .from('discount_uses')
+        .select('id', { count: 'exact', head: true })
+        .eq('discount_id', d.id)
+      if ((totalUses ?? 0) >= d.max_uses) {
+        if (code) return { discount: null, error: 'Este código ya fue utilizado' }
         continue
       }
     }

@@ -123,6 +123,20 @@ export async function POST(request: NextRequest) {
         if (change.field !== 'messages') continue
         const value = change.value
 
+        // Lookup de customers por teléfono para notificaciones (igual que el inbox)
+        const phones = (value.messages ?? []).map((m: Record<string, string>) => m.from).filter(Boolean)
+        let customerNameMap = new Map<string, string>()
+        if (phones.length > 0) {
+          const { data: customerRows } = await supabase
+            .from('customers')
+            .select('full_name, phone')
+            .not('phone', 'is', null)
+          ;(customerRows ?? []).forEach((c: { full_name: string; phone: string }) => {
+            const last10 = c.phone.replace(/\D/g, '').slice(-10)
+            if (last10.length === 10) customerNameMap.set(last10, c.full_name)
+          })
+        }
+
         for (const message of value.messages ?? []) {
           const msgType = message.type as string
           const contactPhone = message.from as string
@@ -195,11 +209,12 @@ export async function POST(request: NextRequest) {
             console.error('❌ Error insertando mensaje WA:', msgErr)
           } else {
             console.log(`📥 WA [${contactPhone}] (${msgType})${mediaUrl ? ' +media' : ''} ${msgBody.slice(0, 60)}`)
-            // Notificación push al admin
-            const displayPhone = contactPhone.slice(-10)
+            // Notificación push — mismo nombre que muestra el inbox
+            const last10 = contactPhone.replace(/\D/g, '').slice(-10)
+            const displayName = customerNameMap.get(last10) ?? contactPhone.slice(-10)
             const pushBody = msgType === 'text' ? msgBody.slice(0, 80) : `(${msgType}) ${msgBody}`
             await sendPushToAll({
-              title: `WhatsApp · ${displayPhone}`,
+              title: `WhatsApp · ${displayName}`,
               body: pushBody,
               tag: `wa-${contactPhone}`,
               url: '/admin/inbox',
