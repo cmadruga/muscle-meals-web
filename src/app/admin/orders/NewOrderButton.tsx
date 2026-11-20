@@ -5,6 +5,7 @@ import { colors } from '@/lib/theme'
 import NewOrderModal from './NewOrderModal'
 import type { CustomerBasic } from '@/lib/db/customers'
 import type { PickupSpot } from '@/lib/db/pickup-spots'
+import type { MemberForAdmin } from '@/app/actions/admin-members'
 
 type Meal = { id: string; name: string }
 type Size = { id: string; name: string }
@@ -15,12 +16,14 @@ export default function NewOrderButton({
   sizes,
   customers,
   pickupSpots,
+  members,
 }: {
   weekStr: string
   meals: Meal[]
   sizes: Size[]
   customers: CustomerBasic[]
   pickupSpots: PickupSpot[]
+  members: MemberForAdmin[]
 }) {
   const [open, setOpen] = useState(false)
 
@@ -51,6 +54,7 @@ export default function NewOrderButton({
           sizes={sizes}
           customers={customers}
           pickupSpots={pickupSpots}
+          members={members}
           onClose={() => setOpen(false)}
         />
       )}
