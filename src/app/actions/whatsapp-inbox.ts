@@ -1,11 +1,12 @@
 'use server'
 
-import { sendWhatsAppText, sendReorderTemplate, sendReorderLastReminder, sendNewClienteLastReminder } from '@/lib/whatsapp'
+import { sendWhatsAppText, sendWhatsAppMedia, sendReorderTemplate, sendReorderLastReminder, sendNewClienteLastReminder } from '@/lib/whatsapp'
 import {
   getWaConversations,
   getWaMessages,
   markWaConversationRead,
   insertWaOutgoingMessage,
+  insertWaOutgoingMediaMessage,
 } from '@/lib/db/whatsapp'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -90,6 +91,46 @@ export async function createWaConvAndSendTemplate(
   if (!ok) return { ok: false, error: 'Error enviando plantilla' }
   await insertWaOutgoingMessage(data.id, label)
   return { ok: true, convId: data.id }
+}
+
+const MEDIA_BUCKET = 'whatsapp-templates'
+
+export async function sendWaMedia(
+  convId: string,
+  phone: string,
+  formData: FormData,
+  caption: string,
+): Promise<{ ok: boolean; error?: string }> {
+  const file = formData.get('file') as File | null
+  if (!file) return { ok: false, error: 'Sin archivo' }
+
+  const admin = createAdminClient()
+  const ext = file.name.split('.').pop() ?? 'bin'
+  const storageKey = `media/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+  const buffer = Buffer.from(await file.arrayBuffer())
+
+  const { error: uploadErr } = await admin.storage
+    .from(MEDIA_BUCKET)
+    .upload(storageKey, buffer, { contentType: file.type, upsert: false })
+  if (uploadErr) return { ok: false, error: uploadErr.message }
+
+  const { data: { publicUrl } } = admin.storage.from(MEDIA_BUCKET).getPublicUrl(storageKey)
+
+  let waType: 'image' | 'document' | 'video' = 'document'
+  if (file.type.startsWith('image/')) waType = 'image'
+  else if (file.type.startsWith('video/')) waType = 'video'
+
+  const ok = await sendWhatsAppMedia(toE164(phone), waType, publicUrl, file.name, caption.trim() || undefined)
+  if (!ok) return { ok: false, error: 'Error enviando media por WhatsApp' }
+
+  const bodyLabel = waType === 'image'
+    ? (caption || '📷 Imagen')
+    : waType === 'video'
+    ? (caption || '🎥 Video')
+    : (caption || `📎 ${file.name}`)
+
+  await insertWaOutgoingMediaMessage(convId, bodyLabel, publicUrl, waType)
+  return { ok: true }
 }
 
 export type CustomerForWa = { id: string; full_name: string; phone: string | null; last_order_at: string | null; created_at: string }

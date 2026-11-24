@@ -342,6 +342,51 @@ export async function sendNewClienteLastReminder(
 }
 
 /**
+ * Envía imagen, documento o video usando una URL pública
+ */
+export async function sendWhatsAppMedia(
+  phoneNumber: string,
+  mediaType: 'image' | 'document' | 'video',
+  url: string,
+  filename?: string,
+  caption?: string,
+): Promise<boolean> {
+  try {
+    const mediaBody: Record<string, unknown> = { link: url }
+    if (caption) mediaBody.caption = caption
+    if (mediaType === 'document' && filename) mediaBody.filename = filename
+
+    const response = await fetch(WHATSAPP_API_URL, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${WHATSAPP_ACCESS_TOKEN}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        recipient_type: 'individual',
+        type: mediaType,
+        to: phoneNumber,
+        [mediaType]: mediaBody,
+      }),
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      console.error(`❌ WhatsApp media (${mediaType}):`, error)
+      return false
+    }
+
+    const result = await response.json()
+    console.log(`✅ WhatsApp ${mediaType} enviado:`, result.messages?.[0]?.id)
+    return true
+  } catch (error) {
+    console.error(`❌ Error enviando media:`, error)
+    return false
+  }
+}
+
+/**
  * Orden expirada sin pago
  */
 export async function sendOrderExpired(

@@ -8,6 +8,7 @@ import {
   getWaMessages,
   markWaConversationRead,
   sendWaReply,
+  sendWaMedia,
   sendWaTemplateSingle,
   createWaConvAndSendTemplate,
   getCustomersForWa,
@@ -637,6 +638,11 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
   const [customers, setCustomers] = useState<CustomerForWa[]>([])
   const [customersLoading, setCustomersLoading] = useState(true)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [mediaFile, setMediaFile] = useState<File | null>(null)
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null)
+  const [mediaError, setMediaError] = useState<string | null>(null)
+  const [sendingMedia, setSendingMedia] = useState(false)
   const push = usePushNotifications()
 
   const selectedConv = conversations.find(c => c.id === selectedId) ?? null
@@ -689,8 +695,43 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
   }, [messages])
 
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    if (file) {
+      if (mediaPreview) URL.revokeObjectURL(mediaPreview)
+      setMediaFile(file)
+      setMediaPreview(file.type.startsWith('image/') ? URL.createObjectURL(file) : null)
+      setMediaError(null)
+    }
+    e.target.value = ''
+  }
+
+  function clearMedia() {
+    if (mediaPreview) URL.revokeObjectURL(mediaPreview)
+    setMediaFile(null)
+    setMediaPreview(null)
+    setMediaError(null)
+  }
+
   const handleSend = async () => {
-    if (!selectedId || !selectedConv || !reply.trim() || sending) return
+    if (!selectedId || !selectedConv || sending || sendingMedia) return
+    if (mediaFile) {
+      setSendingMedia(true)
+      setMediaError(null)
+      const fd = new FormData()
+      fd.append('file', mediaFile)
+      const result = await sendWaMedia(selectedId, selectedConv.contact_phone, fd, reply.trim())
+      if (result.ok) {
+        clearMedia()
+        setReply('')
+        setMessages(await getWaMessages(selectedId))
+      } else {
+        setMediaError(result.error ?? 'Error enviando')
+      }
+      setSendingMedia(false)
+      return
+    }
+    if (!reply.trim()) return
     setSending(true)
     const text = reply.trim()
     setReply('')
@@ -916,46 +957,82 @@ export default function InboxClient({ initial }: { initial: WaConversation[] }) 
                 </span>
               </div>
 
+              {/* hidden file input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.csv,.txt"
+                style={{ display: 'none' }}
+                onChange={handleFileSelect}
+              />
+
               {windowOpen ? (
                 <div style={{ margin: '10px 16px 8px', border: '1px solid #333', borderRadius: 10, overflow: 'hidden' }}>
+                  {/* media preview strip */}
+                  {mediaFile && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 12px', borderBottom: '1px solid #333', background: '#1a1a1a' }}>
+                      {mediaPreview ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={mediaPreview} alt="" style={{ width: 36, height: 36, objectFit: 'cover', borderRadius: 5, flexShrink: 0 }} />
+                      ) : (
+                        <span style={{ fontSize: 20, lineHeight: 1, flexShrink: 0 }}>📎</span>
+                      )}
+                      <span style={{ flex: 1, fontSize: 12, color: C.white, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{mediaFile.name}</span>
+                      {mediaError && <span style={{ fontSize: 11, color: '#ef4444', flexShrink: 0 }}>{mediaError}</span>}
+                      <button onClick={clearMedia} style={{ background: 'none', border: 'none', color: C.textMuted, cursor: 'pointer', fontSize: 18, lineHeight: 1, padding: '0 2px', flexShrink: 0 }}>×</button>
+                    </div>
+                  )}
                   <textarea
                     className="wa-reply-area"
                     rows={3}
-                    placeholder="Escribe un mensaje…"
-                    disabled={sending}
+                    placeholder={mediaFile ? 'Pie de foto (opcional)…' : 'Escribe un mensaje…'}
+                    disabled={sending || sendingMedia}
                     value={reply}
                     onChange={e => setReply(e.target.value)}
                     onKeyDown={handleKeyDown}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 10px', borderTop: '1px solid #333' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      {/* attach button */}
+                      <button
+                        onClick={() => fileInputRef.current?.click()}
+                        title="Adjuntar foto o documento"
+                        className="wa-icon-btn"
+                        style={{ padding: '5px 7px' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M13.5 7.5l-6.5 6.5a4 4 0 01-5.66-5.66l7-7a2.5 2.5 0 013.54 3.54l-7 7a1 1 0 01-1.42-1.42l6.5-6.5" />
+                        </svg>
+                      </button>
+                      <button
+                        onClick={() => openTemplate(selectedConv)}
+                        title="Enviar plantilla"
+                        style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', borderRadius: 6, fontSize: 12, background: 'transparent', border: 'none', color: C.orange, cursor: 'pointer', fontFamily: 'inherit' }}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="2" y="2" width="12" height="12" rx="2" />
+                          <path d="M5 6h6M5 9h4" />
+                        </svg>
+                        Enviar plantilla
+                      </button>
+                    </div>
                     <button
-                      onClick={() => openTemplate(selectedConv)}
-                      title="Enviar plantilla"
-                      style={{ display: 'flex', alignItems: 'center', gap: 5, padding: '5px 8px', borderRadius: 6, fontSize: 12, background: 'transparent', border: 'none', color: C.orange, cursor: 'pointer', fontFamily: 'inherit' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <rect x="2" y="2" width="12" height="12" rx="2" />
-                        <path d="M5 6h6M5 9h4" />
-                      </svg>
-                      Enviar plantilla
-                    </button>
-                    <button
-                      disabled={!reply.trim() || sending}
+                      disabled={(!reply.trim() && !mediaFile) || sending || sendingMedia}
                       onClick={handleSend}
                       style={{
                         display: 'flex', alignItems: 'center', gap: 6,
                         padding: '7px 16px', borderRadius: 7, border: 'none',
-                        background: !reply.trim() || sending ? '#333' : C.orange,
-                        color: !reply.trim() || sending ? C.textMuted : '#17140f',
+                        background: ((!reply.trim() && !mediaFile) || sending || sendingMedia) ? '#333' : C.orange,
+                        color: ((!reply.trim() && !mediaFile) || sending || sendingMedia) ? C.textMuted : '#17140f',
                         fontSize: 13, fontWeight: 700,
-                        cursor: !reply.trim() || sending ? 'not-allowed' : 'pointer',
-                        opacity: sending ? 0.7 : 1, fontFamily: 'inherit',
+                        cursor: ((!reply.trim() && !mediaFile) || sending || sendingMedia) ? 'not-allowed' : 'pointer',
+                        opacity: (sending || sendingMedia) ? 0.7 : 1, fontFamily: 'inherit',
                       }}
                     >
                       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
                         <path d="M14 2L2 6.5l5 2 2 5L14 2z" />
                       </svg>
-                      {sending ? '…' : 'Enviar'}
+                      {(sending || sendingMedia) ? '…' : 'Enviar'}
                     </button>
                   </div>
                 </div>

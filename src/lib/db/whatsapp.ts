@@ -71,3 +71,20 @@ export async function insertWaOutgoingMessage(convId: string, body: string): Pro
     supabase.from('wa_conversations').update({ last_message_at: now }).eq('id', convId),
   ])
 }
+
+export async function insertWaOutgoingMediaMessage(
+  convId: string,
+  body: string,
+  mediaUrl: string,
+  mediaType: string,
+): Promise<void> {
+  const supabase = createAdminClient()
+  const now = new Date().toISOString()
+  await Promise.all([
+    supabase.from('wa_messages').insert({
+      conversation_id: convId, direction: 'out',
+      body, sent_at: now, media_url: mediaUrl, media_type: mediaType,
+    }),
+    supabase.from('wa_conversations').update({ last_message_at: now }).eq('id', convId),
+  ])
+}
