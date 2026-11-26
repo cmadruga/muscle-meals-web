@@ -4,7 +4,8 @@ import crypto from 'crypto'
 import { updateOrderStatus, updatePaymentGatewayId, updatePaymentMethod, getOrderById, getOrderWithItems } from '@/lib/db/orders'
 import { getCustomerById } from '@/lib/db/customers'
 import type { ConektaOrder, ConektaCharge } from '@/lib/types/conekta'
-import { sendPaymentConfirmation, sendPaymentPending, sendOrderExpired, sendInternalOrderAlert } from '@/lib/whatsapp'
+import { sendPaymentConfirmation, sendPaymentPending, sendOrderExpired } from '@/lib/whatsapp'
+import { sendPushToAll } from '@/lib/push'
 
 const WEBHOOK_SECRET = process.env.CONEKTA_WEBHOOK_SECRET!
 
@@ -160,22 +161,15 @@ async function handleOrderPaid(conektaOrder: ConektaOrder) {
     }
 
     const orderWithItemsPaid = await getOrderWithItems(ourOrderId)
-    await sendInternalOrderAlert({
-      orderNumber: order.order_number,
-      status: 'paid',
-      customerName: customer.full_name,
-      customerPhone: customer.phone ?? '',
-      items: (orderWithItemsPaid?.items ?? []).map(item => ({
-        mealName: item.meal_name || 'Platillo',
-        sizeName: item.size_name || '',
-        qty: item.qty,
-        unitPrice: item.unit_price / 100,
-      })),
-      shippingType: order.shipping_type,
-      shippingCost: order.shipping_cost / 100,
-      totalAmount,
+    const totalItemsPaid = (orderWithItemsPaid?.items ?? []).reduce((s, i) => s + i.qty, 0)
+    const shippingLabelPaid = order.shipping_type === 'pickup' ? 'Pickup' : order.shipping_type === 'priority' ? 'Prioritario' : 'Estándar'
+    await sendPushToAll({
+      title: `🛍️ Pedido pagado — ${order.order_number}`,
+      body: `${customer.full_name} · ${totalItemsPaid} comida${totalItemsPaid !== 1 ? 's' : ''} · $${totalAmount.toFixed(0)} MXN · ${shippingLabelPaid}`,
+      tag: 'order-alert',
+      url: `/admin/orders`,
     })
-    console.log(`🔔 Alerta interna enviada — pedido #${order.order_number}`)
+    console.log(`🔔 Push enviado — pedido pagado #${order.order_number}`)
 
   } catch (error) {
     console.error('Error en handleOrderPaid:', error)
@@ -239,22 +233,14 @@ async function handleOrderPending(conektaOrder: ConektaOrder) {
       console.log(`📱 Instrucciones de pago enviadas a ${customer.phone}`)
     }
 
-    await sendInternalOrderAlert({
-      orderNumber: order.order_number,
-      status: 'pending_payment',
-      customerName: customer.full_name,
-      customerPhone: customer.phone ?? '',
-      items: (orderWithItemsPending?.items ?? []).map(item => ({
-        mealName: item.meal_name || 'Platillo',
-        sizeName: item.size_name || '',
-        qty: item.qty,
-        unitPrice: item.unit_price / 100,
-      })),
-      shippingType: order.shipping_type,
-      shippingCost: order.shipping_cost / 100,
-      totalAmount,
+    const shippingLabelPending = order.shipping_type === 'pickup' ? 'Pickup' : order.shipping_type === 'priority' ? 'Prioritario' : 'Estándar'
+    await sendPushToAll({
+      title: `⏳ Pedido pendiente — ${order.order_number}`,
+      body: `${customer.full_name} · ${itemCountPending} comida${itemCountPending !== 1 ? 's' : ''} · $${totalAmount.toFixed(0)} MXN · ${shippingLabelPending}`,
+      tag: 'order-alert',
+      url: `/admin/orders`,
     })
-    console.log(`🔔 Alerta interna enviada — pedido pendiente #${order.order_number}`)
+    console.log(`🔔 Push enviado — pedido pendiente #${order.order_number}`)
 
   } catch (error) {
     console.error('Error en handleOrderPending:', error)

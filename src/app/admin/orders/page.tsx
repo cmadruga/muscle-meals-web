@@ -68,7 +68,7 @@ export default async function PanelOrdersPage({
     getMainSizes(),
     getShippingStandard(),
     getMembershipDiscounts(),
-    getMembersWithLastOrder(),
+    getMembersWithLastOrder().catch(() => []),
   ])
 
   const customers: CustomerBasic[] = (customersRes.data ?? []) as CustomerBasic[]
