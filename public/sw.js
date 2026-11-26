@@ -20,7 +20,8 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       for (const client of list) {
-        if (client.url.includes('/admin/inbox') && 'focus' in client) {
+        if (client.url.includes('/admin/') && 'focus' in client) {
+          client.navigate(url)
           return client.focus()
         }
       }

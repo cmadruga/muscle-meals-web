@@ -151,10 +151,9 @@ export async function getWeeklyProductionData(
 
   // Fetch sizes (only real UUIDs — sentinel excluded)
   const realSizeIds = uniqueSizeIds.filter(id => id !== EXTRA_SIZE_SENTINEL)
-  const { data: sizesData, error: sizesError } = await client
-    .from('sizes')
-    .select('*')
-    .in('id', realSizeIds.length > 0 ? realSizeIds : ['__none__'])
+  const { data: sizesData, error: sizesError } = realSizeIds.length > 0
+    ? await client.from('sizes').select('*').in('id', realSizeIds)
+    : { data: [], error: null }
 
   if (sizesError) throw sizesError
 
